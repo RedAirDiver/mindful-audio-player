@@ -1,53 +1,91 @@
+import { useEffect, useState } from "react";
 import ProgramCard from "./ProgramCard";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data - will be replaced with real data from backend
-const programs = [
-  {
-    id: "1",
-    title: "Djup Avslappning",
-    description: "Guidade meditationer för att släppa stress och hitta inre lugn. Perfekt för kvällen.",
-    duration: "45 min",
-    trackCount: 8,
-    price: 299,
-    image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop",
-    rating: 5,
-    featured: true,
-  },
-  {
-    id: "2",
-    title: "Fokus & Koncentration",
-    description: "Öka din mentala skärpa och förbättra din koncentrationsförmåga med dessa övningar.",
-    duration: "30 min",
-    trackCount: 6,
-    price: 249,
-    image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=800&auto=format&fit=crop",
-    rating: 5,
-  },
-  {
-    id: "3",
-    title: "Bättre Sömn",
-    description: "Sömnmeditationer som hjälper dig somna snabbare och sova djupare.",
-    duration: "60 min",
-    trackCount: 10,
-    price: 349,
-    image: "https://images.unsplash.com/photo-1511295742362-92c96b1cf484?w=800&auto=format&fit=crop",
-    rating: 4,
-  },
-  {
-    id: "4",
-    title: "Självförtroende",
-    description: "Stärk din inre styrka och bygg ett orubbligt självförtroende.",
-    duration: "35 min",
-    trackCount: 7,
-    price: 279,
-    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&auto=format&fit=crop",
-    rating: 5,
-  },
-];
+interface Program {
+  id: string;
+  title: string;
+  short_description: string | null;
+  description: string | null;
+  duration_text: string | null;
+  price: number;
+  image_url: string | null;
+  is_active: boolean;
+}
+
+interface AudioFileCount {
+  program_id: string;
+  count: number;
+}
 
 const ProgramsSection = () => {
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
+
+  const fetchPrograms = async () => {
+    try {
+      // Fetch programs
+      const { data: programsData, error: programsError } = await supabase
+        .from('programs')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (programsError) throw programsError;
+
+      if (programsData) {
+        setPrograms(programsData);
+        
+        // Fetch track counts for each program
+        const counts: Record<string, number> = {};
+        for (const program of programsData) {
+          const { count, error } = await supabase
+            .from('audio_files')
+            .select('*', { count: 'exact', head: true })
+            .eq('program_id', program.id);
+          
+          if (!error && count !== null) {
+            counts[program.id] = count;
+          }
+        }
+        setTrackCounts(counts);
+      }
+    } catch (error) {
+      console.error('Error fetching programs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="py-20 md:py-28 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
+              Våra program
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Laddar program...
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card rounded-2xl h-80 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="py-20 md:py-28 bg-background">
+    <section id="programs" className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-16">
@@ -67,7 +105,17 @@ const ProgramsSection = () => {
               className="animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
-              <ProgramCard {...program} />
+              <ProgramCard 
+                id={program.id}
+                title={program.title}
+                description={program.short_description || program.description || ''}
+                duration={program.duration_text || ''}
+                trackCount={trackCounts[program.id] || 0}
+                price={program.price}
+                image={program.image_url || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop'}
+                rating={5}
+                featured={index === 0}
+              />
             </div>
           ))}
         </div>
