@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.svg";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut, loading } = useAuth();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
@@ -27,12 +36,12 @@ const Header = () => {
             >
               Hem
             </Link>
-            <Link 
-              to="/programs" 
-              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/programs') ? 'text-primary' : 'text-muted-foreground'}`}
+            <a 
+              href="/#programs" 
+              className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
             >
               Program
-            </Link>
+            </a>
             <Link 
               to="/about" 
               className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/about') ? 'text-primary' : 'text-muted-foreground'}`}
@@ -43,15 +52,34 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">Logga in</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link to="/login">
-                <User className="w-4 h-4 mr-1" />
-                Mitt konto
-              </Link>
-            </Button>
+            {!loading && (
+              user ? (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/dashboard">
+                      <User className="w-4 h-4 mr-1" />
+                      Mitt konto
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleSignOut}>
+                    <LogOut className="w-4 h-4 mr-1" />
+                    Logga ut
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/login">Logga in</Link>
+                  </Button>
+                  <Button size="sm" asChild>
+                    <Link to="/login">
+                      <User className="w-4 h-4 mr-1" />
+                      Skapa konto
+                    </Link>
+                  </Button>
+                </>
+              )
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -76,13 +104,13 @@ const Header = () => {
             >
               Hem
             </Link>
-            <Link 
-              to="/programs" 
+            <a 
+              href="/#programs" 
               className="py-2 text-foreground font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
               Program
-            </Link>
+            </a>
             <Link 
               to="/about" 
               className="py-2 text-foreground font-medium"
@@ -91,12 +119,23 @@ const Header = () => {
               Om oss
             </Link>
             <div className="pt-3 border-t border-border flex flex-col gap-2">
-              <Button variant="outline" asChild>
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>Logga in</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>Mitt konto</Link>
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="outline" asChild>
+                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Mitt konto</Link>
+                  </Button>
+                  <Button onClick={handleSignOut}>Logga ut</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" asChild>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>Logga in</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>Skapa konto</Link>
+                  </Button>
+                </>
+              )}
             </div>
           </nav>
         </div>
