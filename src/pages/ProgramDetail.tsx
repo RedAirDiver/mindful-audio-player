@@ -72,22 +72,16 @@ const ProgramDetail = () => {
 
       setProgram(programData);
 
-      // Fetch track count (not full track data - that's protected by RLS)
-      const { count } = await supabase
+      // Fetch tracks (metadata is now publicly viewable)
+      const { data: tracksData, error: tracksError } = await supabase
         .from('audio_files')
-        .select('*', { count: 'exact', head: true })
-        .eq('program_id', id);
+        .select('id, title, duration_seconds, track_order')
+        .eq('program_id', id)
+        .order('track_order', { ascending: true });
 
-      // Create placeholder tracks for display
-      if (count && count > 0) {
-        const placeholderTracks: AudioFile[] = Array.from({ length: count }, (_, i) => ({
-          id: `placeholder-${i}`,
-          title: `Spår ${i + 1}`,
-          file_path: '',
-          duration_seconds: null,
-          track_order: i + 1,
-        }));
-        setTracks(placeholderTracks);
+      if (!tracksError && tracksData) {
+        // Add empty file_path for non-purchased display
+        setTracks(tracksData.map(t => ({ ...t, file_path: '' })));
       }
 
       // Check if user has purchased this program
