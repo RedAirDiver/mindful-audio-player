@@ -14,13 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audio_files: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          file_path: string
+          id: string
+          program_id: string
+          title: string
+          track_order: number
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_path: string
+          id?: string
+          program_id: string
+          title: string
+          track_order?: number
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          file_path?: string
+          id?: string
+          program_id?: string
+          title?: string
+          track_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audio_files_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      programs: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_text: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          price: number
+          short_description: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_text?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          price?: number
+          short_description?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_text?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          price?: number
+          short_description?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      purchases: {
+        Row: {
+          amount_paid: number
+          id: string
+          program_id: string
+          purchase_date: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          id?: string
+          program_id: string
+          purchase_date?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          id?: string
+          program_id?: string
+          purchase_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchases_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_purchased_program: {
+        Args: { program_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
