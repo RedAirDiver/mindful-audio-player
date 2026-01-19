@@ -4,8 +4,9 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
-import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag } from "lucide-react";
+import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useOfflineAudio } from "@/hooks/useOfflineAudio";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
@@ -24,26 +25,19 @@ interface Program {
   image_url: string | null;
 }
 
-interface Purchase {
-  id: string;
-  program_id: string;
-  purchase_date: string;
-  programs: Program;
-}
-
 interface PurchasedProgram extends Program {
   tracks: AudioFile[];
 }
 
 const Dashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { savedTracks, savingTrack, saveTrackOffline, removeTrackOffline, getDecryptedAudioUrl, isOnline } = useOfflineAudio();
   const navigate = useNavigate();
   const [purchasedPrograms, setPurchasedPrograms] = useState<PurchasedProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<PurchasedProgram | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<AudioFile | null>(null);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [savedOffline, setSavedOffline] = useState<Set<string>>(new Set());
-  const [savingOffline, setSavingOffline] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -51,9 +45,54 @@ const Dashboard = () => {
     }
   }, [user, authLoading]);
 
+  // Get audio URL when track changes
+  useEffect(() => {
+    const loadAudio = async () => {
+      if (!selectedTrack) {
+        setCurrentAudioUrl(null);
+        return;
+      }
+
+      // Check if track is saved offline
+      if (savedTracks.has(selectedTrack.id)) {
+        const offlineUrl = await getDecryptedAudioUrl(selectedTrack.id);
+        if (offlineUrl) {
+          setCurrentAudioUrl(offlineUrl);
+          return;
+        }
+      }
+
+      // If online, get streaming URL
+      if (isOnline) {
+        try {
+          const { data, error } = await supabase.storage
+            .from("audio-files")
+            .createSignedUrl(selectedTrack.file_path, 3600);
+          
+          if (!error && data?.signedUrl) {
+            setCurrentAudioUrl(data.signedUrl);
+            return;
+          }
+        } catch (err) {
+          console.error("Error getting audio URL:", err);
+        }
+      }
+
+      setCurrentAudioUrl(null);
+    };
+
+    loadAudio();
+
+    // Cleanup blob URLs
+    return () => {
+      if (currentAudioUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(currentAudioUrl);
+      }
+    };
+  }, [selectedTrack, savedTracks, isOnline, getDecryptedAudioUrl]);
+
   const fetchPurchasedPrograms = async () => {
     try {
-      // Fetch purchases with program details
       const { data: purchases, error: purchasesError } = await supabase
         .from('purchases')
         .select(`
@@ -77,7 +116,6 @@ const Dashboard = () => {
         return;
       }
 
-      // Fetch audio files for each purchased program
       const programIds = purchases.map(p => p.program_id);
       const { data: audioFiles, error: audioError } = await supabase
         .from('audio_files')
@@ -87,7 +125,6 @@ const Dashboard = () => {
 
       if (audioError) throw audioError;
 
-      // Combine data
       const programsWithTracks: PurchasedProgram[] = purchases.map(purchase => {
         const program = purchase.programs as unknown as Program;
         const tracks = (audioFiles || []).filter(af => af.program_id === program.id);
@@ -118,13 +155,15 @@ const Dashboard = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSaveOffline = async (trackId: string) => {
-    setSavingOffline(trackId);
-    // TODO: Implement actual offline caching with Service Worker
-    setTimeout(() => {
-      setSavedOffline(prev => new Set(prev).add(trackId));
-      setSavingOffline(null);
-    }, 2000);
+  const handleSaveOffline = async (track: AudioFile) => {
+    await saveTrackOffline(track.id, track.file_path, {
+      title: track.title,
+      duration: track.duration_seconds || 180,
+    });
+  };
+
+  const handleRemoveOffline = async (trackId: string) => {
+    await removeTrackOffline(trackId);
   };
 
   const handleSignOut = async () => {
@@ -177,6 +216,19 @@ const Dashboard = () => {
       
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4">
+          {/* Offline Banner */}
+          {!isOnline && (
+            <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-foreground">Du är offline</p>
+                <p className="text-sm text-muted-foreground">
+                  Du kan bara lyssna på spår som du har sparat för offline-lyssning.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Dashboard Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
@@ -251,6 +303,7 @@ const Dashboard = () => {
                     title={selectedTrack.title}
                     coverImage={selectedProgram.image_url || undefined}
                     duration={selectedTrack.duration_seconds || 180}
+                    audioUrl={currentAudioUrl || undefined}
                   />
 
                   {/* Track List */}
@@ -266,75 +319,96 @@ const Dashboard = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      {selectedProgram.tracks.map((track, index) => (
-                        <div
-                          key={track.id}
-                          className={`flex items-center gap-4 p-3 rounded-lg transition-all cursor-pointer ${
-                            selectedTrack.id === track.id 
-                              ? 'bg-primary/10' 
-                              : 'hover:bg-muted'
-                          }`}
-                          onClick={() => setSelectedTrack(track)}
-                        >
-                          {/* Track Number / Playing Indicator */}
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                            selectedTrack.id === track.id 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-muted text-muted-foreground'
-                          }`}>
-                            {selectedTrack.id === track.id ? (
-                              <Headphones className="w-4 h-4" />
-                            ) : (
-                              index + 1
-                            )}
-                          </div>
+                      {selectedProgram.tracks.map((track, index) => {
+                        const isSaved = savedTracks.has(track.id);
+                        const isSaving = savingTrack === track.id;
+                        const canPlay = isOnline || isSaved;
 
-                          {/* Track Info */}
-                          <div className="flex-1 min-w-0">
-                            <p className={`font-medium truncate ${
-                              selectedTrack.id === track.id ? 'text-primary' : 'text-foreground'
+                        return (
+                          <div
+                            key={track.id}
+                            className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
+                              canPlay ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                            } ${
+                              selectedTrack.id === track.id 
+                                ? 'bg-primary/10' 
+                                : canPlay ? 'hover:bg-muted' : ''
+                            }`}
+                            onClick={() => canPlay && setSelectedTrack(track)}
+                          >
+                            {/* Track Number / Playing Indicator */}
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                              selectedTrack.id === track.id 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-muted text-muted-foreground'
                             }`}>
-                              {track.title}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatDuration(track.duration_seconds)}
-                            </p>
-                          </div>
+                              {selectedTrack.id === track.id ? (
+                                <Headphones className="w-4 h-4" />
+                              ) : (
+                                index + 1
+                              )}
+                            </div>
 
-                          {/* Offline Status */}
-                          <div className="flex items-center gap-2">
-                            {savedOffline.has(track.id) ? (
-                              <div className="flex items-center gap-1 text-sm text-primary">
-                                <WifiOff className="w-4 h-4" />
-                                <span className="hidden sm:inline">Sparad</span>
-                              </div>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSaveOffline(track.id);
-                                }}
-                                disabled={savingOffline === track.id}
-                                className="text-muted-foreground"
-                              >
-                                {savingOffline === track.id ? (
-                                  <span className="flex items-center gap-1">
-                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    <span className="hidden sm:inline">Sparar...</span>
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-1">
-                                    <Download className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Spara</span>
-                                  </span>
-                                )}
-                              </Button>
-                            )}
+                            {/* Track Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className={`font-medium truncate ${
+                                selectedTrack.id === track.id ? 'text-primary' : 'text-foreground'
+                              }`}>
+                                {track.title}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDuration(track.duration_seconds)}
+                              </p>
+                            </div>
+
+                            {/* Offline Status */}
+                            <div className="flex items-center gap-2">
+                              {isSaved ? (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 text-sm text-primary">
+                                    <WifiOff className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Sparad</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveOffline(track.id);
+                                    }}
+                                    className="text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSaveOffline(track);
+                                  }}
+                                  disabled={isSaving || !isOnline}
+                                  className="text-muted-foreground"
+                                >
+                                  {isSaving ? (
+                                    <span className="flex items-center gap-1">
+                                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                      <span className="hidden sm:inline">Sparar...</span>
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center gap-1">
+                                      <Download className="w-4 h-4" />
+                                      <span className="hidden sm:inline">Spara</span>
+                                    </span>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </>
@@ -346,7 +420,8 @@ const Dashboard = () => {
                 <div className="text-sm">
                   <p className="font-medium text-foreground">Om offline-läge</p>
                   <p className="text-muted-foreground">
-                    Sparade spår kan lyssnas utan internetuppkoppling. Klicka på "Spara" för att ladda ner spår till din enhet.
+                    Sparade spår krypteras och lagras lokalt på din enhet. Du kan lyssna på dem utan internet, 
+                    men filerna kan inte laddas ner eller kopieras till andra enheter.
                   </p>
                 </div>
               </div>
