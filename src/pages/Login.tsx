@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 import logo from "@/assets/logo.svg";
 
 const Login = () => {
@@ -11,12 +13,32 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn, signUp, user } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Demo: Just navigate to dashboard
+  // Redirect if already logged in
+  if (user) {
     navigate("/dashboard");
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        await signIn(email, password);
+      } else {
+        await signUp(email, password, name);
+      }
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Ett fel uppstod. Försök igen.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,6 +98,7 @@ const Login = () => {
                   onChange={(e) => setName(e.target.value)}
                   className="pl-10"
                   required={!isLogin}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -93,6 +116,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -109,6 +133,8 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
                 required
+                minLength={6}
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -121,8 +147,15 @@ const Login = () => {
             </div>
           )}
 
-          <Button type="submit" className="w-full" size="lg">
-            {isLogin ? 'Logga in' : 'Skapa konto'}
+          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                {isLogin ? 'Loggar in...' : 'Skapar konto...'}
+              </span>
+            ) : (
+              isLogin ? 'Logga in' : 'Skapa konto'
+            )}
           </Button>
         </form>
 
@@ -137,8 +170,8 @@ const Login = () => {
         </div>
 
         {/* Social Login (placeholder) */}
-        <Button variant="outline" className="w-full" size="lg">
-          Fortsätt med Google
+        <Button variant="outline" className="w-full" size="lg" disabled>
+          Fortsätt med Google (kommer snart)
         </Button>
 
         {/* Help Text */}

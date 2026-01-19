@@ -8,17 +8,19 @@ interface AudioPlayerProps {
   artist?: string;
   audioUrl?: string;
   coverImage?: string;
+  duration?: number;
 }
 
 const AudioPlayer = ({ 
   title, 
   artist = "Mentalträning", 
   audioUrl,
-  coverImage = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&auto=format&fit=crop"
+  coverImage = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&auto=format&fit=crop",
+  duration: initialDuration = 180
 }: AudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(180); // Demo: 3 minutes
+  const [duration, setDuration] = useState(initialDuration);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
