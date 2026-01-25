@@ -33,7 +33,7 @@ const ProgramCard = ({
 
   return (
     <article 
-      className={`group relative bg-card rounded-2xl overflow-hidden shadow-elegant hover:shadow-lg transition-all duration-300 hover:-translate-y-1 ${
+      className={`group relative bg-card rounded-2xl overflow-hidden shadow-elegant hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full flex flex-col ${
         featured ? 'ring-2 ring-primary/20' : ''
       } ${isFree ? 'ring-2 ring-accent/30' : ''}`}
     >
@@ -61,7 +61,7 @@ const ProgramCard = ({
       </div>
 
       {/* Content */}
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-4 flex-1 flex flex-col">
         {/* Category Badge */}
         {displayCategory && (
           <Badge variant="secondary" className="text-xs">
@@ -104,7 +104,7 @@ const ProgramCard = ({
         </div>
 
         {/* Price & CTA */}
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-2 mt-auto">
           <div className="text-2xl font-semibold text-foreground">
             {isFree ? (
               <span className="text-accent">Gratis</span>
