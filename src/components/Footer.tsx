@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-1">
-            <img src={logo} alt="Mentalträning" className="h-12 w-auto brightness-0 invert opacity-90" />
+            <img src={logo} alt="Mentalträning" className="h-20 md:h-24 w-auto" />
             <p className="mt-4 text-sm leading-relaxed opacity-70">
               Professionell mental träning för ett bättre liv. Utveckla ditt sinne med våra guidade program.
             </p>
