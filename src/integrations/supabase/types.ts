@@ -81,6 +81,7 @@ export type Database = {
       }
       programs: {
         Row: {
+          categories: string[] | null
           created_at: string
           description: string | null
           duration_text: string | null
@@ -89,10 +90,13 @@ export type Database = {
           is_active: boolean
           price: number
           short_description: string | null
+          sku: string | null
           title: string
           updated_at: string
+          wc_id: number | null
         }
         Insert: {
+          categories?: string[] | null
           created_at?: string
           description?: string | null
           duration_text?: string | null
@@ -101,10 +105,13 @@ export type Database = {
           is_active?: boolean
           price?: number
           short_description?: string | null
+          sku?: string | null
           title: string
           updated_at?: string
+          wc_id?: number | null
         }
         Update: {
+          categories?: string[] | null
           created_at?: string
           description?: string | null
           duration_text?: string | null
@@ -113,8 +120,10 @@ export type Database = {
           is_active?: boolean
           price?: number
           short_description?: string | null
+          sku?: string | null
           title?: string
           updated_at?: string
+          wc_id?: number | null
         }
         Relationships: []
       }
