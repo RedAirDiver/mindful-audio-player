@@ -11,6 +11,13 @@ import Dashboard from "./pages/Dashboard";
 import ProgramDetail from "./pages/ProgramDetail";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPrograms from "./pages/admin/AdminPrograms";
+import AdminAudio from "./pages/admin/AdminAudio";
+import AdminPurchases from "./pages/admin/AdminPurchases";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const App = () => {
   // Create queryClient inside component with useState to survive HMR
@@ -45,6 +52,21 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+              {/* Admin routes */}
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminLayout />
+                  </AdminRoute>
+                }
+              >
+                <Route index element={<AdminDashboard />} />
+                <Route path="programs" element={<AdminPrograms />} />
+                <Route path="audio" element={<AdminAudio />} />
+                <Route path="purchases" element={<AdminPurchases />} />
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
