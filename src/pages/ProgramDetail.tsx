@@ -74,6 +74,8 @@ const ProgramDetail = () => {
   const [previewTrack, setPreviewTrack] = useState<string | null>(null);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [playingOffline, setPlayingOffline] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const previewAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (slug) {
@@ -99,16 +101,15 @@ const ProgramDetail = () => {
 
       setProgram(programData);
 
-      // Fetch tracks (metadata is now publicly viewable)
+      // Fetch tracks (including file_path for preview functionality)
       const { data: tracksData, error: tracksError } = await supabase
         .from('audio_files')
-        .select('id, title, duration_seconds, track_order')
+        .select('id, title, duration_seconds, track_order, file_path')
         .eq('program_id', programData.id)
         .order('track_order', { ascending: true });
 
       if (!tracksError && tracksData) {
-        // Add empty file_path for non-purchased display
-        setTracks(tracksData.map(t => ({ ...t, file_path: '' })));
+        setTracks(tracksData);
       }
 
       // Check if user has purchased this program
@@ -294,49 +295,101 @@ const ProgramDetail = () => {
     }
   };
 
-  // Preview playback (simulated - first 30 seconds for non-purchased)
-  const togglePreview = (trackId: string) => {
+  // Preview playback - actual audio for first 30 seconds
+  const togglePreview = async (trackId: string) => {
     // Stop any real playback first
     if (audioRef.current) {
       audioRef.current.pause();
       setCurrentTrackIndex(null);
     }
     
+    // If same track is playing, stop it
     if (previewTrack === trackId && isPlaying) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
       setIsPlaying(false);
       setPreviewTrack(null);
       setPreviewProgress(0);
-    } else {
-      setPreviewTrack(trackId);
-      setIsPlaying(true);
-      setPreviewProgress(0);
-      
-      toast.info("Förhandslyssning: 30 sekunder", {
-        description: "Köp programmet för att lyssna på hela spåret"
-      });
+      return;
+    }
+
+    // Find the track to get file_path
+    const track = tracks.find(t => t.id === trackId);
+    if (!track || !track.file_path) {
+      toast.error("Kunde inte ladda förhandslyssning");
+      return;
+    }
+
+    setPreviewLoading(true);
+    
+    try {
+      // Get signed URL for the track
+      const { data, error } = await supabase.storage
+        .from("audio-files")
+        .createSignedUrl(track.file_path, 300); // 5 min expiry for preview
+
+      if (error || !data?.signedUrl) {
+        throw new Error("Kunde inte hämta ljudfil");
+      }
+
+      if (previewAudioRef.current) {
+        previewAudioRef.current.src = data.signedUrl;
+        previewAudioRef.current.volume = volume / 100;
+        await previewAudioRef.current.play();
+        
+        setPreviewTrack(trackId);
+        setIsPlaying(true);
+        setPreviewProgress(0);
+        
+        toast.info("Förhandslyssning: 30 sekunder", {
+          description: "Köp programmet för att lyssna på hela spåret"
+        });
+      }
+    } catch (error: any) {
+      console.error('Error starting preview:', error);
+      toast.error("Kunde inte spela förhandslyssning");
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
-  // Simulate preview progress for non-purchased
+  // Handle preview audio time update and 30-second limit
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying && previewTrack && !isPurchased) {
-      interval = setInterval(() => {
-        setPreviewProgress(prev => {
-          if (prev >= 30) {
-            setIsPlaying(false);
-            setPreviewTrack(null);
-            toast.info("Förhandslyssningen är slut", {
-              description: "Köp programmet för att lyssna på hela spåret"
-            });
-            return 0;
-          }
-          return prev + 1;
+    const previewAudio = previewAudioRef.current;
+    if (!previewAudio) return;
+
+    const handleTimeUpdate = () => {
+      const currentSeconds = Math.floor(previewAudio.currentTime);
+      setPreviewProgress(currentSeconds);
+      
+      // Stop at 30 seconds
+      if (previewAudio.currentTime >= 30) {
+        previewAudio.pause();
+        previewAudio.currentTime = 0;
+        setIsPlaying(false);
+        setPreviewTrack(null);
+        setPreviewProgress(0);
+        toast.info("Förhandslyssningen är slut", {
+          description: "Köp programmet för att lyssna på hela spåret"
         });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, previewTrack, isPurchased]);
+      }
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setPreviewTrack(null);
+      setPreviewProgress(0);
+    };
+
+    previewAudio.addEventListener('timeupdate', handleTimeUpdate);
+    previewAudio.addEventListener('ended', handleEnded);
+
+    return () => {
+      previewAudio.removeEventListener('timeupdate', handleTimeUpdate);
+      previewAudio.removeEventListener('ended', handleEnded);
+    };
+  }, []);
 
   const handlePurchase = async () => {
     if (!user) {
@@ -494,6 +547,7 @@ const ProgramDetail = () => {
               {isPurchased && tracks.length > 0 && (
                 <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
                   <audio ref={audioRef} className="hidden" />
+                  <audio ref={previewAudioRef} className="hidden" />
                   
                   {/* Online/Offline Status */}
                   <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full w-fit ${
@@ -605,6 +659,9 @@ const ProgramDetail = () => {
                 </div>
               )}
 
+              {/* Hidden audio element for preview playback (non-purchased users) */}
+              {!isPurchased && <audio ref={previewAudioRef} className="hidden" />}
+
               {/* Track List */}
               <div className="space-y-4">
                 <h2 className="font-display text-xl font-semibold text-foreground">
@@ -632,11 +689,16 @@ const ProgramDetail = () => {
                               : 'bg-muted text-muted-foreground'
                           }`}
                         >
-                          {(isPurchased && currentTrackIndex === index && isPlaying) || 
-                           (!isPurchased && previewTrack === track.id && isPlaying) ? (
-                            <Pause className="w-4 h-4" />
-                          ) : (
-                            <Play className="w-4 h-4 ml-0.5" />
+                          {previewLoading && !isPurchased && (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          )}
+                          {!previewLoading && (
+                            (isPurchased && currentTrackIndex === index && isPlaying) || 
+                            (!isPurchased && previewTrack === track.id && isPlaying) ? (
+                              <Pause className="w-4 h-4" />
+                            ) : (
+                              <Play className="w-4 h-4 ml-0.5" />
+                            )
                           )}
                         </div>
 
