@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { 
@@ -14,7 +15,11 @@ import {
   Pause, 
   Lock,
   Check,
-  ShoppingCart
+  ShoppingCart,
+  Volume2,
+  VolumeX,
+  SkipBack,
+  SkipForward
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,14 +44,19 @@ interface AudioFile {
 const ProgramDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [program, setProgram] = useState<Program | null>(null);
   const [tracks, setTracks] = useState<AudioFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
-  const [previewTrack, setPreviewTrack] = useState<string | null>(null);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(80);
+  const [isMuted, setIsMuted] = useState(false);
+  const [previewTrack, setPreviewTrack] = useState<string | null>(null);
   const [previewProgress, setPreviewProgress] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -121,8 +131,117 @@ const ProgramDetail = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Preview playback (simulated - first 30 seconds)
+  // Handle audio time update
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => setCurrentTime(audio.currentTime);
+    const updateDuration = () => setDuration(audio.duration);
+    const handleEnded = () => {
+      // Auto-play next track if available
+      if (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1) {
+        playTrack(currentTrackIndex + 1);
+      } else {
+        setIsPlaying(false);
+        setCurrentTrackIndex(null);
+      }
+    };
+
+    audio.addEventListener('timeupdate', updateTime);
+    audio.addEventListener('loadedmetadata', updateDuration);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateTime);
+      audio.removeEventListener('loadedmetadata', updateDuration);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentTrackIndex, tracks.length]);
+
+  // Play a purchased track
+  const playTrack = async (index: number) => {
+    const track = tracks[index];
+    if (!track || !isPurchased || !track.file_path) return;
+
+    try {
+      const { data, error } = await supabase.storage
+        .from("audio-files")
+        .createSignedUrl(track.file_path, 3600);
+
+      if (error) throw error;
+
+      if (data?.signedUrl && audioRef.current) {
+        audioRef.current.src = data.signedUrl;
+        audioRef.current.volume = volume / 100;
+        await audioRef.current.play();
+        setCurrentTrackIndex(index);
+        setIsPlaying(true);
+        setPreviewTrack(null);
+      }
+    } catch (error: any) {
+      console.error('Error playing track:', error);
+      toast.error("Kunde inte spela upp spåret");
+    }
+  };
+
+  const togglePlayPause = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else if (currentTrackIndex !== null) {
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else if (tracks.length > 0 && isPurchased) {
+      playTrack(0);
+    }
+  };
+
+  const handleSeek = (value: number[]) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = value[0];
+      setCurrentTime(value[0]);
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0];
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume / 100;
+    }
+    setIsMuted(newVolume === 0);
+  };
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setVolume(80);
+      if (audioRef.current) audioRef.current.volume = 0.8;
+    } else {
+      setVolume(0);
+      if (audioRef.current) audioRef.current.volume = 0;
+    }
+    setIsMuted(!isMuted);
+  };
+
+  const skipTrack = (direction: 'prev' | 'next') => {
+    if (currentTrackIndex === null) return;
+    const newIndex = direction === 'next' ? currentTrackIndex + 1 : currentTrackIndex - 1;
+    if (newIndex >= 0 && newIndex < tracks.length) {
+      playTrack(newIndex);
+    }
+  };
+
+  // Preview playback (simulated - first 30 seconds for non-purchased)
   const togglePreview = (trackId: string) => {
+    // Stop any real playback first
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setCurrentTrackIndex(null);
+    }
+    
     if (previewTrack === trackId && isPlaying) {
       setIsPlaying(false);
       setPreviewTrack(null);
@@ -132,17 +251,16 @@ const ProgramDetail = () => {
       setIsPlaying(true);
       setPreviewProgress(0);
       
-      // Simulate 30 second preview
       toast.info("Förhandslyssning: 30 sekunder", {
         description: "Köp programmet för att lyssna på hela spåret"
       });
     }
   };
 
-  // Simulate preview progress
+  // Simulate preview progress for non-purchased
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isPlaying && previewTrack) {
+    if (isPlaying && previewTrack && !isPurchased) {
       interval = setInterval(() => {
         setPreviewProgress(prev => {
           if (prev >= 30) {
@@ -158,7 +276,7 @@ const ProgramDetail = () => {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, previewTrack]);
+  }, [isPlaying, previewTrack, isPurchased]);
 
   const handlePurchase = async () => {
     if (!user) {
@@ -312,6 +430,99 @@ const ProgramDetail = () => {
                 )}
               </div>
 
+              {/* Audio Player for purchased programs */}
+              {isPurchased && tracks.length > 0 && (
+                <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
+                  <audio ref={audioRef} className="hidden" />
+                  
+                  {/* Current Track Info */}
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Headphones className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground truncate">
+                        {currentTrackIndex !== null ? tracks[currentTrackIndex]?.title : 'Välj ett spår'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {currentTrackIndex !== null ? `Spår ${currentTrackIndex + 1} av ${tracks.length}` : program.title}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <Slider
+                      value={[currentTime]}
+                      max={duration || 100}
+                      step={1}
+                      onValueChange={handleSeek}
+                      className="cursor-pointer"
+                      disabled={currentTrackIndex === null}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{formatDuration(currentTime)}</span>
+                      <span>{formatDuration(duration)}</span>
+                    </div>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 w-28">
+                      <button 
+                        onClick={toggleMute} 
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {isMuted || volume === 0 ? (
+                          <VolumeX className="w-5 h-5" />
+                        ) : (
+                          <Volume2 className="w-5 h-5" />
+                        )}
+                      </button>
+                      <Slider
+                        value={[volume]}
+                        max={100}
+                        step={1}
+                        onValueChange={handleVolumeChange}
+                        className="cursor-pointer flex-1"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => skipTrack('prev')}
+                        disabled={currentTrackIndex === null || currentTrackIndex === 0}
+                      >
+                        <SkipBack className="w-5 h-5" />
+                      </Button>
+                      <Button 
+                        size="lg"
+                        className="w-12 h-12 rounded-full"
+                        onClick={togglePlayPause}
+                      >
+                        {isPlaying && currentTrackIndex !== null ? (
+                          <Pause className="w-5 h-5" />
+                        ) : (
+                          <Play className="w-5 h-5 ml-0.5" />
+                        )}
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => skipTrack('next')}
+                        disabled={currentTrackIndex === null || currentTrackIndex === tracks.length - 1}
+                      >
+                        <SkipForward className="w-5 h-5" />
+                      </Button>
+                    </div>
+
+                    <div className="w-28" />
+                  </div>
+                </div>
+              )}
+
               {/* Track List */}
               <div className="space-y-4">
                 <h2 className="font-display text-xl font-semibold text-foreground">
@@ -321,25 +532,27 @@ const ProgramDetail = () => {
                   {tracks.map((track, index) => (
                     <div
                       key={track.id}
-                      className={`flex items-center gap-4 p-4 ${
+                      className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
                         index !== tracks.length - 1 ? 'border-b border-border' : ''
-                      }`}
+                      } ${currentTrackIndex === index ? 'bg-primary/5' : ''}`}
+                      onClick={() => isPurchased ? playTrack(index) : togglePreview(track.id)}
                     >
                       {/* Play/Preview Button */}
-                      <button
-                        onClick={() => togglePreview(track.id)}
+                      <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                          previewTrack === track.id && isPlaying
+                          (isPurchased && currentTrackIndex === index && isPlaying) || 
+                          (!isPurchased && previewTrack === track.id && isPlaying)
                             ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
-                        {previewTrack === track.id && isPlaying ? (
+                        {(isPurchased && currentTrackIndex === index && isPlaying) || 
+                         (!isPurchased && previewTrack === track.id && isPlaying) ? (
                           <Pause className="w-4 h-4" />
                         ) : (
                           <Play className="w-4 h-4 ml-0.5" />
                         )}
-                      </button>
+                      </div>
 
                       {/* Track Info */}
                       <div className="flex-1 min-w-0">
@@ -355,8 +568,8 @@ const ProgramDetail = () => {
                             </span>
                           )}
                         </div>
-                        {/* Preview Progress */}
-                        {previewTrack === track.id && isPlaying && (
+                        {/* Preview Progress for non-purchased */}
+                        {!isPurchased && previewTrack === track.id && isPlaying && (
                           <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary transition-all duration-1000"
