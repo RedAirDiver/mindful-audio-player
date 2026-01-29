@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, LogOut } from "lucide-react";
+import { Menu, X, User, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import logo from "@/assets/logo.svg";
 
 const Header = () => {
@@ -10,6 +11,7 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
+  const { isAdmin } = useAdmin();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -55,6 +57,14 @@ const Header = () => {
             {!loading && (
               user ? (
                 <>
+                  {isAdmin && (
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="/admin">
+                        <Settings className="w-4 h-4 mr-1" />
+                        Admin
+                      </Link>
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" asChild>
                     <Link to="/dashboard">
                       <User className="w-4 h-4 mr-1" />
@@ -121,6 +131,14 @@ const Header = () => {
             <div className="pt-3 border-t border-border flex flex-col gap-2">
               {user ? (
                 <>
+                  {isAdmin && (
+                    <Button variant="outline" asChild>
+                      <Link to="/admin" onClick={() => setIsMenuOpen(false)}>
+                        <Settings className="w-4 h-4 mr-1" />
+                        Admin
+                      </Link>
+                    </Button>
+                  )}
                   <Button variant="outline" asChild>
                     <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>Mitt konto</Link>
                   </Button>
