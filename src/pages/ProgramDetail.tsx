@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOfflineAudio } from "@/hooks/useOfflineAudio";
 import { 
   ArrowLeft, 
   Headphones, 
@@ -19,7 +20,13 @@ import {
   Volume2,
   VolumeX,
   SkipBack,
-  SkipForward
+  SkipForward,
+  Download,
+  CloudOff,
+  Wifi,
+  WifiOff,
+  Loader2,
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +52,14 @@ const ProgramDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { 
+    savedTracks, 
+    savingTrack, 
+    saveTrackOffline, 
+    removeTrackOffline, 
+    getDecryptedAudioUrl, 
+    isOnline 
+  } = useOfflineAudio();
   const [program, setProgram] = useState<Program | null>(null);
   const [tracks, setTracks] = useState<AudioFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +72,7 @@ const ProgramDetail = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [previewTrack, setPreviewTrack] = useState<string | null>(null);
   const [previewProgress, setPreviewProgress] = useState(0);
+  const [playingOffline, setPlayingOffline] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -159,20 +175,46 @@ const ProgramDetail = () => {
     };
   }, [currentTrackIndex, tracks.length]);
 
-  // Play a purchased track
+  // Play a purchased track (with offline support)
   const playTrack = async (index: number) => {
     const track = tracks[index];
     if (!track || !isPurchased || !track.file_path) return;
 
     try {
-      const { data, error } = await supabase.storage
-        .from("audio-files")
-        .createSignedUrl(track.file_path, 3600);
+      let audioUrl: string | null = null;
 
-      if (error) throw error;
+      // Check if track is saved offline first
+      if (savedTracks.has(track.id)) {
+        audioUrl = await getDecryptedAudioUrl(track.id);
+        if (audioUrl) {
+          setPlayingOffline(true);
+        }
+      }
 
-      if (data?.signedUrl && audioRef.current) {
-        audioRef.current.src = data.signedUrl;
+      // If not offline or decryption failed, try online
+      if (!audioUrl) {
+        if (!isOnline) {
+          toast.error("Du är offline", {
+            description: "Spara spåret för offline-lyssning först"
+          });
+          return;
+        }
+
+        const { data, error } = await supabase.storage
+          .from("audio-files")
+          .createSignedUrl(track.file_path, 3600);
+
+        if (error) throw error;
+        audioUrl = data?.signedUrl || null;
+        setPlayingOffline(false);
+      }
+
+      if (audioUrl && audioRef.current) {
+        // Revoke previous blob URL if exists
+        if (audioRef.current.src.startsWith('blob:')) {
+          URL.revokeObjectURL(audioRef.current.src);
+        }
+        audioRef.current.src = audioUrl;
         audioRef.current.volume = volume / 100;
         await audioRef.current.play();
         setCurrentTrackIndex(index);
@@ -183,6 +225,23 @@ const ProgramDetail = () => {
       console.error('Error playing track:', error);
       toast.error("Kunde inte spela upp spåret");
     }
+  };
+
+  // Save track for offline listening
+  const handleSaveOffline = async (e: React.MouseEvent, track: AudioFile) => {
+    e.stopPropagation();
+    if (!track.file_path) return;
+    
+    await saveTrackOffline(track.id, track.file_path, {
+      title: track.title,
+      duration: track.duration_seconds || 0
+    });
+  };
+
+  // Remove track from offline storage
+  const handleRemoveOffline = async (e: React.MouseEvent, trackId: string) => {
+    e.stopPropagation();
+    await removeTrackOffline(trackId);
   };
 
   const togglePlayPause = () => {
@@ -435,6 +494,28 @@ const ProgramDetail = () => {
                 <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
                   <audio ref={audioRef} className="hidden" />
                   
+                  {/* Online/Offline Status */}
+                  <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full w-fit ${
+                    isOnline 
+                      ? 'bg-primary/10 text-primary' 
+                      : 'bg-accent/10 text-accent'
+                  }`}>
+                    {isOnline ? (
+                      <>
+                        <Wifi className="w-3 h-3" />
+                        <span>Online</span>
+                      </>
+                    ) : (
+                      <>
+                        <WifiOff className="w-3 h-3" />
+                        <span>Offline-läge</span>
+                      </>
+                    )}
+                    {playingOffline && currentTrackIndex !== null && (
+                      <span className="ml-1">• Spelar från cache</span>
+                    )}
+                  </div>
+                  
                   {/* Current Track Info */}
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -529,62 +610,95 @@ const ProgramDetail = () => {
                   Innehåll
                 </h2>
                 <div className="bg-card rounded-2xl shadow-elegant overflow-hidden">
-                  {tracks.map((track, index) => (
-                    <div
-                      key={track.id}
-                      className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
-                        index !== tracks.length - 1 ? 'border-b border-border' : ''
-                      } ${currentTrackIndex === index ? 'bg-primary/5' : ''}`}
-                      onClick={() => isPurchased ? playTrack(index) : togglePreview(track.id)}
-                    >
-                      {/* Play/Preview Button */}
+                  {tracks.map((track, index) => {
+                    const isTrackSaved = savedTracks.has(track.id);
+                    const isSaving = savingTrack === track.id;
+                    
+                    return (
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                          (isPurchased && currentTrackIndex === index && isPlaying) || 
-                          (!isPurchased && previewTrack === track.id && isPlaying)
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground'
-                        }`}
+                        key={track.id}
+                        className={`flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
+                          index !== tracks.length - 1 ? 'border-b border-border' : ''
+                        } ${currentTrackIndex === index ? 'bg-primary/5' : ''}`}
+                        onClick={() => isPurchased ? playTrack(index) : togglePreview(track.id)}
                       >
-                        {(isPurchased && currentTrackIndex === index && isPlaying) || 
-                         (!isPurchased && previewTrack === track.id && isPlaying) ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4 ml-0.5" />
-                        )}
-                      </div>
-
-                      {/* Track Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
-                          {isPurchased ? track.title : `Spår ${index + 1}`}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{formatDuration(track.duration_seconds)}</span>
-                          {!isPurchased && (
-                            <span className="flex items-center gap-1 text-xs">
-                              <Lock className="w-3 h-3" />
-                              30s förhandslyssning
-                            </span>
+                        {/* Play/Preview Button */}
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors flex-shrink-0 ${
+                            (isPurchased && currentTrackIndex === index && isPlaying) || 
+                            (!isPurchased && previewTrack === track.id && isPlaying)
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {(isPurchased && currentTrackIndex === index && isPlaying) || 
+                           (!isPurchased && previewTrack === track.id && isPlaying) ? (
+                            <Pause className="w-4 h-4" />
+                          ) : (
+                            <Play className="w-4 h-4 ml-0.5" />
                           )}
                         </div>
-                        {/* Preview Progress for non-purchased */}
-                        {!isPurchased && previewTrack === track.id && isPlaying && (
-                          <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary transition-all duration-1000"
-                              style={{ width: `${(previewProgress / 30) * 100}%` }}
-                            />
+
+                        {/* Track Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground truncate">
+                              {isPurchased ? track.title : `Spår ${index + 1}`}
+                            </p>
+                            {/* Offline indicator */}
+                            {isPurchased && isTrackSaved && (
+                              <span title="Sparad offline">
+                                <CloudOff className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                              </span>
+                            )}
                           </div>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{formatDuration(track.duration_seconds)}</span>
+                            {!isPurchased && (
+                              <span className="flex items-center gap-1 text-xs">
+                                <Lock className="w-3 h-3" />
+                                30s förhandslyssning
+                              </span>
+                            )}
+                          </div>
+                          {/* Preview Progress for non-purchased */}
+                          {!isPurchased && previewTrack === track.id && isPlaying && (
+                            <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all duration-1000"
+                                style={{ width: `${(previewProgress / 30) * 100}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Offline Save/Remove Button for purchased tracks */}
+                        {isPurchased && track.file_path && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="flex-shrink-0"
+                            onClick={(e) => isTrackSaved ? handleRemoveOffline(e, track.id) : handleSaveOffline(e, track)}
+                            disabled={isSaving}
+                            title={isTrackSaved ? "Ta bort offline-sparning" : "Spara för offline-lyssning"}
+                          >
+                            {isSaving ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isTrackSaved ? (
+                              <Trash2 className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <Download className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        )}
+
+                        {/* Lock Icon for non-purchased */}
+                        {!isPurchased && (
+                          <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         )}
                       </div>
-
-                      {/* Lock Icon for non-purchased */}
-                      {!isPurchased && (
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
