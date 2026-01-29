@@ -18,6 +18,7 @@ import AdminPrograms from "./pages/admin/AdminPrograms";
 import AdminAudio from "./pages/admin/AdminAudio";
 import AdminPurchases from "./pages/admin/AdminPurchases";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminCategories from "./pages/admin/AdminCategories";
 
 const App = () => {
   // Create queryClient inside component with useState to survive HMR
@@ -63,6 +64,7 @@ const App = () => {
               >
                 <Route index element={<AdminDashboard />} />
                 <Route path="programs" element={<AdminPrograms />} />
+                <Route path="categories" element={<AdminCategories />} />
                 <Route path="audio" element={<AdminAudio />} />
                 <Route path="purchases" element={<AdminPurchases />} />
                 <Route path="users" element={<AdminUsers />} />

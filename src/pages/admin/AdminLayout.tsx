@@ -7,6 +7,7 @@ import {
   Music, 
   ShoppingCart, 
   Users,
+  FolderOpen,
   LogOut,
   ChevronLeft
 } from "lucide-react";
@@ -20,6 +21,7 @@ const AdminLayout = () => {
   const navItems = [
     { href: "/admin", label: "Översikt", icon: LayoutDashboard, exact: true },
     { href: "/admin/programs", label: "Program", icon: Package },
+    { href: "/admin/categories", label: "Kategorier", icon: FolderOpen },
     { href: "/admin/audio", label: "Ljudfiler", icon: Music },
     { href: "/admin/purchases", label: "Köp", icon: ShoppingCart },
     { href: "/admin/users", label: "Användare", icon: Users },
