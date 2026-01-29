@@ -50,6 +50,7 @@ const AdminPrograms = () => {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [formData, setFormData] = useState({
     title: "",
+    slug: "",
     description: "",
     short_description: "",
     price: 0,
@@ -133,9 +134,19 @@ const AdminPrograms = () => {
     },
   });
 
+  // Generate slug from title
+  const generateSlug = (title: string): string => {
+    let slug = title.toLowerCase();
+    slug = slug.replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o');
+    slug = slug.replace(/[^a-z0-9]+/g, '-');
+    slug = slug.replace(/^-|-$/g, '');
+    return slug;
+  };
+
   const resetForm = () => {
     setFormData({
       title: "",
+      slug: "",
       description: "",
       short_description: "",
       price: 0,
@@ -150,6 +161,7 @@ const AdminPrograms = () => {
     setEditingProgram(program);
     setFormData({
       title: program.title,
+      slug: program.slug,
       description: program.description || "",
       short_description: program.short_description || "",
       price: program.price,
@@ -162,10 +174,15 @@ const AdminPrograms = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Auto-generate slug if not provided
+    const dataWithSlug = {
+      ...formData,
+      slug: formData.slug || generateSlug(formData.title) + '-' + Date.now().toString(36)
+    };
     if (editingProgram) {
-      updateMutation.mutate({ id: editingProgram.id, data: formData });
+      updateMutation.mutate({ id: editingProgram.id, data: dataWithSlug });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(dataWithSlug);
     }
   };
 

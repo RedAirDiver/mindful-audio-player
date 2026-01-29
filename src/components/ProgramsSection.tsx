@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Program {
   id: string;
+  slug: string;
   title: string;
   short_description: string | null;
   description: string | null;
@@ -132,7 +133,7 @@ const ProgramsSection = () => {
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <ProgramCard 
-                id={program.id}
+                slug={program.slug}
                 title={program.title}
                 description={program.short_description || program.description || ''}
                 duration={program.duration_text || ''}

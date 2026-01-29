@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Headphones, Clock, Star, Gift } from "lucide-react";
 
 interface ProgramCardProps {
-  id: string;
+  slug: string;
   title: string;
   description: string;
   duration: string;
@@ -17,7 +17,7 @@ interface ProgramCardProps {
 }
 
 const ProgramCard = ({
-  id,
+  slug,
   title,
   description,
   duration,
@@ -115,7 +115,7 @@ const ProgramCard = ({
             )}
           </div>
           <Button size="sm" asChild>
-            <Link to={`/program/${id}`}>Läs mer</Link>
+            <Link to={`/program/${slug}`}>Läs mer</Link>
           </Button>
         </div>
       </div>
