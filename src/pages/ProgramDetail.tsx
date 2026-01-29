@@ -32,6 +32,7 @@ import { toast } from "sonner";
 
 interface Program {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   short_description: string | null;
@@ -49,7 +50,7 @@ interface AudioFile {
 }
 
 const ProgramDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
   const audioRef = useRef<HTMLAudioElement>(null);
   const { 
@@ -75,18 +76,18 @@ const ProgramDetail = () => {
   const [playingOffline, setPlayingOffline] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (slug) {
       fetchProgram();
     }
-  }, [id, user]);
+  }, [slug, user]);
 
   const fetchProgram = async () => {
     try {
-      // Fetch program
+      // Fetch program by slug
       const { data: programData, error: programError } = await supabase
         .from('programs')
         .select('*')
-        .eq('id', id)
+        .eq('slug', slug)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -102,7 +103,7 @@ const ProgramDetail = () => {
       const { data: tracksData, error: tracksError } = await supabase
         .from('audio_files')
         .select('id, title, duration_seconds, track_order')
-        .eq('program_id', id)
+        .eq('program_id', programData.id)
         .order('track_order', { ascending: true });
 
       if (!tracksError && tracksData) {
@@ -115,7 +116,7 @@ const ProgramDetail = () => {
         const { data: purchaseData } = await supabase
           .from('purchases')
           .select('id')
-          .eq('program_id', id)
+          .eq('program_id', programData.id)
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -125,7 +126,7 @@ const ProgramDetail = () => {
           const { data: actualTracks } = await supabase
             .from('audio_files')
             .select('*')
-            .eq('program_id', id)
+            .eq('program_id', programData.id)
             .order('track_order', { ascending: true });
           
           if (actualTracks) {
@@ -351,7 +352,7 @@ const ProgramDetail = () => {
         .from('purchases')
         .insert({
           user_id: user.id,
-          program_id: id,
+          program_id: program?.id,
           amount_paid: program?.price || 0,
         });
 
