@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,18 +27,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Music } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type AudioFile = Tables<"audio_files">;
 
 const AdminAudio = () => {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAudio, setEditingAudio] = useState<AudioFile | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     file_path: "",
@@ -135,6 +140,62 @@ const AdminAudio = () => {
       duration_seconds: null,
     });
     setEditingAudio(null);
+    setSelectedFile(null);
+    setUploadProgress(0);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("audio/")) {
+        toast.error("Vänligen välj en ljudfil (MP3, WAV, etc.)");
+        return;
+      }
+      setSelectedFile(file);
+      // Auto-fill title from filename if empty
+      if (!formData.title) {
+        const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+        setFormData((prev) => ({ ...prev, title: nameWithoutExt }));
+      }
+      // Try to get duration
+      const audio = new Audio();
+      audio.src = URL.createObjectURL(file);
+      audio.onloadedmetadata = () => {
+        setFormData((prev) => ({
+          ...prev,
+          duration_seconds: Math.round(audio.duration),
+        }));
+        URL.revokeObjectURL(audio.src);
+      };
+    }
+  };
+
+  const uploadFile = async (file: File, programId: string): Promise<string> => {
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${programId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    const { error } = await supabase.storage
+      .from("audio-files")
+      .upload(fileName, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+
+    setUploadProgress(100);
+
+    if (error) {
+      setIsUploading(false);
+      throw error;
+    }
+
+    setIsUploading(false);
+    return fileName;
   };
 
   const handleEdit = (audio: AudioFile) => {
@@ -149,12 +210,30 @@ const AdminAudio = () => {
     setIsDialogOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingAudio) {
-      updateMutation.mutate({ id: editingAudio.id, data: formData });
-    } else {
-      createMutation.mutate(formData);
+    
+    try {
+      let filePath = formData.file_path;
+      
+      // Upload file if a new file is selected
+      if (selectedFile && formData.program_id) {
+        filePath = await uploadFile(selectedFile, formData.program_id);
+      }
+      
+      const dataToSave = { ...formData, file_path: filePath };
+      
+      if (editingAudio) {
+        updateMutation.mutate({ id: editingAudio.id, data: dataToSave });
+      } else {
+        if (!filePath) {
+          toast.error("Vänligen välj en ljudfil att ladda upp");
+          return;
+        }
+        createMutation.mutate(dataToSave);
+      }
+    } catch (error: any) {
+      toast.error("Kunde inte ladda upp filen: " + error.message);
     }
   };
 
@@ -232,16 +311,68 @@ const AdminAudio = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="file_path">Filsökväg</Label>
-                <Input
-                  id="file_path"
-                  value={formData.file_path}
-                  onChange={(e) =>
-                    setFormData({ ...formData, file_path: e.target.value })
-                  }
-                  placeholder="audio/program-1/track-1.mp3"
-                  required
+                <Label>Ljudfil</Label>
+                {editingAudio && formData.file_path && !selectedFile ? (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <FileAudio className="h-5 w-5 text-primary" />
+                    <span className="text-sm flex-1 truncate">{formData.file_path}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      Byt fil
+                    </Button>
+                  </div>
+                ) : selectedFile ? (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <FileAudio className="h-5 w-5 text-primary" />
+                    <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {(selectedFile.size / 1024 / 1024).toFixed(1)} MB
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Klicka för att välja en ljudfil
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      MP3, WAV, M4A, etc.
+                    </p>
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
                 />
+                {isUploading && (
+                  <div className="mt-2">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Laddar upp... {uploadProgress}%
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -283,7 +414,7 @@ const AdminAudio = () => {
                 >
                   Avbryt
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
                   {editingAudio ? "Spara ändringar" : "Lägg till"}
                 </Button>
               </div>
