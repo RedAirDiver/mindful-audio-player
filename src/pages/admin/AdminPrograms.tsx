@@ -20,13 +20,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { cn } from "@/lib/utils";
 
 type Program = Tables<"programs">;
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 const AdminPrograms = () => {
   const queryClient = useQueryClient();
@@ -53,6 +67,19 @@ const AdminPrograms = () => {
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  const { data: categories } = useQuery({
+    queryKey: ["admin-categories-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, slug")
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+      return data as Category[];
     },
   });
 
@@ -220,20 +247,78 @@ const AdminPrograms = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="categories">Kategorier (kommaseparerade)</Label>
-                  <Input
-                    id="categories"
-                    value={formData.categories.join(", ")}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        categories: e.target.value
-                          .split(",")
-                          .map((s) => s.trim())
-                          .filter(Boolean),
-                      })
-                    }
-                  />
+                  <Label>Kategorier</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between font-normal"
+                      >
+                        {formData.categories.length > 0
+                          ? `${formData.categories.length} valda`
+                          : "Välj kategorier..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-2 bg-popover" align="start">
+                      <div className="space-y-2">
+                        {categories?.map((category) => (
+                          <div
+                            key={category.id}
+                            className="flex items-center space-x-2 p-2 rounded hover:bg-muted cursor-pointer"
+                            onClick={() => {
+                              const isSelected = formData.categories.includes(category.name);
+                              setFormData({
+                                ...formData,
+                                categories: isSelected
+                                  ? formData.categories.filter((c) => c !== category.name)
+                                  : [...formData.categories, category.name],
+                              });
+                            }}
+                          >
+                            <Checkbox
+                              checked={formData.categories.includes(category.name)}
+                              onCheckedChange={(checked) => {
+                                setFormData({
+                                  ...formData,
+                                  categories: checked
+                                    ? [...formData.categories, category.name]
+                                    : formData.categories.filter((c) => c !== category.name),
+                                });
+                              }}
+                            />
+                            <span className="text-sm">{category.name}</span>
+                          </div>
+                        ))}
+                        {(!categories || categories.length === 0) && (
+                          <p className="text-sm text-muted-foreground p-2">
+                            Inga kategorier skapade ännu
+                          </p>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  {formData.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {formData.categories.map((cat) => (
+                        <Badge
+                          key={cat}
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              categories: formData.categories.filter((c) => c !== cat),
+                            })
+                          }
+                        >
+                          {cat}
+                          <X className="h-3 w-3 ml-1" />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div>
