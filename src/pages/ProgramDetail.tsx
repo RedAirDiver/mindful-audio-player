@@ -725,12 +725,18 @@ const ProgramDetail = () => {
                             )}
                           </div>
                           {/* Preview Progress for non-purchased */}
-                          {!isPurchased && previewTrack === track.id && isPlaying && (
-                            <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-primary transition-all duration-1000"
-                                style={{ width: `${(previewProgress / 30) * 100}%` }}
-                              />
+                          {!isPurchased && previewTrack === track.id && (
+                            <div className="mt-2 space-y-1">
+                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary rounded-full transition-all duration-300"
+                                  style={{ width: `${(previewProgress / 30) * 100}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>{previewProgress}s</span>
+                                <span>30s förhandslyssning</span>
+                              </div>
                             </div>
                           )}
                         </div>
