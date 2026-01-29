@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Music, Upload, FileAudio, X, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Music, Upload, FileAudio, X, Play, Pause, Volume2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type AudioFile = Tables<"audio_files">;
@@ -33,11 +33,14 @@ interface ProgramAudioManagerProps {
 export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioManagerProps) => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAudio, setEditingAudio] = useState<AudioFile | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     track_order: 1,
@@ -247,8 +250,43 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const handlePlayTrack = async (audio: AudioFile) => {
+    if (playingTrackId === audio.id && isPlaying) {
+      // Pause current track
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    try {
+      // Get signed URL for the audio file
+      const { data, error } = await supabase.storage
+        .from("audio-files")
+        .createSignedUrl(audio.file_path, 3600); // 1 hour expiry
+
+      if (error) throw error;
+
+      if (data?.signedUrl && audioRef.current) {
+        audioRef.current.src = data.signedUrl;
+        audioRef.current.play();
+        setPlayingTrackId(audio.id);
+        setIsPlaying(true);
+      }
+    } catch (error: any) {
+      toast.error("Kunde inte spela upp ljudfilen: " + error.message);
+    }
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setPlayingTrackId(null);
+  };
+
   return (
     <div className="space-y-4">
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
+      
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Ljudfiler</h3>
@@ -271,6 +309,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12"></TableHead>
                 <TableHead className="w-16">Spår</TableHead>
                 <TableHead>Titel</TableHead>
                 <TableHead className="w-20">Längd</TableHead>
@@ -280,6 +319,21 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
             <TableBody>
               {audioFiles.map((audio) => (
                 <TableRow key={audio.id}>
+                  <TableCell>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
+                      onClick={() => handlePlayTrack(audio)}
+                    >
+                      {playingTrackId === audio.id && isPlaying ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Music className="h-4 w-4 text-muted-foreground" />
