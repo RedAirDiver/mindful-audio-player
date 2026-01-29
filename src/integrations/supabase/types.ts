@@ -121,6 +121,7 @@ export type Database = {
           price: number
           short_description: string | null
           sku: string | null
+          slug: string
           title: string
           updated_at: string
           wc_id: number | null
@@ -136,6 +137,7 @@ export type Database = {
           price?: number
           short_description?: string | null
           sku?: string | null
+          slug: string
           title: string
           updated_at?: string
           wc_id?: number | null
@@ -151,6 +153,7 @@ export type Database = {
           price?: number
           short_description?: string | null
           sku?: string | null
+          slug?: string
           title?: string
           updated_at?: string
           wc_id?: number | null
@@ -215,6 +218,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_slug: { Args: { title: string }; Returns: string }
       has_purchased_program: {
         Args: { program_uuid: string }
         Returns: boolean
