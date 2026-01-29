@@ -30,9 +30,10 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
+import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
 
 type Program = Tables<"programs">;
 
@@ -342,6 +343,17 @@ const AdminPrograms = () => {
                 />
                 <Label htmlFor="is_active">Aktivt (synligt för kunder)</Label>
               </div>
+
+              {/* Audio files section - only show when editing existing program */}
+              {editingProgram && (
+                <div className="border-t pt-4 mt-4">
+                  <ProgramAudioManager 
+                    programId={editingProgram.id} 
+                    programTitle={editingProgram.title} 
+                  />
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   type="button"
