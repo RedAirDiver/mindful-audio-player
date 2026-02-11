@@ -19,6 +19,7 @@ import AdminAudio from "./pages/admin/AdminAudio";
 import AdminPurchases from "./pages/admin/AdminPurchases";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCategories from "./pages/admin/AdminCategories";
+import AdminImportUsers from "./pages/admin/AdminImportUsers";
 
 const App = () => {
   // Create queryClient inside component with useState to survive HMR
@@ -68,6 +69,7 @@ const App = () => {
                 <Route path="audio" element={<AdminAudio />} />
                 <Route path="purchases" element={<AdminPurchases />} />
                 <Route path="users" element={<AdminUsers />} />
+                <Route path="import" element={<AdminImportUsers />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

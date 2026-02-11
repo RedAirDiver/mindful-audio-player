@@ -9,7 +9,8 @@ import {
   Users,
   FolderOpen,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  DatabaseBackup
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.svg";
@@ -25,6 +26,7 @@ const AdminLayout = () => {
     { href: "/admin/audio", label: "Ljudfiler", icon: Music },
     { href: "/admin/purchases", label: "Köp", icon: ShoppingCart },
     { href: "/admin/users", label: "Användare", icon: Users },
+    { href: "/admin/import", label: "WP Import", icon: DatabaseBackup },
   ];
 
   const isActive = (href: string, exact?: boolean) => {

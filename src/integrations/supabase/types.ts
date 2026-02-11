@@ -87,25 +87,31 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          legacy_password_hash: string | null
           name: string | null
           updated_at: string
           user_id: string
+          wp_user_id: number | null
         }
         Insert: {
           created_at?: string
           email?: string | null
           id?: string
+          legacy_password_hash?: string | null
           name?: string | null
           updated_at?: string
           user_id: string
+          wp_user_id?: number | null
         }
         Update: {
           created_at?: string
           email?: string | null
           id?: string
+          legacy_password_hash?: string | null
           name?: string | null
           updated_at?: string
           user_id?: string
+          wp_user_id?: number | null
         }
         Relationships: []
       }
