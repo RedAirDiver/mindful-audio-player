@@ -487,62 +487,80 @@ const AdminAudio = () => {
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Spår</TableHead>
                   <TableHead>Titel</TableHead>
-                  <TableHead>Program</TableHead>
                   <TableHead>Längd</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAudioFiles?.map((audio) => (
-                  <TableRow key={audio.id}>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
-                        onClick={() => handlePlayTrack(audio)}
-                      >
-                        {playingTrackId === audio.id && isPlaying ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Music className="h-4 w-4 text-muted-foreground" />
-                        {audio.track_order}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{audio.title}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {(audio.programs as any)?.title || "-"}
-                    </TableCell>
-                    <TableCell>{formatDuration(audio.duration_seconds)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(audio)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => {
-                          if (confirm("Är du säker på att du vill radera denna ljudfil?")) {
-                            deleteMutation.mutate(audio.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {(() => {
+                  // Group by program
+                  const grouped: Record<string, { programTitle: string; tracks: typeof filteredAudioFiles }> = {};
+                  filteredAudioFiles?.forEach((audio) => {
+                    const progTitle = (audio.programs as any)?.title || "Okänt program";
+                    if (!grouped[audio.program_id]) {
+                      grouped[audio.program_id] = { programTitle: progTitle, tracks: [] };
+                    }
+                    grouped[audio.program_id].tracks!.push(audio);
+                  });
+
+                  return Object.entries(grouped).map(([programId, group]) => (
+                    <>
+                      <TableRow key={`header-${programId}`} className="bg-muted/50 hover:bg-muted/50">
+                        <TableCell colSpan={5} className="py-2">
+                          <span className="font-semibold text-foreground">{group.programTitle}</span>
+                          <span className="text-sm text-muted-foreground ml-2">({group.tracks!.length} spår)</span>
+                        </TableCell>
+                      </TableRow>
+                      {group.tracks!.map((audio) => (
+                        <TableRow key={audio.id}>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
+                              onClick={() => handlePlayTrack(audio)}
+                            >
+                              {playingTrackId === audio.id && isPlaying ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Music className="h-4 w-4 text-muted-foreground" />
+                              {audio.track_order}
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">{audio.title}</TableCell>
+                          <TableCell>{formatDuration(audio.duration_seconds)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(audio)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                if (confirm("Är du säker på att du vill radera denna ljudfil?")) {
+                                  deleteMutation.mutate(audio.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  ));
+                })()}
               </TableBody>
             </Table>
           )}
