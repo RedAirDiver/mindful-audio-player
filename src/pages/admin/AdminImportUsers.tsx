@@ -27,6 +27,7 @@ const AdminImportUsers = () => {
   const [importProgress, setImportProgress] = useState(0);
   const [importResults, setImportResults] = useState<{
     imported: number;
+    updated: number;
     skipped: number;
     errors: { email: string; error: string }[];
   } | null>(null);
@@ -65,7 +66,7 @@ const AdminImportUsers = () => {
 
     setIsImporting(true);
     setImportProgress(0);
-    const totalResults = { imported: 0, skipped: 0, errors: [] as { email: string; error: string }[] };
+    const totalResults = { imported: 0, updated: 0, skipped: 0, errors: [] as { email: string; error: string }[] };
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -99,8 +100,9 @@ const AdminImportUsers = () => {
 
         const batchResult = response.data?.results;
         if (batchResult) {
-          totalResults.imported += batchResult.imported;
-          totalResults.skipped += batchResult.skipped;
+          totalResults.imported += batchResult.imported || 0;
+          totalResults.updated += batchResult.updated || 0;
+          totalResults.skipped += batchResult.skipped || 0;
           totalResults.errors.push(...(batchResult.errors || []));
         }
 
@@ -109,7 +111,7 @@ const AdminImportUsers = () => {
 
       setImportResults(totalResults);
       toast.success(
-        `Import klar! ${totalResults.imported} importerade, ${totalResults.skipped} överhoppade, ${totalResults.errors.length} fel`
+        `Import klar! ${totalResults.imported} nya, ${totalResults.updated} uppdaterade, ${totalResults.errors.length} fel`
       );
     } catch (err) {
       toast.error("Import misslyckades: " + (err instanceof Error ? err.message : String(err)));
@@ -378,9 +380,12 @@ const AdminImportUsers = () => {
               {importResults && (
                 <div className="mt-4 p-4 rounded-lg bg-muted">
                   <h4 className="font-medium mb-2">Importresultat</h4>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-green-600 font-bold">{importResults.imported}</span> importerade
+                      <span className="text-green-600 font-bold">{importResults.imported}</span> nya
+                    </div>
+                    <div>
+                      <span className="text-blue-600 font-bold">{importResults.updated}</span> uppdaterade
                     </div>
                     <div>
                       <span className="text-yellow-600 font-bold">{importResults.skipped}</span> överhoppade
