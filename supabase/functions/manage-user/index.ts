@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      const { userId, name, email } = body;
+      const { userId, name, email, phone, company, address_line1, address_city, address_postcode, address_country } = body;
       if (!userId) {
         return new Response(
           JSON.stringify({ error: "userId is required" }),
@@ -106,9 +106,15 @@ Deno.serve(async (req) => {
       }
 
       // Update profile
-      const updates: Record<string, string> = {};
+      const updates: Record<string, string | null> = {};
       if (name !== undefined) updates.name = name;
       if (email !== undefined) updates.email = email;
+      if (phone !== undefined) updates.phone = phone || null;
+      if (company !== undefined) updates.company = company || null;
+      if (address_line1 !== undefined) updates.address_line1 = address_line1 || null;
+      if (address_city !== undefined) updates.address_city = address_city || null;
+      if (address_postcode !== undefined) updates.address_postcode = address_postcode || null;
+      if (address_country !== undefined) updates.address_country = address_country || null;
 
       if (Object.keys(updates).length > 0) {
         const { error } = await adminClient
