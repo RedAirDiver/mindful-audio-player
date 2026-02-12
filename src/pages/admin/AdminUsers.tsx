@@ -51,6 +51,12 @@ const AdminUsers = () => {
     name: "",
     email: "",
     password: "",
+    phone: "",
+    company: "",
+    address_line1: "",
+    address_city: "",
+    address_postcode: "",
+    address_country: "",
   });
 
   // Debounce search
@@ -171,6 +177,12 @@ const AdminUsers = () => {
             userId: editingUser.user_id,
             name: formData.name,
             email: formData.email,
+            phone: formData.phone,
+            company: formData.company,
+            address_line1: formData.address_line1,
+            address_city: formData.address_city,
+            address_postcode: formData.address_postcode,
+            address_country: formData.address_country,
           },
         });
         if (error) throw error;
@@ -203,9 +215,11 @@ const AdminUsers = () => {
   const isUserAdmin = (userId: string) =>
     userRoles?.some((r) => r.user_id === userId && r.role === "admin");
 
+  const emptyForm = { name: "", email: "", password: "", phone: "", company: "", address_line1: "", address_city: "", address_postcode: "", address_country: "" };
+
   const openCreate = () => {
     setEditingUser(null);
-    setFormData({ name: "", email: "", password: "" });
+    setFormData({ ...emptyForm });
     setIsDialogOpen(true);
   };
 
@@ -219,6 +233,12 @@ const AdminUsers = () => {
       name: profile.name || "",
       email: profile.email || "",
       password: "",
+      phone: (profile as any).phone || "",
+      company: (profile as any).company || "",
+      address_line1: (profile as any).address_line1 || "",
+      address_city: (profile as any).address_city || "",
+      address_postcode: (profile as any).address_postcode || "",
+      address_country: (profile as any).address_country || "",
     });
     setIsDialogOpen(true);
   };
@@ -226,7 +246,7 @@ const AdminUsers = () => {
   const closeDialog = () => {
     setIsDialogOpen(false);
     setEditingUser(null);
-    setFormData({ name: "", email: "", password: "" });
+    setFormData({ ...emptyForm });
   };
 
   return (
@@ -469,6 +489,62 @@ const AdminUsers = () => {
                 />
               </div>
             )}
+            <div>
+              <Label htmlFor="user-phone">Telefon</Label>
+              <Input
+                id="user-phone"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="070-123 45 67"
+              />
+            </div>
+            <div>
+              <Label htmlFor="user-company">Företag</Label>
+              <Input
+                id="user-company"
+                value={formData.company}
+                onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                placeholder="Företagsnamn AB"
+              />
+            </div>
+            <div>
+              <Label htmlFor="user-address">Adress</Label>
+              <Input
+                id="user-address"
+                value={formData.address_line1}
+                onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                placeholder="Gatuadress 1"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="user-postcode">Postnummer</Label>
+                <Input
+                  id="user-postcode"
+                  value={formData.address_postcode}
+                  onChange={(e) => setFormData({ ...formData, address_postcode: e.target.value })}
+                  placeholder="123 45"
+                />
+              </div>
+              <div>
+                <Label htmlFor="user-city">Stad</Label>
+                <Input
+                  id="user-city"
+                  value={formData.address_city}
+                  onChange={(e) => setFormData({ ...formData, address_city: e.target.value })}
+                  placeholder="Stockholm"
+                />
+              </div>
+              <div>
+                <Label htmlFor="user-country">Land</Label>
+                <Input
+                  id="user-country"
+                  value={formData.address_country}
+                  onChange={(e) => setFormData({ ...formData, address_country: e.target.value })}
+                  placeholder="SE"
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog}>
