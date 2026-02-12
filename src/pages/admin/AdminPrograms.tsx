@@ -6,6 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -57,6 +64,7 @@ const AdminPrograms = () => {
     image_url: "",
     is_active: true,
     categories: [] as string[],
+    country: "SE",
   });
 
   const { data: programs, isLoading } = useQuery({
@@ -153,6 +161,7 @@ const AdminPrograms = () => {
       image_url: "",
       is_active: true,
       categories: [],
+      country: "SE",
     });
     setEditingProgram(null);
   };
@@ -168,6 +177,7 @@ const AdminPrograms = () => {
       image_url: program.image_url || "",
       is_active: program.is_active,
       categories: program.categories || [],
+      country: (program as any).country || "SE",
     });
     setIsDialogOpen(true);
   };
@@ -338,6 +348,27 @@ const AdminPrograms = () => {
                     </div>
                   )}
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="country">Land</Label>
+                <Select
+                  value={formData.country}
+                  onValueChange={(value) => setFormData({ ...formData, country: value })}
+                >
+                  <SelectTrigger id="country">
+                    <SelectValue placeholder="Välj land" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SE">🇸🇪 Sverige</SelectItem>
+                    <SelectItem value="NO">🇳🇴 Norge</SelectItem>
+                    <SelectItem value="DK">🇩🇰 Danmark</SelectItem>
+                    <SelectItem value="FI">🇫🇮 Finland</SelectItem>
+                    <SelectItem value="DE">🇩🇪 Tyskland</SelectItem>
+                    <SelectItem value="GB">🇬🇧 Storbritannien</SelectItem>
+                    <SelectItem value="US">🇺🇸 USA</SelectItem>
+                    <SelectItem value="ALL">🌍 Alla länder</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="image_url">Bild-URL</Label>
