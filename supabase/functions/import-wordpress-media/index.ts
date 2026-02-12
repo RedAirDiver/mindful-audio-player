@@ -189,20 +189,56 @@ Deno.serve(async (req) => {
     console.log("Sample DB filenames:", JSON.stringify(sampleDbFilenames));
     console.log("Existing DB files count:", existingFiles?.length || 0);
 
+    // Normalize filename: strip WordPress suffixes like "-1-skzz32", track numbers, and extensions
+    function normalizeFilename(name: string): string {
+      return name
+        .toLowerCase()
+        .replace(/\.[^/.]+$/, "") // remove extension
+        .replace(/-\d+-[a-z0-9]+$/, "") // remove WP suffix like -1-skzz32
+        .replace(/-\d+$/, "") // remove trailing number suffix like -1
+        .replace(/^\d+-/, ""); // remove leading track number like 01-
+    }
+
+    // Normalize title for comparison
+    function normalizeTitle(t: string): string {
+      return t.toLowerCase()
+        .replace(/[åä]/g, "a").replace(/ö/g, "o")
+        .replace(/[^a-z0-9]/g, "");
+    }
+
+    // Pre-compute normalized DB filenames and titles
+    const dbNormalized = existingFiles?.map(f => ({
+      ...f,
+      normFilename: normalizeFilename(f.file_path.split("/").pop() || ""),
+      normTitle: normalizeTitle(f.title),
+    })) || [];
+
     let unmatched = 0;
+    let matched = 0;
     for (const item of mediaItems) {
       try {
-        // Try to match with existing db records by filename
-        const matchingFile = existingFiles?.find((f) => {
-          const dbFilename = f.file_path.split("/").pop()?.toLowerCase();
-          return dbFilename === item.filename.toLowerCase();
-        });
+        const xmlNormFilename = normalizeFilename(item.filename);
+        const xmlNormTitle = normalizeTitle(item.title);
+
+        // Try exact filename match first, then normalized, then title
+        let matchingFile = dbNormalized.find(f => 
+          f.file_path.split("/").pop()?.toLowerCase() === item.filename.toLowerCase()
+        );
+        if (!matchingFile) {
+          matchingFile = dbNormalized.find(f => f.normFilename === xmlNormFilename && xmlNormFilename.length > 2);
+        }
+        if (!matchingFile) {
+          matchingFile = dbNormalized.find(f => f.normTitle === xmlNormTitle && xmlNormTitle.length > 2);
+        }
 
         if (!matchingFile) {
           unmatched++;
-          if (unmatched <= 3) console.log("No match for:", item.filename, "URL:", item.url);
+          if (unmatched <= 5) console.log("No match for:", item.filename, "norm:", xmlNormFilename, "title:", item.title);
           continue;
         }
+
+        matched++;
+        if (matched <= 3) console.log("Matched:", item.filename, "→", matchingFile.file_path);
 
         // Update duration if we have a match and duration is missing
         if (matchingFile && item.duration && !matchingFile.duration_seconds) {
