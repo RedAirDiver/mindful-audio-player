@@ -23,9 +23,9 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
   while ((itemMatch = itemRegex.exec(xmlText)) !== null) {
     const itemBlock = itemMatch[1];
 
-    // Check if it's an audio attachment
-    const attachmentType = itemBlock.match(/<wp:attachment_url>(.*?)<\/wp:attachment_url>/);
-    const postType = itemBlock.match(/<wp:post_type><!\[CDATA\[(.*?)\]\]><\/wp:post_type>/);
+    // Check if it's an audio attachment - handle both plain text and CDATA
+    const attachmentType = itemBlock.match(/<wp:attachment_url>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/wp:attachment_url>/);
+    const postType = itemBlock.match(/<wp:post_type>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/wp:post_type>/);
 
     if (!attachmentType || (postType && postType[1] !== "attachment")) continue;
 
