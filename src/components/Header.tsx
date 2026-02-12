@@ -42,7 +42,7 @@ const Header = () => {
               href="/#programs" 
               className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
             >
-              Program
+              Produkter
             </a>
             <Link 
               to="/about" 
@@ -119,7 +119,7 @@ const Header = () => {
               className="py-2 text-foreground font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
-              Program
+              Produkter
             </a>
             <Link 
               to="/about" 

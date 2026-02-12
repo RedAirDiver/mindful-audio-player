@@ -92,12 +92,12 @@ const AdminPrograms = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-programs"] });
-      toast.success("Program skapat!");
+      toast.success("Produkt skapad!");
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error("Kunde inte skapa programmet: " + error.message);
+      toast.error("Kunde inte skapa produkten: " + error.message);
     },
   });
 
@@ -111,12 +111,12 @@ const AdminPrograms = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-programs"] });
-      toast.success("Program uppdaterat!");
+      toast.success("Produkt uppdaterad!");
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      toast.error("Kunde inte uppdatera programmet: " + error.message);
+      toast.error("Kunde inte uppdatera produkten: " + error.message);
     },
   });
 
@@ -127,10 +127,10 @@ const AdminPrograms = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-programs"] });
-      toast.success("Program raderat!");
+      toast.success("Produkt raderad!");
     },
     onError: (error) => {
-      toast.error("Kunde inte radera programmet: " + error.message);
+      toast.error("Kunde inte radera produkten: " + error.message);
     },
   });
 
@@ -196,9 +196,9 @@ const AdminPrograms = () => {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Program</h1>
+          <h1 className="text-3xl font-bold text-foreground">Produkter</h1>
           <p className="text-muted-foreground mt-1">
-            Hantera alla mentala träningsprogram
+            Hantera alla mentala träningsprodukter
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -208,13 +208,13 @@ const AdminPrograms = () => {
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Nytt program
+              Ny produkt
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingProgram ? "Redigera program" : "Skapa nytt program"}
+                {editingProgram ? "Redigera produkt" : "Skapa ny produkt"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -380,7 +380,7 @@ const AdminPrograms = () => {
                   Avbryt
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editingProgram ? "Spara ändringar" : "Skapa program"}
+                  {editingProgram ? "Spara ändringar" : "Skapa produkt"}
                 </Button>
               </div>
             </form>
@@ -394,14 +394,14 @@ const AdminPrograms = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Sök program..."
+                placeholder="Sök produkter..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              {filteredPrograms?.length || 0} program
+              {filteredPrograms?.length || 0} produkter
             </p>
           </div>
         </CardHeader>
@@ -453,7 +453,7 @@ const AdminPrograms = () => {
                         size="icon"
                         className="text-destructive hover:text-destructive"
                         onClick={() => {
-                          if (confirm("Är du säker på att du vill radera detta program?")) {
+                          if (confirm("Är du säker på att du vill radera denna produkt?")) {
                             deleteMutation.mutate(program.id);
                           }
                         }}

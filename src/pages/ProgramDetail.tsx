@@ -343,7 +343,7 @@ const ProgramDetail = () => {
         setPreviewProgress(0);
         
         toast.info("Förhandslyssning: 30 sekunder", {
-          description: "Köp programmet för att lyssna på hela spåret"
+          description: "Köp produkten för att lyssna på hela spåret"
         });
       }
     } catch (error: any) {
@@ -371,7 +371,7 @@ const ProgramDetail = () => {
         setPreviewTrack(null);
         setPreviewProgress(0);
         toast.info("Förhandslyssningen är slut", {
-          description: "Köp programmet för att lyssna på hela spåret"
+          description: "Köp produkten för att lyssna på hela spåret"
         });
       }
     };
@@ -394,7 +394,7 @@ const ProgramDetail = () => {
   const handlePurchase = async () => {
     if (!user) {
       toast.error("Logga in för att köpa", {
-        description: "Du måste vara inloggad för att köpa program"
+        description: "Du måste vara inloggad för att köpa produkter"
       });
       return;
     }
@@ -431,7 +431,7 @@ const ProgramDetail = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          <p className="text-muted-foreground">Laddar program...</p>
+          <p className="text-muted-foreground">Laddar produkt...</p>
         </div>
       </div>
     );
@@ -444,7 +444,7 @@ const ProgramDetail = () => {
         <main className="pt-24 pb-16">
           <div className="container mx-auto px-4 text-center py-16">
             <h1 className="font-display text-2xl font-semibold text-foreground mb-4">
-              Programmet hittades inte
+              Produkten hittades inte
             </h1>
             <Button asChild>
               <Link to="/">Tillbaka till startsidan</Link>
@@ -468,7 +468,7 @@ const ProgramDetail = () => {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Tillbaka till program</span>
+            <span>Tillbaka till produkter</span>
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -518,7 +518,7 @@ const ProgramDetail = () => {
                 {isPurchased ? (
                   <div className="flex items-center gap-3 text-primary">
                     <Check className="w-6 h-6" />
-                    <span className="font-semibold text-lg">Du äger detta program</span>
+                    <span className="font-semibold text-lg">Du äger denna produkt</span>
                   </div>
                 ) : (
                   <>

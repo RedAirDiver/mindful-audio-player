@@ -123,7 +123,7 @@ const AdminPurchases = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Sök på kund eller program..."
+                placeholder="Sök på kund eller produkt..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -131,10 +131,10 @@ const AdminPurchases = () => {
             </div>
             <Select value={filterProgramId} onValueChange={setFilterProgramId}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrera program" />
+                <SelectValue placeholder="Filtrera produkt" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alla program</SelectItem>
+                <SelectItem value="all">Alla produkter</SelectItem>
                 {programs?.map((program) => (
                   <SelectItem key={program.id} value={program.id}>
                     {program.title}
@@ -155,7 +155,7 @@ const AdminPurchases = () => {
                 <TableRow>
                   <TableHead>Datum</TableHead>
                   <TableHead>Kund</TableHead>
-                  <TableHead>Program</TableHead>
+                  <TableHead>Produkt</TableHead>
                   <TableHead className="text-right">Belopp</TableHead>
                 </TableRow>
               </TableHeader>

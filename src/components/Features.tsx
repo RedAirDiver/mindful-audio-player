@@ -14,12 +14,12 @@ const features = [
   {
     icon: Download,
     title: "Offline-läge",
-    description: "Spara dina favoritprogram för att lyssna även utan internetuppkoppling.",
+    description: "Spara dina favoritprodukter för att lyssna även utan internetuppkoppling.",
   },
   {
     icon: Shield,
     title: "Livstidsåtkomst",
-    description: "Köp en gång och få tillgång till dina program för alltid.",
+    description: "Köp en gång och få tillgång till dina produkter för alltid.",
   },
 ];
 

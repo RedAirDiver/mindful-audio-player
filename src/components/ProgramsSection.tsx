@@ -80,10 +80,10 @@ const ProgramsSection = () => {
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-              Våra program
+            Våra produkter
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Laddar program...
+              Laddar produkter...
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -102,10 +102,10 @@ const ProgramsSection = () => {
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-            Våra program
+            Våra produkter
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Välj bland våra professionellt framtagna program för mental träning och avslappning.
+            Välj bland våra professionellt framtagna produkter för mental träning och avslappning.
           </p>
         </div>
 
@@ -151,7 +151,7 @@ const ProgramsSection = () => {
         {/* Empty State */}
         {filteredPrograms.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Inga program hittades i denna kategori.</p>
+            <p className="text-muted-foreground">Inga produkter hittades i denna kategori.</p>
           </div>
         )}
       </div>

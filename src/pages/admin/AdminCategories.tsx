@@ -196,7 +196,7 @@ const AdminCategories = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Kategorier</h1>
           <p className="text-muted-foreground mt-1">
-            Hantera programkategorier
+            Hantera produktkategorier
           </p>
         </div>
         <Button onClick={openCreateDialog}>
@@ -220,7 +220,7 @@ const AdminCategories = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Program med kategorier
+              Produkter med kategorier
             </CardTitle>
           </CardHeader>
           <CardContent>
