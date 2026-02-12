@@ -32,6 +32,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  ShoppingCart,
 } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -42,6 +43,8 @@ const AdminUsers = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [purchasesUserId, setPurchasesUserId] = useState<string | null>(null);
+  const [purchasesUserName, setPurchasesUserName] = useState("");
   const [editingUser, setEditingUser] = useState<{
     user_id: string;
     name: string | null;
@@ -130,6 +133,22 @@ const AdminUsers = () => {
       }
       return counts;
     },
+  });
+
+  // Fetch purchases for a specific user when viewing
+  const { data: userPurchases, isLoading: loadingPurchases } = useQuery({
+    queryKey: ["admin-user-purchases", purchasesUserId],
+    queryFn: async () => {
+      if (!purchasesUserId) return [];
+      const { data, error } = await supabase
+        .from("purchases")
+        .select("*, programs (title)")
+        .eq("user_id", purchasesUserId)
+        .order("purchase_date", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!purchasesUserId,
   });
 
   const toggleAdminMutation = useMutation({
@@ -345,7 +364,17 @@ const AdminUsers = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          {purchaseCounts?.[profile.user_id] || 0} st
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-primary underline-offset-4 hover:underline p-0 h-auto font-normal"
+                            onClick={() => {
+                              setPurchasesUserId(profile.user_id);
+                              setPurchasesUserName(profile.name || profile.email || "Okänd");
+                            }}
+                          >
+                            {purchaseCounts?.[profile.user_id] || 0} st
+                          </Button>
                         </TableCell>
                         <TableCell>
                           {admin ? (
@@ -560,6 +589,50 @@ const AdminUsers = () => {
               {editingUser ? "Spara" : "Skapa"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* User Purchases Dialog */}
+      <Dialog open={!!purchasesUserId} onOpenChange={(open) => { if (!open) setPurchasesUserId(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Köp – {purchasesUserName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {loadingPurchases ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : userPurchases && userPurchases.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Produkt</TableHead>
+                    <TableHead className="text-right">Belopp</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userPurchases.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="text-sm">
+                        {new Date(p.purchase_date).toLocaleDateString("sv-SE")}
+                      </TableCell>
+                      <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {Number(p.amount_paid).toLocaleString("sv-SE")} kr
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">Inga köp registrerade</p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
