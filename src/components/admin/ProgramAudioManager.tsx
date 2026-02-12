@@ -486,21 +486,12 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
                 />
               </div>
               <div>
-                <Label htmlFor="audio-duration">Längd (sekunder)</Label>
-                <Input
-                  id="audio-duration"
-                  type="number"
-                  min="0"
-                  value={formData.duration_seconds || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      duration_seconds: e.target.value
-                        ? Number(e.target.value)
-                        : null,
-                    })
-                  }
-                />
+                <Label>Längd</Label>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {formData.duration_seconds
+                    ? `${Math.floor(formData.duration_seconds / 60)}:${(formData.duration_seconds % 60).toString().padStart(2, "0")}`
+                    : "Hämtas automatiskt"}
+                </p>
               </div>
             </div>
             <div className="flex justify-end gap-2 pt-4">
