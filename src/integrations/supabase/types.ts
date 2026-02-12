@@ -118,6 +118,7 @@ export type Database = {
       programs: {
         Row: {
           categories: string[] | null
+          country: string | null
           created_at: string
           description: string | null
           duration_text: string | null
@@ -134,6 +135,7 @@ export type Database = {
         }
         Insert: {
           categories?: string[] | null
+          country?: string | null
           created_at?: string
           description?: string | null
           duration_text?: string | null
@@ -150,6 +152,7 @@ export type Database = {
         }
         Update: {
           categories?: string[] | null
+          country?: string | null
           created_at?: string
           description?: string | null
           duration_text?: string | null
