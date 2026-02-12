@@ -52,7 +52,7 @@ const AdminPurchases = () => {
         .select(`
           *,
           programs (title),
-          profiles!purchases_user_id_fkey (email, name)
+          profiles!purchases_user_id_profiles_fkey (email, name)
         `)
         .order("purchase_date", { ascending: false });
 
@@ -102,7 +102,7 @@ const AdminPurchases = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");
 
-      setImportPreview(data);
+      setImportPreview(data.results ? data : { results: data });
     } catch (err: any) {
       toast.error("Fel vid förhandsgranskning: " + err.message);
       setImportPreview(null);
