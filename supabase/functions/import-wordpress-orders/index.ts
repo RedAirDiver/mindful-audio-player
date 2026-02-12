@@ -21,6 +21,14 @@ interface OrderData {
 function safeDateToISO(dateStr: string): string | null {
   if (!dateStr) return null;
   try {
+    // Check if it's a Unix timestamp (all digits, typically 10 digits for seconds)
+    if (/^\d{9,13}$/.test(dateStr.trim())) {
+      let ts = parseInt(dateStr.trim(), 10);
+      // If 10 digits, it's seconds; convert to ms
+      if (ts < 1e12) ts = ts * 1000;
+      const d = new Date(ts);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
     // Try direct parse
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) return d.toISOString();
@@ -29,6 +37,23 @@ function safeDateToISO(dateStr: string): string | null {
     if (!isNaN(d2.getTime())) return d2.toISOString();
   } catch { /* ignore */ }
   return null;
+}
+
+/**
+ * Parse a localized number string (handles comma decimals, currency symbols).
+ */
+function parseLocalizedNumber(value: string): number {
+  if (!value) return 0;
+  let str = value.trim().replace(/[¤$€£¥\s]/g, "");
+  const lastComma = str.lastIndexOf(",");
+  const lastDot = str.lastIndexOf(".");
+  if (lastComma > lastDot) {
+    str = str.replace(/\./g, "").replace(",", ".");
+  } else {
+    str = str.replace(/,/g, "");
+  }
+  const parsed = parseFloat(str);
+  return isNaN(parsed) ? 0 : parsed;
 }
 
 /**
@@ -128,7 +153,8 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
           email = value.toLowerCase().trim();
           break;
         case "_order_total":
-          orderTotal = parseFloat(value) || 0;
+        case "_order_total_base":
+          if (orderTotal === 0) orderTotal = parseLocalizedNumber(value);
           break;
         case "_paid_date":
         case "_date_paid":
