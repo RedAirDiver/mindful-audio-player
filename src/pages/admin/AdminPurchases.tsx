@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -18,11 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ShoppingCart } from "lucide-react";
+import { Search, ShoppingCart, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 const AdminPurchases = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
+  const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<any>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const pendingFileRef = useRef<File | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: programs } = useQuery({
     queryKey: ["admin-programs-list"],
@@ -69,14 +76,139 @@ const AdminPurchases = () => {
     0
   ) || 0;
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    pendingFileRef.current = file;
+    setImporting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("dryRun", "true");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-orders`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+
+      setImportPreview(data);
+    } catch (err: any) {
+      toast.error("Fel vid förhandsgranskning: " + err.message);
+      setImportPreview(null);
+    } finally {
+      setImporting(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  const handleConfirmImport = async () => {
+    const file = pendingFileRef.current;
+    if (!file) return;
+    setImporting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("dryRun", "false");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-orders`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Import failed");
+
+      toast.success(`Import klar: ${data.results.created} köp skapade`);
+      if (data.results.unmatched_users > 0) {
+        toast.info(`${data.results.unmatched_users} beställningar kunde inte matchas till användare`);
+      }
+      setImportPreview(null);
+      pendingFileRef.current = null;
+      queryClient.invalidateQueries({ queryKey: ["admin-purchases"] });
+    } catch (err: any) {
+      toast.error("Importfel: " + err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Köp</h1>
-        <p className="text-muted-foreground mt-1">
-          Översikt över alla kundköp
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Köp</h1>
+          <p className="text-muted-foreground mt-1">
+            Översikt över alla kundköp
+          </p>
+        </div>
+        <div>
+          <input
+            type="file"
+            ref={fileRef}
+            accept=".xml"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileRef.current?.click()}
+            disabled={importing}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {importing ? "Bearbetar..." : "Importera beställningar (XML)"}
+          </Button>
+        </div>
       </div>
+
+      {/* Import preview */}
+      {importPreview && (
+        <Card className="mb-8 border-primary">
+          <CardHeader>
+            <CardTitle className="text-lg">Förhandsgranskning av import</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p>Totala beställningar i filen: <strong>{importPreview.results.total_orders}</strong></p>
+            <p>Matchade användare: <strong>{importPreview.results.matched_users}</strong></p>
+            <p>Köp att skapa: <strong>{importPreview.results.created}</strong></p>
+            <p>Dubbletter (hoppas över): <strong>{importPreview.results.skipped_duplicate}</strong></p>
+            <p>Utan matchad produkt: <strong>{importPreview.results.skipped_no_product}</strong></p>
+            <p>Omatchade e-postadresser: <strong>{importPreview.results.unmatched_users}</strong></p>
+            <div className="flex gap-3 mt-4">
+              <Button onClick={handleConfirmImport} disabled={importing}>
+                {importing ? "Importerar..." : "Bekräfta import"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setImportPreview(null);
+                  pendingFileRef.current = null;
+                }}
+              >
+                Avbryt
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
