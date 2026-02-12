@@ -139,18 +139,18 @@ Deno.serve(async (req) => {
     const headers = parseCSVLine(lines[0]);
     console.log("CSV headers:", headers);
 
-    // Find columns
+    // Find columns - include Swedish WooCommerce export names
     const idCol = findColumnIndex(headers, ["ID", "id", "product_id", "wc_id"]);
-    const nameCol = findColumnIndex(headers, ["Name", "name", "title", "post_title", "product_name"]);
-    const descCol = findColumnIndex(headers, ["Description", "description", "post_content"]);
-    const shortDescCol = findColumnIndex(headers, ["Short description", "short_description", "post_excerpt"]);
-    const priceCol = findColumnIndex(headers, ["Regular price", "regular_price", "price", "Price"]);
-    const salePriceCol = findColumnIndex(headers, ["Sale price", "sale_price"]);
-    const skuCol = findColumnIndex(headers, ["SKU", "sku"]);
-    const catCol = findColumnIndex(headers, ["Categories", "categories", "category"]);
-    const imageCol = findColumnIndex(headers, ["Images", "images", "image", "image_url"]);
-    const publishedCol = findColumnIndex(headers, ["Published", "published", "status", "post_status"]);
-    const typeCol = findColumnIndex(headers, ["Type", "type", "product_type"]);
+    const nameCol = findColumnIndex(headers, ["Namn", "Name", "name", "title", "post_title", "product_name"]);
+    const descCol = findColumnIndex(headers, ["Beskrivning", "Description", "description", "post_content"]);
+    const shortDescCol = findColumnIndex(headers, ["Kort beskrivning", "Short description", "short_description", "post_excerpt"]);
+    const priceCol = findColumnIndex(headers, ["Ordinarie pris", "Regular price", "regular_price", "price", "Price"]);
+    const salePriceCol = findColumnIndex(headers, ["Reapris", "Sale price", "sale_price"]);
+    const skuCol = findColumnIndex(headers, ["Artikelnummer", "SKU", "sku"]);
+    const catCol = findColumnIndex(headers, ["Kategorier", "Categories", "categories", "category"]);
+    const imageCol = findColumnIndex(headers, ["Bilder", "Images", "images", "image", "image_url"]);
+    const publishedCol = findColumnIndex(headers, ["Publicerad", "Published", "published", "status", "post_status"]);
+    const typeCol = findColumnIndex(headers, ["Typ", "Type", "type", "product_type"]);
 
     console.log("Column mapping:", { idCol, nameCol, descCol, shortDescCol, priceCol, skuCol, catCol, imageCol, publishedCol, typeCol });
 
