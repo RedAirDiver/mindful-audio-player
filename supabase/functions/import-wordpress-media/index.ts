@@ -182,6 +182,14 @@ Deno.serve(async (req) => {
     let failed = 0;
     const results: { title: string; action: string; error?: string }[] = [];
 
+    // Log sample filenames for matching debug
+    const sampleXmlFilenames = mediaItems.slice(0, 5).map(i => i.filename);
+    const sampleDbFilenames = existingFiles?.slice(0, 5).map(f => f.file_path.split("/").pop()) || [];
+    console.log("Sample XML filenames:", JSON.stringify(sampleXmlFilenames));
+    console.log("Sample DB filenames:", JSON.stringify(sampleDbFilenames));
+    console.log("Existing DB files count:", existingFiles?.length || 0);
+
+    let unmatched = 0;
     for (const item of mediaItems) {
       try {
         // Try to match with existing db records by filename
@@ -189,6 +197,12 @@ Deno.serve(async (req) => {
           const dbFilename = f.file_path.split("/").pop()?.toLowerCase();
           return dbFilename === item.filename.toLowerCase();
         });
+
+        if (!matchingFile) {
+          unmatched++;
+          if (unmatched <= 3) console.log("No match for:", item.filename, "URL:", item.url);
+          continue;
+        }
 
         // Update duration if we have a match and duration is missing
         if (matchingFile && item.duration && !matchingFile.duration_seconds) {
@@ -253,6 +267,8 @@ Deno.serve(async (req) => {
         failed++;
       }
     }
+
+    console.log(`Summary: ${unmatched} unmatched, ${durationsUpdated} durations updated, ${filesDownloaded} downloaded, ${failed} failed`);
 
     return new Response(
       JSON.stringify({
