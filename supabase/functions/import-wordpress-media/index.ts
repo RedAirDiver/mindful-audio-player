@@ -134,7 +134,24 @@ Deno.serve(async (req) => {
       mode = body.mode || "full";
     }
 
+    // Debug logging
+    console.log("XML length:", xmlText.length);
+    console.log("First 500 chars:", xmlText.substring(0, 500));
+    
+    // Count raw <item> blocks
+    const rawItemCount = (xmlText.match(/<item>/g) || []).length;
+    console.log("Raw <item> blocks found:", rawItemCount);
+    
+    // Check for attachment URLs
+    const attachmentUrlCount = (xmlText.match(/<wp:attachment_url>/g) || []).length;
+    console.log("wp:attachment_url tags found:", attachmentUrlCount);
+    
+    // Check for audio file extensions in text
+    const audioRefs = (xmlText.match(/\.(mp3|wav|m4a|ogg|flac)/gi) || []).length;
+    console.log("Audio file extension references found:", audioRefs);
+
     const mediaItems = parseWordPressXml(xmlText);
+    console.log("Parsed media items:", mediaItems.length);
 
     if (mediaItems.length === 0) {
       return new Response(
