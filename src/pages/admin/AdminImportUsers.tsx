@@ -547,32 +547,37 @@ const AdminImportUsers = () => {
                 type="file"
                 className="hidden"
                 accept=".sql"
-                onChange={(e) => {
-                  setMetaFile(e.target.files?.[0] || null);
+                onChange={async (e) => {
+                  const file = e.target.files?.[0] || null;
+                  setMetaFile(file);
                   setParsedMetaUpdates([]);
                   setMetaImportResults(null);
+                  if (file) {
+                    setIsParsingMeta(true);
+                    try {
+                      const content = await file.text();
+                      const metas = parseWpUserMeta(content);
+                      const updates = buildMetaUpdates(metas);
+                      setParsedMetaUpdates(updates);
+                      toast.success(`${updates.length} användare med metadata hittades`);
+                    } catch (err) {
+                      toast.error("Kunde inte parsa: " + (err instanceof Error ? err.message : String(err)));
+                    } finally {
+                      setIsParsingMeta(false);
+                    }
+                  }
                 }}
               />
             </label>
           </div>
 
           <div className="flex gap-3 mt-4">
-            <Button
-              onClick={handleParseMeta}
-              disabled={!metaFile || isParsingMeta}
-            >
-              {isParsingMeta ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Parserar...
-                </>
-              ) : (
-                <>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Parsa meta-fil
-                </>
-              )}
-            </Button>
+            {isParsingMeta && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Parserar...
+              </div>
+            )}
 
             {parsedMetaUpdates.length > 0 && (
               <Button
