@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X, Play, Pause } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type AudioFile = Tables<"audio_files">;
@@ -37,6 +37,7 @@ type AudioFile = Tables<"audio_files">;
 const AdminAudio = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -44,6 +45,8 @@ const AdminAudio = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     file_path: "",
@@ -253,8 +256,36 @@ const AdminAudio = () => {
     return matchesSearch && matchesProgram;
   });
 
+  const handlePlayTrack = async (audio: AudioFile) => {
+    if (playingTrackId === audio.id && isPlaying) {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase.storage
+        .from("audio-files")
+        .createSignedUrl(audio.file_path, 3600);
+      if (error) throw error;
+      if (data?.signedUrl && audioRef.current) {
+        audioRef.current.src = data.signedUrl;
+        audioRef.current.play();
+        setPlayingTrackId(audio.id);
+        setIsPlaying(true);
+      }
+    } catch (error: any) {
+      toast.error("Kunde inte spela upp: " + error.message);
+    }
+  };
+
+  const handleAudioEnded = () => {
+    setIsPlaying(false);
+    setPlayingTrackId(null);
+  };
+
   return (
     <div className="p-8">
+      <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Ljudfiler</h1>
@@ -389,21 +420,12 @@ const AdminAudio = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="duration_seconds">Längd (sekunder)</Label>
-                  <Input
-                    id="duration_seconds"
-                    type="number"
-                    min="0"
-                    value={formData.duration_seconds || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        duration_seconds: e.target.value
-                          ? Number(e.target.value)
-                          : null,
-                      })
-                    }
-                  />
+                  <Label>Längd</Label>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {formData.duration_seconds
+                      ? `${Math.floor(formData.duration_seconds / 60)}:${(formData.duration_seconds % 60).toString().padStart(2, "0")}`
+                      : "Hämtas automatiskt"}
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-4">
@@ -462,6 +484,7 @@ const AdminAudio = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12"></TableHead>
                   <TableHead>Spår</TableHead>
                   <TableHead>Titel</TableHead>
                   <TableHead>Program</TableHead>
@@ -472,6 +495,20 @@ const AdminAudio = () => {
               <TableBody>
                 {filteredAudioFiles?.map((audio) => (
                   <TableRow key={audio.id}>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
+                        onClick={() => handlePlayTrack(audio)}
+                      >
+                        {playingTrackId === audio.id && isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Music className="h-4 w-4 text-muted-foreground" />
