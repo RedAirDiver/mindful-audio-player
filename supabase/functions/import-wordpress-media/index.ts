@@ -146,9 +146,21 @@ Deno.serve(async (req) => {
     const attachmentUrlCount = (xmlText.match(/<wp:attachment_url>/g) || []).length;
     console.log("wp:attachment_url tags found:", attachmentUrlCount);
     
-    // Check for audio file extensions in text
-    const audioRefs = (xmlText.match(/\.(mp3|wav|m4a|ogg|flac)/gi) || []).length;
-    console.log("Audio file extension references found:", audioRefs);
+    // Log first few attachment URLs for debugging
+    const sampleUrls: string[] = [];
+    const itemRegexDebug = /<item>([\s\S]*?)<\/item>/g;
+    let debugMatch;
+    let debugCount = 0;
+    while ((debugMatch = itemRegexDebug.exec(xmlText)) !== null && debugCount < 5) {
+      const block = debugMatch[1];
+      const attUrl = block.match(/<wp:attachment_url>(.*?)<\/wp:attachment_url>/);
+      const postType = block.match(/<wp:post_type><!\[CDATA\[(.*?)\]\]><\/wp:post_type>/);
+      if (attUrl) {
+        sampleUrls.push(`URL: ${attUrl[1].trim()} | post_type: ${postType?.[1] || 'N/A'}`);
+        debugCount++;
+      }
+    }
+    console.log("Sample attachment URLs:", JSON.stringify(sampleUrls));
 
     const mediaItems = parseWordPressXml(xmlText);
     console.log("Parsed media items:", mediaItems.length);
