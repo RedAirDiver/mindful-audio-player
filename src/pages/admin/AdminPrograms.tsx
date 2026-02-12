@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
@@ -52,9 +52,12 @@ interface Category {
 
 const AdminPrograms = () => {
   const queryClient = useQueryClient();
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -202,6 +205,85 @@ const AdminPrograms = () => {
       p.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress("Läser CSV-fil...");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      const csvContent = await file.text();
+
+      // First do a dry run
+      setImportProgress("Analyserar data...");
+      const dryResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-products`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ csvContent, dryRun: true }),
+        }
+      );
+      const dryResult = await dryResponse.json();
+      if (!dryResponse.ok) throw new Error(dryResult.error);
+
+      const { results: preview } = dryResult;
+      const confirmed = confirm(
+        `Förhandsgranskning:\n\n` +
+        `Totalt rader: ${preview.total}\n` +
+        `Nya produkter: ${preview.created}\n` +
+        `Uppdateras: ${preview.updated}\n` +
+        `Hoppar över: ${preview.skipped}\n\n` +
+        `Vill du fortsätta med importen?`
+      );
+
+      if (!confirmed) {
+        setIsImporting(false);
+        setImportProgress("");
+        if (csvInputRef.current) csvInputRef.current.value = "";
+        return;
+      }
+
+      setImportProgress("Importerar produkter...");
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-products`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ csvContent, dryRun: false }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      toast.success(
+        `Import klar! ${result.results.created} nya, ${result.results.updated} uppdaterade, ${result.results.skipped} hoppades över.` +
+        (result.results.errors.length > 0 ? ` ${result.results.errors.length} fel.` : "")
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["admin-programs"] });
+    } catch (error: any) {
+      toast.error("Import misslyckades: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+      if (csvInputRef.current) csvInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -211,16 +293,32 @@ const AdminPrograms = () => {
             Hantera alla mentala träningsprodukter
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Ny produkt
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleCsvImport}
+          />
+          <Button
+            variant="outline"
+            onClick={() => csvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {isImporting ? importProgress || "Importerar..." : "Importera CSV"}
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Ny produkt
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -417,6 +515,7 @@ const AdminPrograms = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
