@@ -13,6 +13,7 @@ interface OrderData {
   orderDate: string;
   status: string;
   productIds: number[]; // WooCommerce product IDs
+  wpUserId?: number; // CustomerUserID from WC export
 }
 
 /**
@@ -105,6 +106,54 @@ function extractProductIdsFromOrderItems(block: string): number[] {
   // Also try extracting from serialized _order_items meta
   // And from direct meta keys containing product_id
   return ids;
+}
+
+/**
+ * Parse the new WooCommerce export format: <data><post>...</post></data>
+ * Uses direct element names like <OrderID>, <BillingEmailAddress>, etc.
+ */
+function parseOrdersFromDataPost(xmlText: string): OrderData[] {
+  const orders: OrderData[] = [];
+  const postRegex = /<post>([\s\S]*?)<\/post>/g;
+  let postMatch;
+
+  while ((postMatch = postRegex.exec(xmlText)) !== null) {
+    const block = postMatch[1];
+
+    const getVal = (tag: string): string => {
+      const m = block.match(new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`));
+      return m ? m[1].trim() : "";
+    };
+
+    const status = getVal("OrderStatus");
+    const validStatuses = ["wc-completed", "wc-processing", "completed", "processing"];
+    if (!validStatuses.includes(status)) continue;
+
+    const email = (getVal("BillingEmailAddress") || getVal("CustomerAccountEmailAddress")).toLowerCase().trim();
+    if (!email) continue;
+
+    const orderId = parseInt(getVal("OrderID"), 10) || 0;
+    const orderTotal = parseLocalizedNumber(getVal("OrderTotal"));
+    const wpUserId = parseInt(getVal("CustomerUserID"), 10) || undefined;
+
+    // Date: prefer _paid_date, then _date_paid (unix), then OrderDate
+    const paidDate = getVal("_paid_date");
+    const datePaid = getVal("_date_paid");
+    const orderDate = getVal("OrderDate");
+    const finalDate = paidDate || datePaid || orderDate;
+
+    orders.push({
+      orderId,
+      email,
+      orderTotal,
+      orderDate: finalDate,
+      status,
+      productIds: [], // This format doesn't include line items
+      wpUserId,
+    });
+  }
+
+  return orders;
 }
 
 function parseOrdersFromXml(xmlText: string): OrderData[] {
@@ -388,12 +437,21 @@ Deno.serve(async (req) => {
 
     console.log("File length:", fileText.length, "Name:", fileName);
 
-    // Detect format: CSV if filename ends with .csv or content starts with typical CSV header
+    // Detect format: <data><post> format, WXR <item> format, or CSV
+    const isDataPost = fileText.includes("<data>") && fileText.includes("<post>");
     const isCsv = fileName.toLowerCase().endsWith(".csv") ||
       (!fileName.toLowerCase().endsWith(".xml") && !fileText.trimStart().startsWith("<?xml") && !fileText.trimStart().startsWith("<"));
 
-    const orders = isCsv ? parseOrdersFromCsv(fileText) : parseOrdersFromXml(fileText);
-    console.log(`Parsed ${orders.length} orders (format: ${isCsv ? "CSV" : "XML"})`);
+    let orders: OrderData[];
+    if (isCsv) {
+      orders = parseOrdersFromCsv(fileText);
+    } else if (isDataPost) {
+      orders = parseOrdersFromDataPost(fileText);
+    } else {
+      orders = parseOrdersFromXml(fileText);
+    }
+    const formatName = isCsv ? "CSV" : isDataPost ? "DataPost-XML" : "WXR-XML";
+    console.log(`Parsed ${orders.length} orders (format: ${formatName})`);
     
     // Debug: log first 3 orders to see product ID extraction
     for (let i = 0; i < Math.min(3, orders.length); i++) {
@@ -418,18 +476,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Load all profiles (email -> user_id)
+    // Load all profiles (email -> user_id, wp_user_id -> user_id)
     const emailToUserId = new Map<string, string>();
+    const wpUserIdToUserId = new Map<number, string>();
     let offset = 0;
     const PAGE = 1000;
     while (true) {
       const { data: page } = await supabase
         .from("profiles")
-        .select("email, user_id")
+        .select("email, user_id, wp_user_id")
         .range(offset, offset + PAGE - 1);
       if (!page || page.length === 0) break;
       for (const p of page) {
         if (p.email) emailToUserId.set(p.email.toLowerCase(), p.user_id);
+        if (p.wp_user_id) wpUserIdToUserId.set(p.wp_user_id, p.user_id);
       }
       if (page.length < PAGE) break;
       offset += PAGE;
@@ -475,7 +535,9 @@ Deno.serve(async (req) => {
     };
 
     for (const order of orders) {
-      const userId = emailToUserId.get(order.email);
+      // Try email first, then wp_user_id
+      const userId = emailToUserId.get(order.email) || 
+        (order.wpUserId ? wpUserIdToUserId.get(order.wpUserId) : undefined);
       if (!userId) {
         results.unmatched_users++;
         if (!results.unmatched_emails.includes(order.email)) {
