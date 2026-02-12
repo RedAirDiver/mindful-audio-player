@@ -164,7 +164,7 @@ const AdminPurchases = () => {
           <input
             type="file"
             ref={fileRef}
-            accept=".xml"
+            accept=".xml,.csv"
             className="hidden"
             onChange={handleFileSelect}
           />
@@ -174,7 +174,7 @@ const AdminPurchases = () => {
             disabled={importing}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {importing ? "Bearbetar..." : "Importera beställningar (XML)"}
+            {importing ? "Bearbetar..." : "Importera beställningar (XML/CSV)"}
           </Button>
         </div>
       </div>
