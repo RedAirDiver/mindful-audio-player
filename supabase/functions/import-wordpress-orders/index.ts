@@ -16,23 +16,69 @@ interface OrderData {
 }
 
 /**
+ * Safely parse a date string, returning ISO string or null.
+ */
+function safeDateToISO(dateStr: string): string | null {
+  if (!dateStr) return null;
+  try {
+    // Try direct parse
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toISOString();
+    // Try replacing space with T for "2023-01-01 12:00:00" format
+    const d2 = new Date(dateStr.replace(" ", "T"));
+    if (!isNaN(d2.getTime())) return d2.toISOString();
+  } catch { /* ignore */ }
+  return null;
+}
+
+/**
  * Parse serialized PHP arrays to extract product IDs.
- * WooCommerce stores order items as serialized PHP in some meta fields.
  */
 function extractProductIdsFromSerialized(value: string): number[] {
   const ids: number[] = [];
-  // Match _product_id patterns in serialized PHP
   const productIdRegex = /"_product_id";(?:s:\d+:"|i:)(\d+)/g;
   let match;
   while ((match = productIdRegex.exec(value)) !== null) {
     ids.push(parseInt(match[1], 10));
   }
-  // Also try simple product_id patterns
   const simpleRegex = /product_id["\s:]+(\d+)/g;
   while ((match = simpleRegex.exec(value)) !== null) {
     const id = parseInt(match[1], 10);
     if (!ids.includes(id)) ids.push(id);
   }
+  return ids;
+}
+
+/**
+ * Extract product IDs from WooCommerce order_item blocks.
+ * WC XML exports order items as <wp:order_item> with <wp:order_item_meta> entries.
+ */
+function extractProductIdsFromOrderItems(block: string): number[] {
+  const ids: number[] = [];
+  
+  // Match <wp:order_item> blocks
+  const orderItemRegex = /<wp:order_item>([\s\S]*?)<\/wp:order_item>/g;
+  let itemMatch;
+  while ((itemMatch = orderItemRegex.exec(block)) !== null) {
+    const itemBlock = itemMatch[1];
+    // Look for <wp:order_item_meta> with _product_id
+    const metaRegex = /<wp:order_item_meta>([\s\S]*?)<\/wp:order_item_meta>/g;
+    let metaMatch;
+    while ((metaMatch = metaRegex.exec(itemBlock)) !== null) {
+      const metaBlock = metaMatch[1];
+      const keyMatch = metaBlock.match(/<wp:meta_key>(?:<!\[CDATA\[)?_product_id(?:\]\]>)?<\/wp:meta_key>/);
+      if (keyMatch) {
+        const valMatch = metaBlock.match(/<wp:meta_value>(?:<!\[CDATA\[)?(\d+)(?:\]\]>)?<\/wp:meta_value>/);
+        if (valMatch) {
+          const pid = parseInt(valMatch[1], 10);
+          if (!ids.includes(pid)) ids.push(pid);
+        }
+      }
+    }
+  }
+  
+  // Also try extracting from serialized _order_items meta
+  // And from direct meta keys containing product_id
   return ids;
 }
 
@@ -106,6 +152,12 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
         const pid = parseInt(value, 10);
         if (!productIds.includes(pid)) productIds.push(pid);
       }
+    }
+
+    // Also extract product IDs from <wp:order_item> blocks (WooCommerce XML format)
+    const orderItemIds = extractProductIdsFromOrderItems(block);
+    for (const pid of orderItemIds) {
+      if (!productIds.includes(pid)) productIds.push(pid);
     }
 
     // Skip non-completed/non-processing orders
@@ -195,6 +247,15 @@ Deno.serve(async (req) => {
 
     const orders = parseOrdersFromXml(xmlText);
     console.log("Parsed orders:", orders.length);
+    
+    // Debug: log first 3 orders to see product ID extraction
+    for (let i = 0; i < Math.min(3, orders.length); i++) {
+      console.log(`Order ${orders[i].orderId}: email=${orders[i].email}, productIds=${JSON.stringify(orders[i].productIds)}, total=${orders[i].orderTotal}, date=${orders[i].orderDate}`);
+    }
+    
+    // Debug: check if XML contains wp:order_item tags
+    const orderItemCount = (xmlText.match(/<wp:order_item>/g) || []).length;
+    console.log("wp:order_item tags found:", orderItemCount);
 
     if (orders.length === 0) {
       return new Response(
@@ -312,9 +373,7 @@ Deno.serve(async (req) => {
         }
 
         if (!dryRun) {
-          const purchaseDate = order.orderDate
-            ? new Date(order.orderDate).toISOString()
-            : new Date().toISOString();
+          const purchaseDate = safeDateToISO(order.orderDate) || new Date().toISOString();
 
           const amountPaid =
             matchedPrograms.length === 1
