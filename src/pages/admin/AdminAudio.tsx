@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X, Play, Pause } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X, Play, Pause, Download } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type AudioFile = Tables<"audio_files">;
@@ -37,6 +37,7 @@ type AudioFile = Tables<"audio_files">;
 const AdminAudio = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
@@ -47,6 +48,8 @@ const AdminAudio = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     file_path: "",
@@ -283,6 +286,56 @@ const AdminAudio = () => {
     setPlayingTrackId(null);
   };
 
+  const handleXmlImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress("Laddar upp och bearbetar XML-fil...");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("mode", "full");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-media`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Import misslyckades");
+      }
+
+      setImportProgress("");
+      toast.success(
+        `Import klar! ${result.durations_updated} längder uppdaterade, ${result.files_downloaded} filer nedladdade, ${result.failed} misslyckade av ${result.total_in_xml} totalt.`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      toast.error("Import misslyckades: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
@@ -293,16 +346,32 @@ const AdminAudio = () => {
             Hantera ljudfiler för alla program
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Ny ljudfil
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <input
+            ref={xmlInputRef}
+            type="file"
+            accept=".xml"
+            className="hidden"
+            onChange={handleXmlImport}
+          />
+          <Button
+            variant="outline"
+            onClick={() => xmlInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isImporting ? "Importerar..." : "Importera från WordPress XML"}
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Ny ljudfil
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -443,6 +512,7 @@ const AdminAudio = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
