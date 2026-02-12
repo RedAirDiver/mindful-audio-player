@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
 
     if (mediaItems.length === 0) {
       return new Response(
-        JSON.stringify({ message: "Inga ljudfiler hittades i XML-filen", updated: 0, downloaded: 0 }),
+        JSON.stringify({ message: "Inga ljudfiler hittades i XML-filen", total_in_xml: 0, durations_updated: 0, files_downloaded: 0, failed: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
