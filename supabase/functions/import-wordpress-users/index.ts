@@ -81,19 +81,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check for existing emails to avoid duplicates - paginate to avoid 1000 row limit
-    const existingEmails = new Set<string>();
+    // Build map of existing emails -> profile data for update detection
+    const existingProfileMap = new Map<string, { user_id: string; wp_user_id: number | null }>();
     let offset = 0;
     const PAGE_SIZE = 1000;
     while (true) {
       const { data: page, error: pageError } = await adminClient
         .from("profiles")
-        .select("email")
+        .select("email, user_id, wp_user_id")
         .range(offset, offset + PAGE_SIZE - 1);
 
       if (pageError || !page || page.length === 0) break;
       for (const p of page) {
-        if (p.email) existingEmails.add(p.email.toLowerCase());
+        if (p.email) existingProfileMap.set(p.email.toLowerCase(), { user_id: p.user_id, wp_user_id: p.wp_user_id });
       }
       if (page.length < PAGE_SIZE) break;
       offset += PAGE_SIZE;
@@ -102,17 +102,16 @@ Deno.serve(async (req) => {
     const results = {
       total: users.length,
       skipped: 0,
+      updated: 0,
       imported: 0,
       errors: [] as { email: string; error: string }[],
       skippedEmails: [] as string[],
     };
 
     if (dryRun) {
-      // Just return what would happen
       for (const wpUser of users) {
-        if (existingEmails.has(wpUser.email.toLowerCase())) {
-          results.skipped++;
-          results.skippedEmails.push(wpUser.email);
+        if (existingProfileMap.has(wpUser.email.toLowerCase())) {
+          results.updated++;
         } else {
           results.imported++;
         }
@@ -122,13 +121,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Process users in batches
+    // Process users
     for (const wpUser of users) {
       const email = wpUser.email.toLowerCase().trim();
+      const existing = existingProfileMap.get(email);
 
-      if (existingEmails.has(email)) {
-        results.skipped++;
-        results.skippedEmails.push(email);
+      const name =
+        wpUser.first_name && wpUser.last_name
+          ? `${wpUser.first_name} ${wpUser.last_name}`.trim()
+          : wpUser.display_name;
+
+      if (existing) {
+        // Update existing profile with WP data
+        try {
+          const { error: updateError } = await adminClient
+            .from("profiles")
+            .update({
+              name,
+              wp_user_id: wpUser.wp_id,
+              legacy_password_hash: wpUser.password_hash || null,
+            })
+            .eq("user_id", existing.user_id);
+
+          if (updateError) {
+            results.errors.push({ email, error: `Update failed: ${updateError.message}` });
+          } else {
+            results.updated++;
+          }
+        } catch (err) {
+          results.errors.push({ email, error: err instanceof Error ? err.message : String(err) });
+        }
         continue;
       }
 
@@ -154,12 +176,6 @@ Deno.serve(async (req) => {
         }
 
         if (authData.user) {
-          // Update profile with WP data (profile is auto-created by trigger)
-          const name =
-            wpUser.first_name && wpUser.last_name
-              ? `${wpUser.first_name} ${wpUser.last_name}`.trim()
-              : wpUser.display_name;
-
           const { error: profileError } = await adminClient
             .from("profiles")
             .update({
@@ -178,7 +194,7 @@ Deno.serve(async (req) => {
         }
 
         results.imported++;
-        existingEmails.add(email); // Prevent duplicates within same batch
+        existingProfileMap.set(email, { user_id: authData.user?.id || "", wp_user_id: wpUser.wp_id });
       } catch (err) {
         results.errors.push({
           email,
