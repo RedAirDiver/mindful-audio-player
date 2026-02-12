@@ -90,26 +90,21 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
   while ((itemMatch = itemRegex.exec(xmlText)) !== null) {
     const block = itemMatch[1];
 
-    // Only process shop_order posts
     const postTypeMatch =
       block.match(/<wp:post_type>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/wp:post_type>/);
     if (!postTypeMatch || postTypeMatch[1].trim() !== "shop_order") continue;
 
-    // Extract order ID (wp:post_id)
     const postIdMatch = block.match(/<wp:post_id>(\d+)<\/wp:post_id>/);
     const orderId = postIdMatch ? parseInt(postIdMatch[1], 10) : 0;
 
-    // Extract order date
     const dateMatch =
       block.match(/<wp:post_date>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/wp:post_date>/);
     const orderDate = dateMatch ? dateMatch[1].trim() : "";
 
-    // Extract order status
     const statusMatch =
       block.match(/<wp:status>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/wp:status>/);
     const status = statusMatch ? statusMatch[1].trim() : "";
 
-    // Parse postmeta
     const metaRegex = /<wp:postmeta>([\s\S]*?)<\/wp:postmeta>/g;
     let metaMatch;
     let email = "";
@@ -142,25 +137,21 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
           break;
         case "_order_items":
         case "_order_line_items":
-          // Serialized order items
           productIds.push(...extractProductIdsFromSerialized(value));
           break;
       }
 
-      // Check for product_id in any meta that might contain it
       if (key.includes("product_id") && /^\d+$/.test(value)) {
         const pid = parseInt(value, 10);
         if (!productIds.includes(pid)) productIds.push(pid);
       }
     }
 
-    // Also extract product IDs from <wp:order_item> blocks (WooCommerce XML format)
     const orderItemIds = extractProductIdsFromOrderItems(block);
     for (const pid of orderItemIds) {
       if (!productIds.includes(pid)) productIds.push(pid);
     }
 
-    // Skip non-completed/non-processing orders
     const validStatuses = [
       "wc-completed", "wc-processing", "completed", "processing",
     ];
@@ -181,6 +172,129 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
   }
 
   return orders;
+}
+
+/**
+ * Parse CSV text (WooCommerce order export) into OrderData[].
+ * Expected columns (case-insensitive): Order ID / order_number, Email / billing_email,
+ * Order Total / order_total, Order Date / date_created, Status / order_status,
+ * Product ID(s) / product_id (comma-separated).
+ */
+function parseOrdersFromCsv(csvText: string): OrderData[] {
+  const lines = csvText.split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  // Parse header
+  const headerLine = lines[0];
+  const headers = parseCsvLine(headerLine).map(h => h.toLowerCase().trim());
+
+  const colIndex = (names: string[]): number => {
+    for (const n of names) {
+      const idx = headers.indexOf(n);
+      if (idx !== -1) return idx;
+    }
+    return -1;
+  };
+
+  const iOrder = colIndex(["order_number", "order id", "order_id", "id"]);
+  const iEmail = colIndex(["billing_email", "email", "billing email", "customer_email"]);
+  const iTotal = colIndex(["order_total", "order total", "total", "cart_total"]);
+  const iDate = colIndex(["order_date", "date_created", "date", "order date", "date_paid", "completed_date"]);
+  const iStatus = colIndex(["status", "order_status", "order status"]);
+  const iProduct = colIndex(["product_id", "product id", "product_ids", "line_item_product_id", "item_id"]);
+  const iProductName = colIndex(["product_name", "item_name", "line_item_name"]);
+
+  console.log(`CSV columns found: order=${iOrder}, email=${iEmail}, total=${iTotal}, date=${iDate}, status=${iStatus}, product=${iProduct}`);
+
+  if (iEmail === -1) {
+    console.error("CSV missing email column. Headers:", headers.join(", "));
+    return [];
+  }
+
+  const orders: OrderData[] = [];
+  // Group rows by order ID (WC CSV exports one row per line item)
+  const orderMap = new Map<string, OrderData>();
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const cols = parseCsvLine(line);
+    const email = (iEmail >= 0 ? cols[iEmail] : "").toLowerCase().trim();
+    if (!email) continue;
+
+    const orderId = iOrder >= 0 ? parseInt(cols[iOrder], 10) || i : i;
+    const orderTotal = iTotal >= 0 ? parseFloat(cols[iTotal]) || 0 : 0;
+    const orderDate = iDate >= 0 ? cols[iDate] || "" : "";
+    const status = iStatus >= 0 ? cols[iStatus]?.toLowerCase().trim() || "completed" : "completed";
+
+    // Filter by status
+    const validStatuses = ["wc-completed", "wc-processing", "completed", "processing"];
+    if (!validStatuses.includes(status)) continue;
+
+    const productIds: number[] = [];
+    if (iProduct >= 0 && cols[iProduct]) {
+      const parts = cols[iProduct].split(/[,;]/);
+      for (const p of parts) {
+        const pid = parseInt(p.trim(), 10);
+        if (!isNaN(pid) && pid > 0) productIds.push(pid);
+      }
+    }
+
+    const key = `${orderId}-${email}`;
+    const existing = orderMap.get(key);
+    if (existing) {
+      // Merge product IDs from additional line items
+      for (const pid of productIds) {
+        if (!existing.productIds.includes(pid)) existing.productIds.push(pid);
+      }
+    } else {
+      orderMap.set(key, {
+        orderId,
+        email,
+        orderTotal,
+        orderDate,
+        status,
+        productIds,
+      });
+    }
+  }
+
+  return Array.from(orderMap.values());
+}
+
+/**
+ * Simple CSV line parser that handles quoted fields.
+ */
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && i + 1 < line.length && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+      } else if (ch === ',') {
+        result.push(current.trim());
+        current = "";
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current.trim());
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -223,7 +337,8 @@ Deno.serve(async (req) => {
 
     // Parse request
     const contentType = req.headers.get("content-type") || "";
-    let xmlText: string;
+    let fileText: string;
+    let fileName = "";
     let dryRun = false;
 
     if (contentType.includes("multipart/form-data")) {
@@ -235,18 +350,24 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      xmlText = await file.text();
+      fileText = await file.text();
+      fileName = file.name || "";
       dryRun = formData.get("dryRun") === "true";
     } else {
       const body = await req.json();
-      xmlText = body.xml;
+      fileText = body.xml || body.csv || "";
+      fileName = body.fileName || "";
       dryRun = body.dryRun === true;
     }
 
-    console.log("XML length:", xmlText.length);
+    console.log("File length:", fileText.length, "Name:", fileName);
 
-    const orders = parseOrdersFromXml(xmlText);
-    console.log("Parsed orders:", orders.length);
+    // Detect format: CSV if filename ends with .csv or content starts with typical CSV header
+    const isCsv = fileName.toLowerCase().endsWith(".csv") ||
+      (!fileName.toLowerCase().endsWith(".xml") && !fileText.trimStart().startsWith("<?xml") && !fileText.trimStart().startsWith("<"));
+
+    const orders = isCsv ? parseOrdersFromCsv(fileText) : parseOrdersFromXml(fileText);
+    console.log(`Parsed ${orders.length} orders (format: ${isCsv ? "CSV" : "XML"})`);
     
     // Debug: log first 3 orders to see product ID extraction
     for (let i = 0; i < Math.min(3, orders.length); i++) {
@@ -254,13 +375,13 @@ Deno.serve(async (req) => {
     }
     
     // Debug: check if XML contains wp:order_item tags
-    const orderItemCount = (xmlText.match(/<wp:order_item>/g) || []).length;
-    console.log("wp:order_item tags found:", orderItemCount);
+    const orderItemCount = (fileText.match(/<wp:order_item>/g) || []).length;
+    if (orderItemCount > 0) console.log("wp:order_item tags found:", orderItemCount);
 
     if (orders.length === 0) {
       return new Response(
         JSON.stringify({
-          message: "Inga beställningar hittades i XML-filen",
+          message: "Inga beställningar hittades i filen",
           total_orders: 0,
           matched: 0,
           created: 0,
