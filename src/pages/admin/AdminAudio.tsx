@@ -326,7 +326,7 @@ const AdminAudio = () => {
         toast.warning(result.message || "Inga ljudfiler hittades i XML-filen.");
       } else {
         toast.success(
-          `Import klar! ${result.durations_updated ?? 0} längder uppdaterade, ${result.files_downloaded ?? 0} filer nedladdade, ${result.failed ?? 0} misslyckade av ${result.total_in_xml ?? 0} totalt.`
+          `Import klar! ${result.files_created ?? 0} nya poster, ${result.durations_updated ?? 0} längder uppdaterade, ${result.files_downloaded ?? 0} filer nedladdade, ${result.failed ?? 0} misslyckade av ${result.total_in_xml ?? 0} totalt.${result.unmatched ? ` ${result.unmatched} kunde inte kopplas till program.` : ''}`
         );
       }
 

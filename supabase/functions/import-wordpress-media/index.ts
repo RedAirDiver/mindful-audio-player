@@ -11,6 +11,8 @@ interface MediaItem {
   url: string;
   duration: number | null;
   filename: string;
+  postParent: number | null;
+  menuOrder: number;
 }
 
 function parseWordPressXml(xmlText: string): MediaItem[] {
@@ -69,7 +71,15 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
 
     const filename = url.split("/").pop() || "";
 
-    items.push({ title, url, duration, filename });
+    // Extract post_parent (WooCommerce product ID)
+    const postParentMatch = itemBlock.match(/<wp:post_parent>(\d+)<\/wp:post_parent>/);
+    const postParent = postParentMatch ? parseInt(postParentMatch[1], 10) : null;
+
+    // Extract menu_order for track ordering
+    const menuOrderMatch = itemBlock.match(/<wp:menu_order>(\d+)<\/wp:menu_order>/);
+    const menuOrder = menuOrderMatch ? parseInt(menuOrderMatch[1], 10) : 0;
+
+    items.push({ title, url, duration, filename, postParent, menuOrder });
   }
 
   return items;
@@ -175,43 +185,54 @@ Deno.serve(async (req) => {
     // Get all existing audio files to match by filename
     const { data: existingFiles } = await supabase
       .from("audio_files")
-      .select("id, file_path, title, duration_seconds");
+      .select("id, file_path, title, duration_seconds, program_id");
+
+    // Get programs with wc_id for mapping unmatched files
+    const { data: programs } = await supabase
+      .from("programs")
+      .select("id, wc_id, title");
+
+    const wcIdToProgram = new Map<number, { id: string; title: string }>();
+    programs?.forEach(p => {
+      if (p.wc_id) wcIdToProgram.set(p.wc_id, { id: p.id, title: p.title });
+    });
 
     let durationsUpdated = 0;
     let filesDownloaded = 0;
+    let filesCreated = 0;
     let failed = 0;
     const results: { title: string; action: string; error?: string }[] = [];
 
-    // Log sample filenames for matching debug
-    const sampleXmlFilenames = mediaItems.slice(0, 5).map(i => i.filename);
-    const sampleDbFilenames = existingFiles?.slice(0, 5).map(f => f.file_path.split("/").pop()) || [];
-    console.log("Sample XML filenames:", JSON.stringify(sampleXmlFilenames));
-    console.log("Sample DB filenames:", JSON.stringify(sampleDbFilenames));
-    console.log("Existing DB files count:", existingFiles?.length || 0);
+    console.log("Existing DB files:", existingFiles?.length || 0, "Programs with wc_id:", wcIdToProgram.size);
 
-    // Normalize filename: strip WordPress suffixes like "-1-skzz32", track numbers, and extensions
+    // Normalize filename: strip WordPress suffixes
     function normalizeFilename(name: string): string {
       return name
         .toLowerCase()
-        .replace(/\.[^/.]+$/, "") // remove extension
-        .replace(/-\d+-[a-z0-9]+$/, "") // remove WP suffix like -1-skzz32
-        .replace(/-\d+$/, "") // remove trailing number suffix like -1
-        .replace(/^\d+-/, ""); // remove leading track number like 01-
+        .replace(/\.[^/.]+$/, "")
+        .replace(/-\d+-[a-z0-9]+$/, "")
+        .replace(/-\d+$/, "")
+        .replace(/^\d+-/, "");
     }
 
-    // Normalize title for comparison
     function normalizeTitle(t: string): string {
       return t.toLowerCase()
         .replace(/[åä]/g, "a").replace(/ö/g, "o")
         .replace(/[^a-z0-9]/g, "");
     }
 
-    // Pre-compute normalized DB filenames and titles
     const dbNormalized = existingFiles?.map(f => ({
       ...f,
       normFilename: normalizeFilename(f.file_path.split("/").pop() || ""),
       normTitle: normalizeTitle(f.title),
     })) || [];
+
+    // Track which programs already have tracks to determine next track_order
+    const programTrackCounts = new Map<string, number>();
+    existingFiles?.forEach(f => {
+      const count = programTrackCounts.get(f.program_id) || 0;
+      programTrackCounts.set(f.program_id, count + 1);
+    });
 
     let unmatched = 0;
     let matched = 0;
@@ -232,8 +253,69 @@ Deno.serve(async (req) => {
         }
 
         if (!matchingFile) {
-          unmatched++;
-          if (unmatched <= 5) console.log("No match for:", item.filename, "norm:", xmlNormFilename, "title:", item.title);
+          // Try to create a new entry if we can map to a program via post_parent → wc_id
+          if (item.postParent && wcIdToProgram.has(item.postParent)) {
+            const program = wcIdToProgram.get(item.postParent)!;
+            
+            // Determine track order
+            const currentCount = programTrackCounts.get(program.id) || 0;
+            const trackOrder = item.menuOrder > 0 ? item.menuOrder : currentCount + 1;
+            
+            // Generate storage path
+            const fileExt = item.filename.split(".").pop() || "mp3";
+            const cleanFilename = item.filename.toLowerCase()
+              .replace(/-\d+-[a-z0-9]+\./, ".") // remove WP suffix
+              .replace(/-\d+\./, "."); // remove trailing number
+            const storagePath = `audio/${item.postParent}/${cleanFilename}`;
+            
+            // Download from WordPress
+            console.log(`Creating new + downloading: ${item.title} → ${program.title}`);
+            const response = await fetch(item.url);
+            if (!response.ok) {
+              results.push({ title: item.title, action: "download_failed", error: `HTTP ${response.status}` });
+              failed++;
+              continue;
+            }
+
+            const blob = await response.blob();
+
+            // Upload to storage
+            const { error: uploadErr } = await supabase.storage
+              .from("audio-files")
+              .upload(storagePath, blob, {
+                contentType: `audio/${fileExt === "mp3" ? "mpeg" : fileExt}`,
+                upsert: true,
+              });
+
+            if (uploadErr) {
+              results.push({ title: item.title, action: "upload_failed", error: uploadErr.message });
+              failed++;
+              continue;
+            }
+
+            // Create DB entry
+            const { error: insertErr } = await supabase
+              .from("audio_files")
+              .insert({
+                title: item.title,
+                file_path: storagePath,
+                program_id: program.id,
+                track_order: trackOrder,
+                duration_seconds: item.duration,
+              });
+
+            if (insertErr) {
+              results.push({ title: item.title, action: "insert_failed", error: insertErr.message });
+              failed++;
+            } else {
+              filesCreated++;
+              programTrackCounts.set(program.id, (programTrackCounts.get(program.id) || 0) + 1);
+              results.push({ title: item.title, action: "created" });
+            }
+          } else {
+            unmatched++;
+            if (unmatched <= 5) console.log("No match & no program for:", item.filename, "postParent:", item.postParent, "title:", item.title);
+          }
           continue;
         }
 
@@ -304,13 +386,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Summary: ${unmatched} unmatched, ${durationsUpdated} durations updated, ${filesDownloaded} downloaded, ${failed} failed`);
+    console.log(`Summary: ${unmatched} unmatched, ${matched} matched, ${filesCreated} created, ${durationsUpdated} durations, ${filesDownloaded} downloaded, ${failed} failed`);
 
     return new Response(
       JSON.stringify({
         total_in_xml: mediaItems.length,
         durations_updated: durationsUpdated,
         files_downloaded: filesDownloaded,
+        files_created: filesCreated,
+        unmatched,
         failed,
         results,
       }),
