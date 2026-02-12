@@ -322,9 +322,13 @@ const AdminAudio = () => {
       }
 
       setImportProgress("");
-      toast.success(
-        `Import klar! ${result.durations_updated} längder uppdaterade, ${result.files_downloaded} filer nedladdade, ${result.failed} misslyckade av ${result.total_in_xml} totalt.`
-      );
+      if (result.total_in_xml === 0) {
+        toast.warning(result.message || "Inga ljudfiler hittades i XML-filen.");
+      } else {
+        toast.success(
+          `Import klar! ${result.durations_updated ?? 0} längder uppdaterade, ${result.files_downloaded ?? 0} filer nedladdade, ${result.failed ?? 0} misslyckade av ${result.total_in_xml ?? 0} totalt.`
+        );
+      }
 
       queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
     } catch (error: any) {
