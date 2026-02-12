@@ -21,7 +21,7 @@ const AdminLayout = () => {
 
   const navItems = [
     { href: "/admin", label: "Översikt", icon: LayoutDashboard, exact: true },
-    { href: "/admin/programs", label: "Program", icon: Package },
+    { href: "/admin/programs", label: "Produkter", icon: Package },
     { href: "/admin/categories", label: "Kategorier", icon: FolderOpen },
     { href: "/admin/audio", label: "Ljudfiler", icon: Music },
     { href: "/admin/purchases", label: "Köp", icon: ShoppingCart },

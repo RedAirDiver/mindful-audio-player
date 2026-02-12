@@ -42,7 +42,7 @@ const AdminDashboard = () => {
   });
 
   const statCards = [
-    { label: "Program", value: stats?.programs || 0, icon: Package, color: "text-primary" },
+    { label: "Produkter", value: stats?.programs || 0, icon: Package, color: "text-primary" },
     { label: "Ljudfiler", value: stats?.audioFiles || 0, icon: Music, color: "text-accent" },
     { label: "Köp", value: stats?.purchases || 0, icon: ShoppingCart, color: "text-green-600" },
     { label: "Användare", value: stats?.users || 0, icon: Users, color: "text-blue-600" },
@@ -86,7 +86,7 @@ const AdminDashboard = () => {
                   className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
                 >
                   <div>
-                    <p className="font-medium">{purchase.programs?.title || "Okänt program"}</p>
+                    <p className="font-medium">{purchase.programs?.title || "Okänd produkt"}</p>
                     <p className="text-sm text-muted-foreground">
                       {purchase.profiles?.email || purchase.profiles?.name || "Okänd användare"}
                     </p>
