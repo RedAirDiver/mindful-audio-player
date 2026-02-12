@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Upload, FileText, Users, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
-import { parseWpUsers, parseWpUserMeta, mergeUsersAndMeta, type MergedWpUser } from "@/lib/wpSqlParser";
+import { parseWpUsers, parseWpUserMeta, mergeUsersAndMeta, buildMetaUpdates, type MergedWpUser, type WpUserMetaUpdate } from "@/lib/wpSqlParser";
 import { Progress } from "@/components/ui/progress";
 
 const BATCH_SIZE = 50;
@@ -32,6 +32,18 @@ const AdminImportUsers = () => {
     errors: { email: string; error: string }[];
   } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Standalone meta import state
+  const [metaFile, setMetaFile] = useState<File | null>(null);
+  const [parsedMetaUpdates, setParsedMetaUpdates] = useState<WpUserMetaUpdate[]>([]);
+  const [isParsingMeta, setIsParsingMeta] = useState(false);
+  const [isImportingMeta, setIsImportingMeta] = useState(false);
+  const [metaImportProgress, setMetaImportProgress] = useState(0);
+  const [metaImportResults, setMetaImportResults] = useState<{
+    updated: number;
+    not_found: number;
+    errors: { wp_user_id: number; error: string }[];
+  } | null>(null);
 
   const handleParse = useCallback(async () => {
     if (!wpUsersFile) {
@@ -87,6 +99,12 @@ const AdminImportUsers = () => {
           last_name: u.last_name,
           password_hash: u.password_hash,
           registered: u.registered,
+          phone: u.phone,
+          company: u.company,
+          address_line1: u.address_line1,
+          address_city: u.address_city,
+          address_postcode: u.address_postcode,
+          address_country: u.address_country,
         }));
 
         const response = await supabase.functions.invoke("import-wordpress-users", {
@@ -119,6 +137,70 @@ const AdminImportUsers = () => {
       setIsImporting(false);
     }
   }, [parsedUsers]);
+
+  const handleParseMeta = useCallback(async () => {
+    if (!metaFile) {
+      toast.error("Ladda upp wp_usermeta.sql först");
+      return;
+    }
+    setIsParsingMeta(true);
+    try {
+      const content = await metaFile.text();
+      const metas = parseWpUserMeta(content);
+      const updates = buildMetaUpdates(metas);
+      setParsedMetaUpdates(updates);
+      setMetaImportResults(null);
+      toast.success(`${updates.length} användare med metadata hittades`);
+    } catch (err) {
+      toast.error("Kunde inte parsa: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsParsingMeta(false);
+    }
+  }, [metaFile]);
+
+  const handleImportMeta = useCallback(async () => {
+    if (parsedMetaUpdates.length === 0) return;
+    setIsImportingMeta(true);
+    setMetaImportProgress(0);
+    const totalResults = { updated: 0, not_found: 0, errors: [] as { wp_user_id: number; error: string }[] };
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      for (let i = 0; i < parsedMetaUpdates.length; i += BATCH_SIZE) {
+        const batch = parsedMetaUpdates.slice(i, i + BATCH_SIZE);
+
+        const response = await supabase.functions.invoke("import-wordpress-meta", {
+          body: { updates: batch },
+        });
+
+        if (response.error) {
+          toast.error(`Batch misslyckades: ${response.error.message}`);
+          break;
+        }
+
+        const batchResult = response.data?.results;
+        if (batchResult) {
+          totalResults.updated += batchResult.updated || 0;
+          totalResults.not_found += batchResult.not_found || 0;
+          totalResults.errors.push(...(batchResult.errors || []));
+        }
+
+        setMetaImportProgress(Math.round(((i + batch.length) / parsedMetaUpdates.length) * 100));
+      }
+
+      setMetaImportResults(totalResults);
+      toast.success(`Meta-import klar! ${totalResults.updated} uppdaterade, ${totalResults.not_found} ej hittade`);
+    } catch (err) {
+      toast.error("Meta-import misslyckades: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsImportingMeta(false);
+    }
+  }, [parsedMetaUpdates]);
 
   const filteredUsers = parsedUsers.filter(
     (u) =>
@@ -429,6 +511,134 @@ const AdminImportUsers = () => {
           </Card>
         </>
       )}
+
+      {/* Standalone Meta Import */}
+      <Card className="mb-6 mt-8">
+        <CardHeader>
+          <CardTitle className="text-lg">Separat meta-import</CardTitle>
+          <CardDescription>
+            Importera wp_usermeta.sql separat för att uppdatera befintliga användare med adress, telefon, företag m.m.
+            Matchning sker via WordPress user ID.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              wp_usermeta.sql
+            </label>
+            <label className="flex flex-col items-center justify-center w-full max-w-sm h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors border-border">
+              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                {metaFile ? (
+                  <>
+                    <FileText className="h-8 w-8 text-primary mb-2" />
+                    <p className="text-sm font-medium">{metaFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(metaFile.size / 1024).toFixed(0)} KB
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Klicka för att välja fil</p>
+                  </>
+                )}
+              </div>
+              <input
+                type="file"
+                className="hidden"
+                accept=".sql"
+                onChange={(e) => {
+                  setMetaFile(e.target.files?.[0] || null);
+                  setParsedMetaUpdates([]);
+                  setMetaImportResults(null);
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <Button
+              onClick={handleParseMeta}
+              disabled={!metaFile || isParsingMeta}
+            >
+              {isParsingMeta ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Parserar...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Parsa meta-fil
+                </>
+              )}
+            </Button>
+
+            {parsedMetaUpdates.length > 0 && (
+              <Button
+                onClick={handleImportMeta}
+                disabled={isImportingMeta}
+              >
+                {isImportingMeta ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Importerar...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Uppdatera {parsedMetaUpdates.length} användare
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {parsedMetaUpdates.length > 0 && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              <p>{parsedMetaUpdates.length} användare med metadata redo att uppdateras</p>
+              <p className="text-xs mt-1">
+                Fält: namn, telefon, företag, adress, stad, postnummer, land
+              </p>
+            </div>
+          )}
+
+          {isImportingMeta && (
+            <div className="mt-4">
+              <Progress value={metaImportProgress} className="mb-2" />
+              <p className="text-sm text-muted-foreground">
+                Uppdaterar... {metaImportProgress}%
+              </p>
+            </div>
+          )}
+
+          {metaImportResults && (
+            <div className="mt-4 p-4 rounded-lg bg-muted">
+              <h4 className="font-medium mb-2">Meta-importresultat</h4>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span className="text-green-600 font-bold">{metaImportResults.updated}</span> uppdaterade
+                </div>
+                <div>
+                  <span className="text-yellow-600 font-bold">{metaImportResults.not_found}</span> ej hittade
+                </div>
+                <div>
+                  <span className="text-red-600 font-bold">{metaImportResults.errors.length}</span> fel
+                </div>
+              </div>
+              {metaImportResults.errors.length > 0 && (
+                <div className="mt-3 max-h-40 overflow-auto">
+                  {metaImportResults.errors.slice(0, 20).map((err, i) => (
+                    <p key={i} className="text-xs text-destructive">
+                      WP #{err.wp_user_id}: {err.error}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -14,6 +14,12 @@ interface WpUser {
   last_name?: string;
   password_hash: string;
   registered: string;
+  phone?: string;
+  company?: string;
+  address_line1?: string;
+  address_city?: string;
+  address_postcode?: string;
+  address_country?: string;
 }
 
 Deno.serve(async (req) => {
@@ -140,6 +146,12 @@ Deno.serve(async (req) => {
               name,
               wp_user_id: wpUser.wp_id,
               legacy_password_hash: wpUser.password_hash || null,
+              phone: wpUser.phone || null,
+              company: wpUser.company || null,
+              address_line1: wpUser.address_line1 || null,
+              address_city: wpUser.address_city || null,
+              address_postcode: wpUser.address_postcode || null,
+              address_country: wpUser.address_country || null,
             })
             .eq("user_id", existing.user_id);
 
@@ -182,6 +194,12 @@ Deno.serve(async (req) => {
               name,
               wp_user_id: wpUser.wp_id,
               legacy_password_hash: wpUser.password_hash || null,
+              phone: wpUser.phone || null,
+              company: wpUser.company || null,
+              address_line1: wpUser.address_line1 || null,
+              address_city: wpUser.address_city || null,
+              address_postcode: wpUser.address_postcode || null,
+              address_country: wpUser.address_country || null,
             })
             .eq("user_id", authData.user.id);
 

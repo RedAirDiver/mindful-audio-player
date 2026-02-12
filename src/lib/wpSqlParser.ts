@@ -22,6 +22,12 @@ export interface MergedWpUser {
   password_hash: string;
   registered: string;
   is_paying_customer: boolean;
+  phone: string;
+  company: string;
+  address_line1: string;
+  address_city: string;
+  address_postcode: string;
+  address_country: string;
 }
 
 /**
@@ -151,7 +157,9 @@ export function parseWpUserMeta(sql: string): ParsedWpUserMeta[] {
   
   const relevantKeys = new Set([
     'first_name', 'last_name', 'billing_email', 'paying_customer',
-    'billing_first_name', 'billing_last_name'
+    'billing_first_name', 'billing_last_name',
+    'billing_phone', 'billing_company',
+    'billing_address_1', 'billing_city', 'billing_postcode', 'billing_country',
   ]);
   
   for (const values of tuples) {
@@ -199,6 +207,52 @@ export function mergeUsersAndMeta(
         password_hash: u.user_pass,
         registered: u.user_registered,
         is_paying_customer: userMeta?.get('paying_customer') === '1',
+        phone: userMeta?.get('billing_phone') || '',
+        company: userMeta?.get('billing_company') || '',
+        address_line1: userMeta?.get('billing_address_1') || '',
+        address_city: userMeta?.get('billing_city') || '',
+        address_postcode: userMeta?.get('billing_postcode') || '',
+        address_country: userMeta?.get('billing_country') || '',
       };
     });
+}
+
+export interface WpUserMetaUpdate {
+  wp_user_id: number;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  company: string;
+  address_line1: string;
+  address_city: string;
+  address_postcode: string;
+  address_country: string;
+  is_paying_customer: boolean;
+}
+
+export function buildMetaUpdates(metas: ParsedWpUserMeta[]): WpUserMetaUpdate[] {
+  const metaMap = new Map<number, Map<string, string>>();
+  for (const meta of metas) {
+    if (!metaMap.has(meta.user_id)) {
+      metaMap.set(meta.user_id, new Map());
+    }
+    metaMap.get(meta.user_id)!.set(meta.meta_key, meta.meta_value);
+  }
+
+  const results: WpUserMetaUpdate[] = [];
+  for (const [wpUserId, fields] of metaMap) {
+    results.push({
+      wp_user_id: wpUserId,
+      first_name: fields.get('first_name') || fields.get('billing_first_name') || '',
+      last_name: fields.get('last_name') || fields.get('billing_last_name') || '',
+      phone: fields.get('billing_phone') || '',
+      company: fields.get('billing_company') || '',
+      address_line1: fields.get('billing_address_1') || '',
+      address_city: fields.get('billing_city') || '',
+      address_postcode: fields.get('billing_postcode') || '',
+      address_country: fields.get('billing_country') || '',
+      is_paying_customer: fields.get('paying_customer') === '1',
+    });
+  }
+  return results;
 }
