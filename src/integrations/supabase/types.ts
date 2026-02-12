@@ -84,31 +84,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address_city: string | null
+          address_country: string | null
+          address_line1: string | null
+          address_postcode: string | null
+          company: string | null
           created_at: string
           email: string | null
           id: string
           legacy_password_hash: string | null
           name: string | null
+          phone: string | null
           updated_at: string
           user_id: string
           wp_user_id: number | null
         }
         Insert: {
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_postcode?: string | null
+          company?: string | null
           created_at?: string
           email?: string | null
           id?: string
           legacy_password_hash?: string | null
           name?: string | null
+          phone?: string | null
           updated_at?: string
           user_id: string
           wp_user_id?: number | null
         }
         Update: {
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_postcode?: string | null
+          company?: string | null
           created_at?: string
           email?: string | null
           id?: string
           legacy_password_hash?: string | null
           name?: string | null
+          phone?: string | null
           updated_at?: string
           user_id?: string
           wp_user_id?: number | null
