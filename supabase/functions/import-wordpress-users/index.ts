@@ -81,16 +81,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check for existing emails to avoid duplicates
-    const emails = users.map((u) => u.email.toLowerCase());
-    const { data: existingProfiles } = await adminClient
-      .from("profiles")
-      .select("email, wp_user_id")
-      .or(emails.map((e) => `email.eq.${e}`).join(","));
+    // Check for existing emails to avoid duplicates - paginate to avoid 1000 row limit
+    const existingEmails = new Set<string>();
+    let offset = 0;
+    const PAGE_SIZE = 1000;
+    while (true) {
+      const { data: page, error: pageError } = await adminClient
+        .from("profiles")
+        .select("email")
+        .range(offset, offset + PAGE_SIZE - 1);
 
-    const existingEmails = new Set(
-      (existingProfiles || []).map((p) => p.email?.toLowerCase())
-    );
+      if (pageError || !page || page.length === 0) break;
+      for (const p of page) {
+        if (p.email) existingEmails.add(p.email.toLowerCase());
+      }
+      if (page.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
 
     const results = {
       total: users.length,
