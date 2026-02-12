@@ -32,9 +32,9 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
     const url = attachmentType[1].trim();
     if (!url.match(/\.(mp3|wav|m4a|ogg|flac)$/i)) continue;
 
-    // Extract title
-    const titleMatch = itemBlock.match(/<title>(.*?)<\/title>/) ||
-                       itemBlock.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
+    // Extract title - handle CDATA wrapping
+    const titleMatch = itemBlock.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
+                       itemBlock.match(/<title>(.*?)<\/title>/);
     const title = titleMatch ? titleMatch[1].trim() : "";
 
     // Extract duration from wp:meta
