@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { MapPin, Phone, Mail } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
 const Footer = () => {
@@ -34,13 +35,30 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Contact Info */}
           <div>
-            <h4 className="font-semibold text-background mb-4">Information</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link to="/privacy" className="hover:text-background transition-colors">Integritetspolicy</Link></li>
-              <li><Link to="/terms" className="hover:text-background transition-colors">Villkor</Link></li>
-              <li><Link to="/contact" className="hover:text-background transition-colors">Kontakt</Link></li>
+            <h4 className="font-semibold text-background mb-4">Kontakt</h4>
+            <ul className="space-y-4 text-sm">
+              <li className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 opacity-70" />
+                <span>
+                  Unestål Education<br />
+                  Hagalundsvägen 4<br />
+                  SE-702 30 Örebro
+                </span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 shrink-0 opacity-70" />
+                <a href="tel:+46193322​33" className="hover:text-background transition-colors">
+                  +46 (0)19-33 22 33
+                </a>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 shrink-0 opacity-70" />
+                <Link to="/about" className="hover:text-background transition-colors">
+                  Kontakta oss
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

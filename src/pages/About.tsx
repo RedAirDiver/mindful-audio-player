@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { Mail, Send } from "lucide-react";
 import { toast } from "sonner";
 
 const About = () => {
@@ -263,44 +263,8 @@ const About = () => {
               </p>
             </div>
 
-            {/* Contact Info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground text-sm">Adress</p>
-                  <p className="text-muted-foreground text-sm">
-                    Unestål Education
-                    <br />
-                    Hagalundsvägen 4
-                    <br />
-                    SE-702 30 Örebro
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground text-sm">Telefon</p>
-                  <p className="text-muted-foreground text-sm">
-                    +46 (0)19-33 22 33
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p className="font-medium text-foreground text-sm">Kontakt</p>
-                  <Dialog open={contactOpen} onOpenChange={setContactOpen}>
-                    <DialogTrigger asChild>
-                      <button className="text-primary text-sm hover:underline">
-                        Skicka ett meddelande →
-                      </button>
-                    </DialogTrigger>
-                  </Dialog>
-                </div>
-              </div>
-            </div>
+
+
           </div>
         </section>
       </main>
