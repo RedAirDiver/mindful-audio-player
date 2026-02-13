@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { Headphones, Clock, Star, Gift } from "lucide-react";
+import { Headphones, Clock, Gift } from "lucide-react";
 
 /** Strip HTML tags and decode common entities for plain-text display */
 function stripHtml(html: string): string {
@@ -15,6 +15,8 @@ function stripHtml(html: string): string {
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#039;/gi, "'")
+    .replace(/\\n/g, " ")
+    .replace(/\n/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -27,7 +29,7 @@ interface ProgramCardProps {
   trackCount: number;
   price: number;
   image: string;
-  rating?: number;
+  
   featured?: boolean;
   categories?: string[];
 }
@@ -40,7 +42,7 @@ const ProgramCard = ({
   trackCount,
   price,
   image,
-  rating = 5,
+  
   featured = false,
   categories = [],
 }: ProgramCardProps) => {
@@ -84,16 +86,6 @@ const ProgramCard = ({
             {displayCategory}
           </Badge>
         )}
-
-        {/* Rating */}
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star 
-              key={i} 
-              className={`w-4 h-4 ${i < rating ? 'text-accent fill-accent' : 'text-muted'}`} 
-            />
-          ))}
-        </div>
 
         {/* Title & Description */}
         <div>
