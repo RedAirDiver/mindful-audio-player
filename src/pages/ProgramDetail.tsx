@@ -30,6 +30,22 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+/** Strip HTML tags and decode common entities for plain-text display */
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 interface Program {
   id: string;
   slug: string;
@@ -509,7 +525,7 @@ const ProgramDetail = () => {
                   {program.title}
                 </h1>
                 <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
-                  {program.description || program.short_description}
+                  {stripHtml(program.description || program.short_description || "")}
                 </p>
               </div>
 

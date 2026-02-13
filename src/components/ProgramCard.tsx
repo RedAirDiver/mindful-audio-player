@@ -3,6 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { Headphones, Clock, Star, Gift } from "lucide-react";
 
+/** Strip HTML tags and decode common entities for plain-text display */
+function stripHtml(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 interface ProgramCardProps {
   slug: string;
   title: string;
@@ -85,7 +101,7 @@ const ProgramCard = ({
             {title}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-            {description}
+            {stripHtml(description)}
           </p>
         </div>
 
