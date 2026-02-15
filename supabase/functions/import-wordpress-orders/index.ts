@@ -460,7 +460,21 @@ Deno.serve(async (req) => {
     
     // Debug: check if XML contains wp:order_item tags
     const orderItemCount = (fileText.match(/<wp:order_item>/g) || []).length;
-    if (orderItemCount > 0) console.log("wp:order_item tags found:", orderItemCount);
+    console.log("wp:order_item tags found:", orderItemCount);
+    
+    // Debug: log a raw shop_order <item> block to see structure
+    const sampleItemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let sampleMatch;
+    let sampleCount = 0;
+    while ((sampleMatch = sampleItemRegex.exec(fileText)) !== null && sampleCount < 1) {
+      const block = sampleMatch[1];
+      const ptMatch = block.match(/<wp:post_type>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/wp:post_type>/);
+      if (ptMatch && ptMatch[1].trim() === "shop_order") {
+        // Log first 2000 chars of this block
+        console.log("SAMPLE shop_order block (first 2000 chars):", block.substring(0, 2000));
+        sampleCount++;
+      }
+    }
 
     if (orders.length === 0) {
       return new Response(
