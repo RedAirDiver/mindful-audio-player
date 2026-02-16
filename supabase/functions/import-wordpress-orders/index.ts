@@ -523,15 +523,21 @@ Deno.serve(async (req) => {
       priceToPrograms.get(price)!.push({ id: p.id, wc_id: p.wc_id, title: p.title });
     });
 
-    // Load existing purchases to avoid duplicates
-    const { data: existingPurchases } = await supabase
-      .from("purchases")
-      .select("user_id, program_id");
-
+    // Load existing purchases to avoid duplicates (paginated)
     const existingSet = new Set<string>();
-    existingPurchases?.forEach((p) => {
-      existingSet.add(`${p.user_id}:${p.program_id}`);
-    });
+    let purchaseOffset = 0;
+    while (true) {
+      const { data: existingPage } = await supabase
+        .from("purchases")
+        .select("user_id, program_id")
+        .range(purchaseOffset, purchaseOffset + PAGE - 1);
+      if (!existingPage || existingPage.length === 0) break;
+      for (const p of existingPage) {
+        existingSet.add(`${p.user_id}:${p.program_id}`);
+      }
+      if (existingPage.length < PAGE) break;
+      purchaseOffset += PAGE;
+    }
 
     console.log(
       `Profiles: ${emailToUserId.size}, Programs: ${wcIdToProgram.size}, Existing purchases: ${existingSet.size}`
@@ -547,6 +553,8 @@ Deno.serve(async (req) => {
       errors: [] as { orderId: number; email: string; error: string }[],
       unmatched_emails: [] as string[],
     };
+
+    const toInsert: { user_id: string; program_id: string; amount_paid: number; purchase_date: string }[] = [];
 
     for (const order of orders) {
       // Try email first, then wp_user_id
@@ -565,7 +573,6 @@ Deno.serve(async (req) => {
       let matchedPrograms: { id: string; title: string }[] = [];
 
       if (order.productIds.length > 0) {
-        // Direct product ID match
         for (const pid of order.productIds) {
           const prog = wcIdToProgram.get(pid);
           if (prog) matchedPrograms.push({ id: prog.id, title: prog.title });
@@ -595,37 +602,37 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        if (!dryRun) {
-          const purchaseDate = safeDateToISO(order.orderDate) || new Date().toISOString();
+        const purchaseDate = safeDateToISO(order.orderDate) || new Date().toISOString();
+        const amountPaid =
+          matchedPrograms.length === 1
+            ? order.orderTotal
+            : wcIdToProgram.get(
+                order.productIds.find(
+                  (pid) => wcIdToProgram.get(pid)?.id === prog.id
+                ) || 0
+              )?.price || 0;
 
-          const amountPaid =
-            matchedPrograms.length === 1
-              ? order.orderTotal
-              : wcIdToProgram.get(
-                  order.productIds.find(
-                    (pid) => wcIdToProgram.get(pid)?.id === prog.id
-                  ) || 0
-                )?.price || 0;
-
-          const { error } = await supabase.from("purchases").insert({
-            user_id: userId,
-            program_id: prog.id,
-            amount_paid: amountPaid,
-            purchase_date: purchaseDate,
-          });
-
-          if (error) {
-            results.errors.push({
-              orderId: order.orderId,
-              email: order.email,
-              error: error.message,
-            });
-            continue;
-          }
-        }
+        toInsert.push({
+          user_id: userId,
+          program_id: prog.id,
+          amount_paid: amountPaid,
+          purchase_date: purchaseDate,
+        });
 
         existingSet.add(key);
         results.created++;
+      }
+    }
+
+    // Batch insert in chunks of 500
+    if (!dryRun && toInsert.length > 0) {
+      const BATCH = 500;
+      for (let i = 0; i < toInsert.length; i += BATCH) {
+        const chunk = toInsert.slice(i, i + BATCH);
+        const { error } = await supabase.from("purchases").insert(chunk);
+        if (error) {
+          results.errors.push({ orderId: 0, email: `batch ${i}-${i + chunk.length}`, error: error.message });
+        }
       }
     }
 
