@@ -88,9 +88,7 @@ const AffiliateApply = () => {
     }
   };
 
-  // PDF agreement URL – replace with your actual agreement PDF
-  const agreementPdfUrl =
-    "https://xn--mentaltrning-ncb.nu/wp-content/uploads/2024/05/Unestal-Education-AB_avtal-affiliate.pdf";
+  const agreementPdfUrl = "/Unestal-Education-AB_avtal-affiliate.pdf";
 
   return (
     <div className="min-h-screen bg-background">
