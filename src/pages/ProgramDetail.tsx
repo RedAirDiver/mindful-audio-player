@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
@@ -11,16 +11,11 @@ import {
   ArrowLeft, 
   Headphones, 
   Clock, 
-  Star, 
   Play, 
   Pause, 
   Lock,
   Check,
   ShoppingCart,
-  Volume2,
-  VolumeX,
-  SkipBack,
-  SkipForward,
   Download,
   CloudOff,
   Wifi,
@@ -68,7 +63,7 @@ interface AudioFile {
 const ProgramDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
-  const audioRef = useRef<HTMLAudioElement>(null);
+  
   const { 
     savedTracks, 
     savingTrack, 
@@ -82,14 +77,10 @@ const ProgramDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isPurchased, setIsPurchased] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(80);
-  const [isMuted, setIsMuted] = useState(false);
   const [previewTrack, setPreviewTrack] = useState<string | null>(null);
   const [previewProgress, setPreviewProgress] = useState(0);
-  const [playingOffline, setPlayingOffline] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
 
@@ -165,83 +156,73 @@ const ProgramDetail = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Handle audio time update
+  // Load audio URL when track index changes
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => setDuration(audio.duration);
-    const handleEnded = () => {
-      // Auto-play next track if available
-      if (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1) {
-        playTrack(currentTrackIndex + 1);
-      } else {
-        setIsPlaying(false);
-        setCurrentTrackIndex(null);
+    const loadAudioUrl = async () => {
+      if (currentTrackIndex === null) {
+        setCurrentAudioUrl(null);
+        return;
       }
+      const track = tracks[currentTrackIndex];
+      if (!track || !track.file_path) return;
+
+      // Check offline first
+      if (savedTracks.has(track.id)) {
+        const offlineUrl = await getDecryptedAudioUrl(track.id);
+        if (offlineUrl) {
+          setCurrentAudioUrl(offlineUrl);
+          return;
+        }
+      }
+
+      // Online
+      if (isOnline) {
+        try {
+          const { data, error } = await supabase.storage
+            .from("audio-files")
+            .createSignedUrl(track.file_path, 3600);
+          if (!error && data?.signedUrl) {
+            setCurrentAudioUrl(data.signedUrl);
+            return;
+          }
+        } catch (err) {
+          console.error("Error getting audio URL:", err);
+        }
+      }
+
+      setCurrentAudioUrl(null);
     };
 
-    audio.addEventListener('timeupdate', updateTime);
-    audio.addEventListener('loadedmetadata', updateDuration);
-    audio.addEventListener('ended', handleEnded);
+    loadAudioUrl();
 
     return () => {
-      audio.removeEventListener('timeupdate', updateTime);
-      audio.removeEventListener('loadedmetadata', updateDuration);
-      audio.removeEventListener('ended', handleEnded);
+      if (currentAudioUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(currentAudioUrl);
+      }
     };
-  }, [currentTrackIndex, tracks.length]);
+  }, [currentTrackIndex, tracks, savedTracks, isOnline, getDecryptedAudioUrl]);
 
-  // Play a purchased track (with offline support)
-  const playTrack = async (index: number) => {
+  // Play a purchased track
+  const playTrack = (index: number) => {
     const track = tracks[index];
     if (!track || !isPurchased || !track.file_path) return;
 
-    try {
-      let audioUrl: string | null = null;
+    if (!isOnline && !savedTracks.has(track.id)) {
+      toast.error("Du är offline", {
+        description: "Spara spåret för offline-lyssning först"
+      });
+      return;
+    }
 
-      // Check if track is saved offline first
-      if (savedTracks.has(track.id)) {
-        audioUrl = await getDecryptedAudioUrl(track.id);
-        if (audioUrl) {
-          setPlayingOffline(true);
-        }
-      }
+    setCurrentTrackIndex(index);
+    setPreviewTrack(null);
+  };
 
-      // If not offline or decryption failed, try online
-      if (!audioUrl) {
-        if (!isOnline) {
-          toast.error("Du är offline", {
-            description: "Spara spåret för offline-lyssning först"
-          });
-          return;
-        }
-
-        const { data, error } = await supabase.storage
-          .from("audio-files")
-          .createSignedUrl(track.file_path, 3600);
-
-        if (error) throw error;
-        audioUrl = data?.signedUrl || null;
-        setPlayingOffline(false);
-      }
-
-      if (audioUrl && audioRef.current) {
-        // Revoke previous blob URL if exists
-        if (audioRef.current.src.startsWith('blob:')) {
-          URL.revokeObjectURL(audioRef.current.src);
-        }
-        audioRef.current.src = audioUrl;
-        audioRef.current.volume = volume / 100;
-        await audioRef.current.play();
-        setCurrentTrackIndex(index);
-        setIsPlaying(true);
-        setPreviewTrack(null);
-      }
-    } catch (error: any) {
-      console.error('Error playing track:', error);
-      toast.error("Kunde inte spela upp spåret");
+  const skipTrack = (direction: 'prev' | 'next') => {
+    if (currentTrackIndex === null) return;
+    const newIndex = direction === 'next' ? currentTrackIndex + 1 : currentTrackIndex - 1;
+    if (newIndex >= 0 && newIndex < tracks.length) {
+      playTrack(newIndex);
     }
   };
 
@@ -249,7 +230,6 @@ const ProgramDetail = () => {
   const handleSaveOffline = async (e: React.MouseEvent, track: AudioFile) => {
     e.stopPropagation();
     if (!track.file_path) return;
-    
     await saveTrackOffline(track.id, track.file_path, {
       title: track.title,
       duration: track.duration_seconds || 0
@@ -262,62 +242,11 @@ const ProgramDetail = () => {
     await removeTrackOffline(trackId);
   };
 
-  const togglePlayPause = () => {
-    if (!audioRef.current) return;
-    
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else if (currentTrackIndex !== null) {
-      audioRef.current.play();
-      setIsPlaying(true);
-    } else if (tracks.length > 0 && isPurchased) {
-      playTrack(0);
-    }
-  };
-
-  const handleSeek = (value: number[]) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = value[0];
-      setCurrentTime(value[0]);
-    }
-  };
-
-  const handleVolumeChange = (value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume / 100;
-    }
-    setIsMuted(newVolume === 0);
-  };
-
-  const toggleMute = () => {
-    if (isMuted) {
-      setVolume(80);
-      if (audioRef.current) audioRef.current.volume = 0.8;
-    } else {
-      setVolume(0);
-      if (audioRef.current) audioRef.current.volume = 0;
-    }
-    setIsMuted(!isMuted);
-  };
-
-  const skipTrack = (direction: 'prev' | 'next') => {
-    if (currentTrackIndex === null) return;
-    const newIndex = direction === 'next' ? currentTrackIndex + 1 : currentTrackIndex - 1;
-    if (newIndex >= 0 && newIndex < tracks.length) {
-      playTrack(newIndex);
-    }
-  };
-
   // Preview playback - actual audio for first 30 seconds
   const togglePreview = async (trackId: string) => {
-    // Stop any real playback first
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setCurrentTrackIndex(null);
-    }
+    // Stop purchased playback
+    setCurrentTrackIndex(null);
+    setCurrentAudioUrl(null);
     
     // If same track is playing, stop it
     if (previewTrack === trackId && isPlaying) {
@@ -351,7 +280,7 @@ const ProgramDetail = () => {
 
       if (previewAudioRef.current) {
         previewAudioRef.current.src = data.signedUrl;
-        previewAudioRef.current.volume = volume / 100;
+        previewAudioRef.current.volume = 0.8;
         await previewAudioRef.current.play();
         
         setPreviewTrack(trackId);
@@ -557,118 +486,22 @@ const ProgramDetail = () => {
 
               {/* Audio Player for purchased programs */}
               {isPurchased && tracks.length > 0 && (
-                <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
-                  <audio ref={audioRef} className="hidden" />
-                  <audio ref={previewAudioRef} className="hidden" />
-                  
-                  {/* Online/Offline Status */}
-                  <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full w-fit ${
-                    isOnline 
-                      ? 'bg-primary/10 text-primary' 
-                      : 'bg-accent/10 text-accent'
-                  }`}>
-                    {isOnline ? (
-                      <>
-                        <Wifi className="w-3 h-3" />
-                        <span>Online</span>
-                      </>
-                    ) : (
-                      <>
-                        <WifiOff className="w-3 h-3" />
-                        <span>Offline-läge</span>
-                      </>
-                    )}
-                    {playingOffline && currentTrackIndex !== null && (
-                      <span className="ml-1">• Spelar från cache</span>
-                    )}
-                  </div>
-                  
-                  {/* Current Track Info */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Headphones className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground truncate">
-                        {currentTrackIndex !== null ? tracks[currentTrackIndex]?.title : 'Välj ett spår'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {currentTrackIndex !== null ? `Spår ${currentTrackIndex + 1} av ${tracks.length}` : program.title}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <Slider
-                      value={[currentTime]}
-                      max={duration || 100}
-                      step={1}
-                      onValueChange={handleSeek}
-                      className="cursor-pointer"
-                      disabled={currentTrackIndex === null}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{formatDuration(currentTime)}</span>
-                      <span>{formatDuration(duration)}</span>
-                    </div>
-                  </div>
-
-                  {/* Controls */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 w-28">
-                      <button 
-                        onClick={toggleMute} 
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {isMuted || volume === 0 ? (
-                          <VolumeX className="w-5 h-5" />
-                        ) : (
-                          <Volume2 className="w-5 h-5" />
-                        )}
-                      </button>
-                      <Slider
-                        value={[volume]}
-                        max={100}
-                        step={1}
-                        onValueChange={handleVolumeChange}
-                        className="cursor-pointer flex-1"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => skipTrack('prev')}
-                        disabled={currentTrackIndex === null || currentTrackIndex === 0}
-                      >
-                        <SkipBack className="w-5 h-5" />
-                      </Button>
-                      <Button 
-                        size="lg"
-                        className="w-12 h-12 rounded-full"
-                        onClick={togglePlayPause}
-                      >
-                        {isPlaying && currentTrackIndex !== null ? (
-                          <Pause className="w-5 h-5" />
-                        ) : (
-                          <Play className="w-5 h-5 ml-0.5" />
-                        )}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => skipTrack('next')}
-                        disabled={currentTrackIndex === null || currentTrackIndex === tracks.length - 1}
-                      >
-                        <SkipForward className="w-5 h-5" />
-                      </Button>
-                    </div>
-
-                    <div className="w-28" />
-                  </div>
-                </div>
+                <AudioPlayer
+                  title={currentTrackIndex !== null ? tracks[currentTrackIndex]?.title : 'Välj ett spår'}
+                  subtitle={currentTrackIndex !== null ? `Spår ${currentTrackIndex + 1} av ${tracks.length}` : program.title}
+                  coverImage={program.image_url || undefined}
+                  duration={currentTrackIndex !== null ? (tracks[currentTrackIndex]?.duration_seconds || 180) : 180}
+                  audioUrl={currentAudioUrl || undefined}
+                  onSkipPrev={() => skipTrack('prev')}
+                  onSkipNext={() => skipTrack('next')}
+                  canSkipPrev={currentTrackIndex !== null && currentTrackIndex > 0}
+                  canSkipNext={currentTrackIndex !== null && currentTrackIndex < tracks.length - 1}
+                  onEnded={() => {
+                    if (currentTrackIndex !== null && currentTrackIndex < tracks.length - 1) {
+                      playTrack(currentTrackIndex + 1);
+                    }
+                  }}
+                />
               )}
 
               {/* Hidden audio element for preview playback (non-purchased users) */}
