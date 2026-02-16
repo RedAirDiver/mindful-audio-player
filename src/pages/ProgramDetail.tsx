@@ -524,9 +524,10 @@ const ProgramDetail = () => {
                 <h1 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
                   {program.title}
                 </h1>
-                <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
-                  {stripHtml(program.description || program.short_description || "")}
-                </p>
+                <div 
+                  className="mt-4 text-lg text-muted-foreground leading-relaxed prose prose-lg max-w-none"
+                  dangerouslySetInnerHTML={{ __html: program.description || program.short_description || "" }}
+                />
               </div>
 
               {/* Price & Purchase */}
