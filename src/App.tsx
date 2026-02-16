@@ -25,6 +25,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminImportUsers from "./pages/admin/AdminImportUsers";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
+import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 
 const App = () => {
   // Create queryClient inside component with useState to survive HMR
@@ -87,6 +88,7 @@ const App = () => {
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="import" element={<AdminImportUsers />} />
                 <Route path="affiliates" element={<AdminAffiliates />} />
+                <Route path="rabattkoder" element={<AdminDiscountCodes />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
