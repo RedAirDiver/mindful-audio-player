@@ -78,7 +78,7 @@ const Products = () => {
 
   // Filter out meta-categories like "Populära Produkter" from the filter UI
   const displayCategories = categories.filter(
-    (c) => c.name !== "Populära Produkter"
+    (c) => c.name !== "Populära Produkter" && c.name !== "Dolda"
   );
 
   const filteredPrograms = programs.filter((p) => {
