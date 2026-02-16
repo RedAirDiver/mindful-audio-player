@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,11 +48,13 @@ const Dashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { savedTracks, savingTrack, saveTrackOffline, removeTrackOffline, getDecryptedAudioUrl, isOnline } = useOfflineAudio();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [activeView, setActiveView] = useState<'programs' | 'profile'>('programs');
   const [purchasedPrograms, setPurchasedPrograms] = useState<PurchasedProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<PurchasedProgram | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<AudioFile | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
+  const [mobileShowPlayer, setMobileShowPlayer] = useState(false);
   const [profile, setProfile] = useState<Profile>({ name: '', email: '', phone: '', company: '', address_line1: '', address_postcode: '', address_city: '', address_country: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -390,168 +393,179 @@ const Dashboard = () => {
           {/* Programs View */}
           {activeView === 'programs' && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Programs List */}
-              <div className="lg:col-span-1 space-y-4">
-                <h2 className="font-semibold text-foreground mb-4">Dina produkter</h2>
-                {purchasedPrograms.map((program) => (
-                  <button
-                    key={program.id}
-                    onClick={() => {
-                      setSelectedProgram(program);
-                      if (program.tracks.length > 0) {
-                        setSelectedTrack(program.tracks[0]);
-                      }
-                    }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${
-                      selectedProgram?.id === program.id 
-                        ? 'bg-primary/10 ring-2 ring-primary' 
-                        : 'bg-card hover:bg-muted'
-                    }`}
-                  >
-                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-                      {program.image_url ? (
-                        <img src={program.image_url} alt={program.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Headphones className="w-6 h-6 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-foreground truncate">{program.title}</h3>
-                      <p className="text-sm text-muted-foreground">{program.tracks.length} spår</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                  </button>
-                ))}
-              </div>
-
-              {/* Player & Tracks */}
-              <div className="lg:col-span-2 space-y-6">
-                {selectedProgram && selectedTrack && (
-                  <>
-                    <AudioPlayer 
-                      title={selectedTrack.title}
-                      coverImage={selectedProgram.image_url || undefined}
-                      duration={selectedTrack.duration_seconds || 180}
-                      audioUrl={currentAudioUrl || undefined}
-                    />
-
-                    <div className="bg-card rounded-2xl shadow-elegant p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-display text-lg font-semibold text-foreground">
-                          {selectedProgram.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Download className="w-4 h-4" />
-                          <span>Spara för offline</span>
-                        </div>
+              {/* Programs List - hidden on mobile when viewing player */}
+              {(!isMobile || !mobileShowPlayer) && (
+                <div className="lg:col-span-1 space-y-4">
+                  <h2 className="font-semibold text-foreground mb-4">Dina produkter</h2>
+                  {purchasedPrograms.map((program) => (
+                    <button
+                      key={program.id}
+                      onClick={() => {
+                        setSelectedProgram(program);
+                        if (program.tracks.length > 0) {
+                          setSelectedTrack(program.tracks[0]);
+                        }
+                        if (isMobile) setMobileShowPlayer(true);
+                      }}
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${
+                        selectedProgram?.id === program.id 
+                          ? 'bg-primary/10 ring-2 ring-primary' 
+                          : 'bg-card hover:bg-muted'
+                      }`}
+                    >
+                      <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                        {program.image_url ? (
+                          <img src={program.image_url} alt={program.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Headphones className="w-6 h-6 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
-                      
-                      <div className="space-y-2">
-                        {selectedProgram.tracks.map((track, index) => {
-                          const isSaved = savedTracks.has(track.id);
-                          const isSaving = savingTrack === track.id;
-                          const canPlay = isOnline || isSaved;
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-foreground truncate">{program.title}</h3>
+                        <p className="text-sm text-muted-foreground">{program.tracks.length} spår</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                          return (
-                            <div
-                              key={track.id}
-                              className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
-                                canPlay ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
-                              } ${
-                                selectedTrack.id === track.id 
-                                  ? 'bg-primary/10' 
-                                  : canPlay ? 'hover:bg-muted' : ''
-                              }`}
-                              onClick={() => canPlay && setSelectedTrack(track)}
-                            >
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                                selectedTrack.id === track.id 
-                                  ? 'bg-primary text-primary-foreground' 
-                                  : 'bg-muted text-muted-foreground'
-                              }`}>
-                                {selectedTrack.id === track.id ? (
-                                  <Headphones className="w-4 h-4" />
-                                ) : (
-                                  index + 1
-                                )}
-                              </div>
+              {/* Player & Tracks - on mobile, shown as full view with back button */}
+              {(!isMobile || mobileShowPlayer) && (
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Mobile back button */}
+                  {isMobile && mobileShowPlayer && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setMobileShowPlayer(false)}
+                      className="mb-2"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Tillbaka till produkter
+                    </Button>
+                  )}
 
-                              <div className="flex-1 min-w-0">
-                                <p className={`font-medium truncate ${
-                                  selectedTrack.id === track.id ? 'text-primary' : 'text-foreground'
+                  {selectedProgram && selectedTrack && (
+                    <>
+                      <AudioPlayer 
+                        title={selectedTrack.title}
+                        coverImage={selectedProgram.image_url || undefined}
+                        duration={selectedTrack.duration_seconds || 180}
+                        audioUrl={currentAudioUrl || undefined}
+                      />
+
+                      <div className="bg-card rounded-2xl shadow-elegant p-4 md:p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-display text-lg font-semibold text-foreground">
+                            {selectedProgram.title}
+                          </h3>
+                          <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                            <Download className="w-4 h-4" />
+                            <span>Spara för offline</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          {selectedProgram.tracks.map((track, index) => {
+                            const isSaved = savedTracks.has(track.id);
+                            const isSaving = savingTrack === track.id;
+                            const canPlay = isOnline || isSaved;
+
+                            return (
+                              <div
+                                key={track.id}
+                                className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                                  canPlay ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                                } ${
+                                  selectedTrack.id === track.id 
+                                    ? 'bg-primary/10' 
+                                    : canPlay ? 'hover:bg-muted' : ''
+                                }`}
+                                onClick={() => canPlay && setSelectedTrack(track)}
+                              >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 ${
+                                  selectedTrack.id === track.id 
+                                    ? 'bg-primary text-primary-foreground' 
+                                    : 'bg-muted text-muted-foreground'
                                 }`}>
-                                  {track.title}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatDuration(track.duration_seconds)}
-                                </p>
-                              </div>
+                                  {selectedTrack.id === track.id ? (
+                                    <Headphones className="w-4 h-4" />
+                                  ) : (
+                                    index + 1
+                                  )}
+                                </div>
 
-                              <div className="flex items-center gap-2">
-                                {isSaved ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1 text-sm text-primary">
-                                      <WifiOff className="w-4 h-4" />
-                                      <span className="hidden sm:inline">Sparad</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`font-medium truncate text-sm ${
+                                    selectedTrack.id === track.id ? 'text-primary' : 'text-foreground'
+                                  }`}>
+                                    {track.title}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatDuration(track.duration_seconds)}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  {isSaved ? (
+                                    <div className="flex items-center gap-1">
+                                      <div className="flex items-center gap-1 text-xs text-primary">
+                                        <WifiOff className="w-3.5 h-3.5" />
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleRemoveOffline(track.id);
+                                        }}
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
                                     </div>
+                                  ) : (
                                     <Button
                                       variant="ghost"
-                                      size="sm"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleRemoveOffline(track.id);
+                                        handleSaveOffline(track);
                                       }}
-                                      className="text-muted-foreground hover:text-destructive"
+                                      disabled={isSaving || !isOnline}
                                     >
-                                      <Trash2 className="w-4 h-4" />
+                                      {isSaving ? (
+                                        <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <Download className="w-3.5 h-3.5" />
+                                      )}
                                     </Button>
-                                  </div>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleSaveOffline(track);
-                                    }}
-                                    disabled={isSaving || !isOnline}
-                                    className="text-muted-foreground"
-                                  >
-                                    {isSaving ? (
-                                      <span className="flex items-center gap-1">
-                                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                        <span className="hidden sm:inline">Sparar...</span>
-                                      </span>
-                                    ) : (
-                                      <span className="flex items-center gap-1">
-                                        <Download className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Spara</span>
-                                      </span>
-                                    )}
-                                  </Button>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  </>
-                )}
+                    </>
+                  )}
 
-                <div className="bg-muted/50 rounded-xl p-4 flex items-start gap-3">
-                  <Wifi className="w-5 h-5 text-primary mt-0.5" />
-                  <div className="text-sm">
-                    <p className="font-medium text-foreground">Om offline-läge</p>
-                    <p className="text-muted-foreground">
-                      Sparade spår krypteras och lagras lokalt på din enhet. Du kan lyssna på dem utan internet, 
-                      men filerna kan inte laddas ner eller kopieras till andra enheter.
-                    </p>
+                  <div className="bg-muted/50 rounded-xl p-4 flex items-start gap-3">
+                    <Wifi className="w-5 h-5 text-primary mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-foreground">Om offline-läge</p>
+                      <p className="text-muted-foreground">
+                        Sparade spår krypteras och lagras lokalt på din enhet. Du kan lyssna på dem utan internet, 
+                        men filerna kan inte laddas ner eller kopieras till andra enheter.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
