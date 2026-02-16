@@ -266,6 +266,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean
+          pdf_file_path: string | null
           price: number
           short_description: string | null
           sku: string | null
@@ -283,6 +284,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          pdf_file_path?: string | null
           price?: number
           short_description?: string | null
           sku?: string | null
@@ -300,6 +302,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean
+          pdf_file_path?: string | null
           price?: number
           short_description?: string | null
           sku?: string | null
