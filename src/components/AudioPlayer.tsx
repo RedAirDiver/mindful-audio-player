@@ -9,6 +9,12 @@ interface AudioPlayerProps {
   audioUrl?: string;
   coverImage?: string;
   duration?: number;
+  subtitle?: string;
+  onSkipPrev?: () => void;
+  onSkipNext?: () => void;
+  canSkipPrev?: boolean;
+  canSkipNext?: boolean;
+  onEnded?: () => void;
 }
 
 const BAR_COUNT = 24;
@@ -18,7 +24,13 @@ const AudioPlayer = ({
   artist = "Mentalträning", 
   audioUrl,
   coverImage = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400&auto=format&fit=crop",
-  duration: initialDuration = 180
+  duration: initialDuration = 180,
+  subtitle,
+  onSkipPrev,
+  onSkipNext,
+  canSkipPrev = true,
+  canSkipNext = true,
+  onEnded,
 }: AudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -31,6 +43,13 @@ const AudioPlayer = ({
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animFrameRef = useRef<number>(0);
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Reset state when audioUrl changes (new track)
+  useEffect(() => {
+    setCurrentTime(0);
+    setIsPlaying(false);
+    setBars(Array(BAR_COUNT).fill(20));
+  }, [audioUrl]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -111,21 +130,22 @@ const AudioPlayer = ({
         setDuration(audio.duration);
       }
     };
-    const onEnded = () => {
+    const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      onEnded?.();
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
-    audio.addEventListener("ended", onEnded);
+    audio.addEventListener("ended", handleEnded);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
-      audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("ended", handleEnded);
     };
-  }, [audioUrl]);
+  }, [audioUrl, onEnded]);
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -184,7 +204,7 @@ const AudioPlayer = ({
         </div>
         <div className="min-w-0">
           <h4 className="font-display font-semibold text-foreground truncate">{title}</h4>
-          <p className="text-sm text-muted-foreground">{artist}</p>
+          <p className="text-sm text-muted-foreground">{subtitle || artist}</p>
         </div>
       </div>
 
@@ -225,7 +245,13 @@ const AudioPlayer = ({
 
         {/* Playback Controls */}
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-muted-foreground hover:text-foreground"
+            onClick={onSkipPrev}
+            disabled={!canSkipPrev}
+          >
             <SkipBack className="w-5 h-5" />
           </Button>
           <Button 
@@ -240,7 +266,13 @@ const AudioPlayer = ({
               <Play className="w-6 h-6 ml-0.5" />
             )}
           </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-muted-foreground hover:text-foreground"
+            onClick={onSkipNext}
+            disabled={!canSkipNext}
+          >
             <SkipForward className="w-5 h-5" />
           </Button>
         </div>
