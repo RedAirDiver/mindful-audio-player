@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
@@ -10,6 +10,8 @@ interface AudioPlayerProps {
   coverImage?: string;
   duration?: number;
 }
+
+const BAR_COUNT = 24;
 
 const AudioPlayer = ({ 
   title, 
@@ -23,7 +25,12 @@ const AudioPlayer = ({
   const [duration, setDuration] = useState(initialDuration);
   const [volume, setVolume] = useState(80);
   const [isMuted, setIsMuted] = useState(false);
+  const [bars, setBars] = useState<number[]>(() => Array(BAR_COUNT).fill(20));
   const audioRef = useRef<HTMLAudioElement>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const animFrameRef = useRef<number>(0);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -31,6 +38,50 @@ const AudioPlayer = ({
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Set up Web Audio API analyser
+  const setupAnalyser = useCallback(() => {
+    if (!audioRef.current || sourceRef.current) return;
+    try {
+      const ctx = new AudioContext();
+      audioContextRef.current = ctx;
+      const source = ctx.createMediaElementSource(audioRef.current);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
+      sourceRef.current = source;
+      analyserRef.current = analyser;
+    } catch {
+      // Web Audio not supported
+    }
+  }, []);
+
+  // Animate bars from analyser data
+  useEffect(() => {
+    if (!isPlaying || !analyserRef.current) {
+      if (!isPlaying) setBars(Array(BAR_COUNT).fill(20));
+      return;
+    }
+
+    const analyser = analyserRef.current;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const tick = () => {
+      analyser.getByteFrequencyData(dataArray);
+      const step = Math.max(1, Math.floor(dataArray.length / BAR_COUNT));
+      const newBars: number[] = [];
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const val = dataArray[Math.min(i * step, dataArray.length - 1)] || 0;
+        newBars.push(Math.max(15, (val / 255) * 100));
+      }
+      setBars(newBars);
+      animFrameRef.current = requestAnimationFrame(tick);
+    };
+
+    animFrameRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animFrameRef.current);
+  }, [isPlaying]);
 
   // Demo: Progress simulation when no audio URL
   useEffect(() => {
@@ -49,11 +100,42 @@ const AudioPlayer = ({
     return () => clearInterval(interval);
   }, [isPlaying, duration, audioUrl]);
 
+  // Sync audio element events to state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onLoadedMetadata = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    const onEnded = () => {
+      setIsPlaying(false);
+      setCurrentTime(0);
+    };
+
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("loadedmetadata", onLoadedMetadata);
+    audio.addEventListener("ended", onEnded);
+
+    return () => {
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+      audio.removeEventListener("ended", onEnded);
+    };
+  }, [audioUrl]);
+
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
+        setupAnalyser();
+        if (audioContextRef.current?.state === "suspended") {
+          audioContextRef.current.resume();
+        }
         audioRef.current.play();
       }
     }
@@ -93,7 +175,7 @@ const AudioPlayer = ({
 
   return (
     <div className="bg-card rounded-2xl shadow-elegant p-6 space-y-6">
-      {audioUrl && <audio ref={audioRef} src={audioUrl} />}
+      {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />}
       
       {/* Track Info */}
       <div className="flex items-center gap-4">
@@ -167,18 +249,13 @@ const AudioPlayer = ({
         <div className="w-32" />
       </div>
 
-      {/* Audio Visualizer (decorative) */}
+      {/* Audio Visualizer */}
       <div className="flex items-end justify-center gap-1 h-8">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {bars.map((height, i) => (
           <div
             key={i}
-            className={`w-1 bg-primary/30 rounded-full transition-all duration-150 ${
-              isPlaying ? 'animate-wave' : ''
-            }`}
-            style={{
-              height: isPlaying ? `${20 + Math.random() * 60}%` : '20%',
-              animationDelay: `${i * 0.05}s`,
-            }}
+            className="w-1 bg-primary/40 rounded-full transition-all duration-75"
+            style={{ height: `${height}%` }}
           />
         ))}
       </div>
