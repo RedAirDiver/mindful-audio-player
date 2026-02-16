@@ -113,13 +113,18 @@ const ProgramCard = ({
 
         {/* Price & CTA */}
         <div className="flex items-center justify-between pt-2 mt-auto">
-          <div className="text-2xl font-semibold text-foreground">
-            {isFree ? (
-              <span className="text-accent">Gratis</span>
-            ) : (
-              <>
-                {price} <span className="text-base font-normal text-muted-foreground">kr</span>
-              </>
+          <div>
+            <div className="text-2xl font-semibold text-foreground">
+              {isFree ? (
+                <span className="text-accent">Gratis</span>
+              ) : (
+                <>
+                  {price} <span className="text-base font-normal text-muted-foreground">kr</span>
+                </>
+              )}
+            </div>
+            {!isFree && (
+              <p className="text-xs text-muted-foreground">Inkl. 6% moms</p>
             )}
           </div>
           <Button size="sm" asChild>
