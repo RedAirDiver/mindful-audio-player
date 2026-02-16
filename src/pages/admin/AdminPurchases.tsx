@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -19,14 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ShoppingCart, Upload } from "lucide-react";
+import { Search, ShoppingCart, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 const AdminPurchases = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
   const [importing, setImporting] = useState(false);
   const [importPreview, setImportPreview] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
   const fileRef = useRef<HTMLInputElement>(null);
   const pendingFileRef = useRef<File | null>(null);
   const queryClient = useQueryClient();
@@ -71,20 +75,42 @@ const AdminPurchases = () => {
     },
   });
 
-  const filteredPurchases = purchases?.filter((p) => {
+  const filteredPurchases = useMemo(() => purchases?.filter((p) => {
     const matchesSearch =
+      !searchQuery ||
       (p.profiles as any)?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.profiles as any)?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.programs as any)?.title?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesProgram =
       filterProgramId === "all" || p.program_id === filterProgramId;
     return matchesSearch && matchesProgram;
-  });
+  }) || [], [purchases, searchQuery, filterProgramId]);
 
-  const totalRevenue = filteredPurchases?.reduce(
+  const totalRevenue = useMemo(() => filteredPurchases.reduce(
     (sum, p) => sum + Number(p.amount_paid),
     0
-  ) || 0;
+  ), [filteredPurchases]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredPurchases.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedPurchases = filteredPurchases.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize
+  );
+
+  // Reset page when filters change
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+  };
+  const handleFilterChange = (val: string) => {
+    setFilterProgramId(val);
+    setCurrentPage(1);
+  };
+  const handlePageSizeChange = (val: string) => {
+    setPageSize(Number(val));
+    setCurrentPage(1);
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -229,7 +255,7 @@ const AdminPurchases = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{filteredPurchases?.length || 0}</div>
+            <div className="text-3xl font-bold">{filteredPurchases.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -250,7 +276,7 @@ const AdminPurchases = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
-              {filteredPurchases?.length
+              {filteredPurchases.length
                 ? Math.round(totalRevenue / filteredPurchases.length).toLocaleString("sv-SE")
                 : 0}{" "}
               kr
@@ -267,11 +293,11 @@ const AdminPurchases = () => {
               <Input
                 placeholder="Sök på kund eller produkt..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Select value={filterProgramId} onValueChange={setFilterProgramId}>
+            <Select value={filterProgramId} onValueChange={handleFilterChange}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filtrera produkt" />
               </SelectTrigger>
@@ -291,46 +317,89 @@ const AdminPurchases = () => {
             <div className="flex justify-center py-8">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : filteredPurchases && filteredPurchases.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Kund</TableHead>
-                  <TableHead>Produkt</TableHead>
-                  <TableHead className="text-right">Belopp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPurchases.map((purchase) => (
-                  <TableRow key={purchase.id}>
-                    <TableCell>
-                      {new Date(purchase.purchase_date).toLocaleDateString("sv-SE", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {(purchase.profiles as any)?.name || "Okänt namn"}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {(purchase.profiles as any)?.email || "-"}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{(purchase.programs as any)?.title || "-"}</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {Number(purchase.amount_paid).toLocaleString("sv-SE")} kr
-                    </TableCell>
+          ) : paginatedPurchases.length > 0 ? (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Kund</TableHead>
+                    <TableHead>Produkt</TableHead>
+                    <TableHead className="text-right">Belopp</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedPurchases.map((purchase) => (
+                    <TableRow key={purchase.id}>
+                      <TableCell>
+                        {new Date(purchase.purchase_date).toLocaleDateString("sv-SE", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">
+                            {(purchase.profiles as any)?.name || "Okänt namn"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {(purchase.profiles as any)?.email || "-"}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>{(purchase.programs as any)?.title || "-"}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {Number(purchase.amount_paid).toLocaleString("sv-SE")} kr
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination controls */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Visar {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, filteredPurchases.length)} av {filteredPurchases.length}</span>
+                  <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-[80px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <SelectItem key={size} value={String(size)}>
+                          {size}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span>per sida</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm px-3">
+                    Sida {safePage} av {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <ShoppingCart className="h-12 w-12 mb-4 opacity-50" />
