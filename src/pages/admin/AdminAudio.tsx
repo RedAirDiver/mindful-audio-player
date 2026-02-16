@@ -323,7 +323,7 @@ const AdminAudio = () => {
 
       setImportProgress("");
       if (result.total_in_xml === 0) {
-        toast.warning(result.message || "Inga ljudfiler hittades i XML-filen.");
+        toast.warning(result.message || "Inga program hittades i XML-filen.");
       } else {
         toast.success(
           `Import klar! ${result.files_created ?? 0} nya poster, ${result.durations_updated ?? 0} längder uppdaterade, ${result.files_downloaded ?? 0} filer nedladdade, ${result.failed ?? 0} misslyckade av ${result.total_in_xml ?? 0} totalt.${result.unmatched ? ` ${result.unmatched} kunde inte kopplas till program.` : ''}`
@@ -345,9 +345,9 @@ const AdminAudio = () => {
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Ljudfiler</h1>
+          <h1 className="text-3xl font-bold text-foreground">Program</h1>
           <p className="text-muted-foreground mt-1">
-            Hantera ljudfiler för alla program
+            Hantera program för alla produkter
           </p>
         </div>
         <div className="flex gap-2">
@@ -525,7 +525,7 @@ const AdminAudio = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Sök ljudfiler..."
+                placeholder="Sök program..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -545,7 +545,7 @@ const AdminAudio = () => {
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              {filteredAudioFiles?.length || 0} ljudfiler
+              {filteredAudioFiles?.length || 0} program
             </p>
           </div>
         </CardHeader>
