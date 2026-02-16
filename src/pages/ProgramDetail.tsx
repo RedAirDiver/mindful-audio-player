@@ -510,11 +510,6 @@ const ProgramDetail = () => {
                     <span>{program.duration_text}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 text-accent fill-accent" />
-                  ))}
-                </div>
               </div>
             </div>
 
