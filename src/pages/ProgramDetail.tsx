@@ -457,7 +457,7 @@ const ProgramDetail = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-24 pb-16">
+        <main className="pt-28 md:pt-36 pb-16">
           <div className="container mx-auto px-4 text-center py-16">
             <h1 className="font-display text-2xl font-semibold text-foreground mb-4">
               Produkten hittades inte
@@ -476,7 +476,7 @@ const ProgramDetail = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="pt-24 pb-16">
+      <main className="pt-28 md:pt-36 pb-16">
         <div className="container mx-auto px-4">
           {/* Back Link */}
           <Link 
