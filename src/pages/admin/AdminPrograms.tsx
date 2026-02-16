@@ -38,7 +38,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePlus, Loader2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
@@ -467,15 +467,65 @@ const AdminPrograms = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="image_url">Bild-URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  value={formData.image_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, image_url: e.target.value })
-                  }
-                />
+                <Label>Produktbild</Label>
+                {formData.image_url && (
+                  <div className="mb-2 relative w-32 h-32">
+                    <img
+                      src={formData.image_url}
+                      alt="Produktbild"
+                      className="w-full h-full object-cover rounded-md border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                      onClick={() => setFormData({ ...formData, image_url: "" })}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="product-image-upload"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const btn = e.target.parentElement?.querySelector('button');
+                      if (btn) btn.setAttribute('disabled', 'true');
+                      try {
+                        const ext = file.name.split('.').pop();
+                        const path = `${crypto.randomUUID()}.${ext}`;
+                        const { error } = await supabase.storage
+                          .from('product-images')
+                          .upload(path, file);
+                        if (error) throw error;
+                        const { data: urlData } = supabase.storage
+                          .from('product-images')
+                          .getPublicUrl(path);
+                        setFormData({ ...formData, image_url: urlData.publicUrl });
+                        toast.success("Bild uppladdad");
+                      } catch (err: any) {
+                        toast.error("Kunde inte ladda upp bild: " + err.message);
+                      } finally {
+                        if (btn) btn.removeAttribute('disabled');
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('product-image-upload')?.click()}
+                  >
+                    <ImagePlus className="h-4 w-4 mr-2" />
+                    {formData.image_url ? "Byt bild" : "Ladda upp bild"}
+                  </Button>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Switch
