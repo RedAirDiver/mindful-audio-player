@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     });
 
     const body = await req.json();
-    const { email, name, program_id } = body;
+    const { email, name, program_id, referral_code } = body;
 
     if (!email || !program_id) {
       return new Response(
@@ -45,8 +45,8 @@ Deno.serve(async (req) => {
     }
 
     // If not authenticated, check if user exists or create one
+    let userCreated = false;
     if (!userId) {
-      // Check existing user by email
       const { data: existingUsers } = await adminClient.auth.admin.listUsers();
       const existingUser = existingUsers?.users?.find(
         (u) => u.email?.toLowerCase() === email.toLowerCase()
@@ -55,7 +55,6 @@ Deno.serve(async (req) => {
       if (existingUser) {
         userId = existingUser.id;
       } else {
-        // Create new user with random password
         const tempPassword = crypto.randomUUID() + "Aa1!";
         const { data: newUser, error: createError } =
           await adminClient.auth.admin.createUser({
@@ -73,8 +72,8 @@ Deno.serve(async (req) => {
         }
 
         userId = newUser.user.id;
+        userCreated = true;
 
-        // Update profile name if provided
         if (name) {
           await adminClient
             .from("profiles")
@@ -82,20 +81,13 @@ Deno.serve(async (req) => {
             .eq("user_id", userId);
         }
 
-        // Send password reset email so user can set their own password
-        // We use the admin API to generate the recovery link
-        const { data: recoveryData, error: recoveryError } = 
-          await adminClient.auth.admin.generateLink({
-            type: "recovery",
-            email,
-            options: {
-              redirectTo: `${req.headers.get("origin") || supabaseUrl}/reset-password`,
-            },
-          });
-
-        if (recoveryError) {
-          console.error("Could not send recovery email:", recoveryError);
-        }
+        await adminClient.auth.admin.generateLink({
+          type: "recovery",
+          email,
+          options: {
+            redirectTo: `${req.headers.get("origin") || supabaseUrl}/reset-password`,
+          },
+        });
       }
     }
 
@@ -130,13 +122,15 @@ Deno.serve(async (req) => {
     }
 
     // Create purchase
-    const { error: purchaseError } = await adminClient
+    const { data: purchaseRow, error: purchaseError } = await adminClient
       .from("purchases")
       .insert({
         user_id: userId,
         program_id: program_id,
         amount_paid: program.price,
-      });
+      })
+      .select("id")
+      .single();
 
     if (purchaseError) {
       return new Response(
@@ -145,11 +139,38 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Handle affiliate commission
+    if (referral_code && purchaseRow) {
+      const { data: affiliate } = await adminClient
+        .from("affiliates")
+        .select("id, commission_rate")
+        .eq("referral_code", referral_code)
+        .eq("status", "approved")
+        .maybeSingle();
+
+      if (affiliate) {
+        const commissionAmount = (program.price * affiliate.commission_rate) / 100;
+
+        await adminClient.from("commissions").insert({
+          affiliate_id: affiliate.id,
+          purchase_id: purchaseRow.id,
+          amount: commissionAmount,
+        });
+
+        // Mark referral as converted if exists
+        await adminClient
+          .from("referrals")
+          .update({ converted: true, converted_user_id: userId })
+          .eq("affiliate_id", affiliate.id)
+          .eq("converted", false);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        user_created: !authHeader,
-        message: !authHeader
+        user_created: userCreated,
+        message: userCreated
           ? "Konto skapat och köp genomfört. Kolla din e-post för att sätta lösenord."
           : "Köp genomfört!",
       }),

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
+import { getReferralCode, clearReferralCode } from "@/hooks/useReferral";
 import { 
   ArrowLeft, 
   Headphones, 
@@ -348,18 +349,26 @@ const ProgramDetail = () => {
     }
 
     setPurchaseLoading(true);
+    const refCode = getReferralCode();
 
     try {
       if (user) {
-        // Logged-in user: direct insert
-        const { error } = await supabase
-          .from('purchases')
-          .insert({
-            user_id: user.id,
+        // Logged-in user: use edge function too for affiliate tracking
+        const { data, error } = await supabase.functions.invoke('guest-purchase', {
+          body: {
+            email: user.email,
             program_id: program?.id,
-            amount_paid: program?.price || 0,
-          });
+            referral_code: refCode || undefined,
+          },
+        });
+
         if (error) throw error;
+        if (data?.error && !data.already_purchased) throw new Error(data.error);
+        if (data?.already_purchased) {
+          toast.info("Du har redan köpt denna produkt");
+          setPurchaseLoading(false);
+          return;
+        }
       } else {
         // Guest purchase via edge function
         const { data, error } = await supabase.functions.invoke('guest-purchase', {
@@ -367,6 +376,7 @@ const ProgramDetail = () => {
             email: guestEmail.trim(),
             name: guestName.trim(),
             program_id: program?.id,
+            referral_code: refCode || undefined,
           },
         });
 
@@ -389,6 +399,9 @@ const ProgramDetail = () => {
           });
         }
       }
+
+      // Clear referral after successful purchase
+      if (refCode) clearReferralCode();
 
       setIsPurchased(true);
       toast.success("Köp genomfört!", {

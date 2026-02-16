@@ -10,7 +10,8 @@ import {
   FolderOpen,
   LogOut,
   ChevronLeft,
-  DatabaseBackup
+  DatabaseBackup,
+  LinkIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.svg";
@@ -27,6 +28,7 @@ const AdminLayout = () => {
     { href: "/admin/purchases", label: "Köp", icon: ShoppingCart },
     { href: "/admin/users", label: "Användare", icon: Users },
     { href: "/admin/import", label: "WP Import", icon: DatabaseBackup },
+    { href: "/admin/affiliates", label: "Affiliates", icon: LinkIcon },
   ];
 
   const isActive = (href: string, exact?: boolean) => {
