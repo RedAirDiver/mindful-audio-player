@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProgramDetail from "./pages/ProgramDetail";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
+import AffiliateApply from "./pages/AffiliateApply";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -52,6 +53,7 @@ const App = () => {
               <Route path="/produkter" element={<Products />} />
               <Route path="/login" element={<Login />} />
               <Route path="/program/:slug" element={<ProgramDetail />} />
+              <Route path="/bli-affiliate" element={<AffiliateApply />} />
               <Route
                 path="/affiliate"
                 element={
