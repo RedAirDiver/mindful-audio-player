@@ -20,6 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -34,6 +41,8 @@ import {
   ChevronDown,
   Loader2,
   ShoppingCart,
+  LinkIcon,
+  Save,
 } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -61,6 +70,15 @@ const AdminUsers = () => {
     address_postcode: "",
     address_country: "",
   });
+  const [affEditForm, setAffEditForm] = useState<{
+    userId: string;
+    referral_code: string;
+    commission_rate: string;
+    status: string;
+    payout_method: string;
+    payout_details: string;
+  } | null>(null);
+  const [affSaving, setAffSaving] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -115,7 +133,6 @@ const AdminUsers = () => {
   const { data: purchaseCounts } = useQuery({
     queryKey: ["admin-user-purchase-counts"],
     queryFn: async () => {
-      // Paginate to avoid 1000 limit
       const counts: Record<string, number> = {};
       let offset = 0;
       while (true) {
@@ -134,6 +151,19 @@ const AdminUsers = () => {
       return counts;
     },
   });
+
+  // Fetch all affiliates for mapping
+  const { data: allAffiliates } = useQuery({
+    queryKey: ["admin-all-affiliates"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("affiliates").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const getAffiliateForUser = (userId: string) =>
+    allAffiliates?.find((a) => a.user_id === userId) || null;
 
   // Fetch purchases for expanded user
   const { data: userPurchases, isLoading: loadingPurchases } = useQuery({
@@ -432,41 +462,108 @@ const AdminUsers = () => {
                         {isExpanded && (
                           <TableRow>
                             <TableCell colSpan={5} className="bg-muted/30 p-0">
-                              <div className="px-8 py-4">
-                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                                  <ShoppingCart className="h-4 w-4" />
-                                  Köphistorik
-                                </h4>
-                                {loadingPurchases ? (
-                                  <div className="flex justify-center py-4">
-                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                                  </div>
-                                ) : userPurchases && userPurchases.length > 0 ? (
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Datum</TableHead>
-                                        <TableHead>Produkt</TableHead>
-                                        <TableHead className="text-right">Belopp</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {userPurchases.map((p) => (
-                                        <TableRow key={p.id}>
-                                          <TableCell className="text-sm">
-                                            {new Date(p.purchase_date).toLocaleDateString("sv-SE")}
-                                          </TableCell>
-                                          <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
-                                          <TableCell className="text-right font-medium">
-                                            {Number(p.amount_paid).toLocaleString("sv-SE")} kr
-                                          </TableCell>
+                              <div className="px-8 py-4 space-y-6">
+                                {/* Affiliate Section */}
+                                <AffiliateSection
+                                  userId={profile.user_id}
+                                  affiliate={getAffiliateForUser(profile.user_id)}
+                                  editForm={affEditForm?.userId === profile.user_id ? affEditForm : null}
+                                  saving={affSaving}
+                                  onStartEdit={(aff) =>
+                                    setAffEditForm({
+                                      userId: profile.user_id,
+                                      referral_code: aff?.referral_code || "",
+                                      commission_rate: String(aff?.commission_rate ?? 10),
+                                      status: aff?.status || "pending",
+                                      payout_method: aff?.payout_method || "",
+                                      payout_details: aff?.payout_details || "",
+                                    })
+                                  }
+                                  onCancelEdit={() => setAffEditForm(null)}
+                                  onChange={(field, value) =>
+                                    setAffEditForm((f) => f ? { ...f, [field]: value } : null)
+                                  }
+                                  onSave={async () => {
+                                    if (!affEditForm) return;
+                                    const rate = parseFloat(affEditForm.commission_rate);
+                                    if (isNaN(rate) || rate < 0 || rate > 100) {
+                                      toast.error("Ange en giltig procentsats (0-100)");
+                                      return;
+                                    }
+                                    if (!affEditForm.referral_code.trim()) {
+                                      toast.error("Affiliate-koden kan inte vara tom");
+                                      return;
+                                    }
+                                    setAffSaving(true);
+                                    const existing = getAffiliateForUser(profile.user_id);
+                                    if (existing) {
+                                      const { error } = await supabase
+                                        .from("affiliates")
+                                        .update({
+                                          referral_code: affEditForm.referral_code.trim().toLowerCase(),
+                                          commission_rate: rate,
+                                          status: affEditForm.status,
+                                          payout_method: affEditForm.payout_method.trim() || null,
+                                          payout_details: affEditForm.payout_details.trim() || null,
+                                        })
+                                        .eq("id", existing.id);
+                                      setAffSaving(false);
+                                      if (error) { toast.error(error.message); return; }
+                                    } else {
+                                      const { error } = await supabase.from("affiliates").insert({
+                                        user_id: profile.user_id,
+                                        referral_code: affEditForm.referral_code.trim().toLowerCase(),
+                                        commission_rate: rate,
+                                        status: affEditForm.status,
+                                        payout_method: affEditForm.payout_method.trim() || null,
+                                        payout_details: affEditForm.payout_details.trim() || null,
+                                      });
+                                      setAffSaving(false);
+                                      if (error) { toast.error(error.message); return; }
+                                    }
+                                    toast.success("Affiliate sparad");
+                                    setAffEditForm(null);
+                                    queryClient.invalidateQueries({ queryKey: ["admin-all-affiliates"] });
+                                  }}
+                                />
+
+                                {/* Köphistorik */}
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                                    <ShoppingCart className="h-4 w-4" />
+                                    Köphistorik
+                                  </h4>
+                                  {loadingPurchases ? (
+                                    <div className="flex justify-center py-4">
+                                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                    </div>
+                                  ) : userPurchases && userPurchases.length > 0 ? (
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Datum</TableHead>
+                                          <TableHead>Produkt</TableHead>
+                                          <TableHead className="text-right">Belopp</TableHead>
                                         </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground py-2">Inga köp registrerade</p>
-                                )}
+                                      </TableHeader>
+                                      <TableBody>
+                                        {userPurchases.map((p) => (
+                                          <TableRow key={p.id}>
+                                            <TableCell className="text-sm">
+                                              {new Date(p.purchase_date).toLocaleDateString("sv-SE")}
+                                            </TableCell>
+                                            <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
+                                            <TableCell className="text-right font-medium">
+                                              {Number(p.amount_paid).toLocaleString("sv-SE")} kr
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground py-2">Inga köp registrerade</p>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -646,3 +743,135 @@ const AdminUsers = () => {
 };
 
 export default AdminUsers;
+
+/* ── Affiliate inline section ── */
+
+interface AffiliateSectionProps {
+  userId: string;
+  affiliate: any | null;
+  editForm: { referral_code: string; commission_rate: string; status: string; payout_method: string; payout_details: string } | null;
+  saving: boolean;
+  onStartEdit: (aff: any | null) => void;
+  onCancelEdit: () => void;
+  onChange: (field: string, value: string) => void;
+  onSave: () => void;
+}
+
+const AffiliateSection = ({ affiliate, editForm, saving, onStartEdit, onCancelEdit, onChange, onSave }: AffiliateSectionProps) => {
+  const isEditing = !!editForm;
+
+  return (
+    <div>
+      <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+        <LinkIcon className="h-4 w-4" />
+        Affiliate
+      </h4>
+
+      {!affiliate && !isEditing && (
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-muted-foreground">Ingen affiliate kopplad</p>
+          <Button size="sm" variant="outline" onClick={() => onStartEdit(null)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Skapa affiliate
+          </Button>
+        </div>
+      )}
+
+      {affiliate && !isEditing && (
+        <div className="flex items-center gap-6 text-sm flex-wrap">
+          <div>
+            <span className="text-muted-foreground text-xs block">Kod</span>
+            <span className="font-mono">{affiliate.referral_code}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs block">Provision</span>
+            <span>{affiliate.commission_rate}%</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs block">Status</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+              affiliate.status === "approved" ? "bg-primary/10 text-primary"
+              : affiliate.status === "pending" ? "bg-amber-500/10 text-amber-600"
+              : "bg-destructive/10 text-destructive"
+            }`}>
+              {affiliate.status === "approved" ? "Godkänd" : affiliate.status === "pending" ? "Väntande" : affiliate.status === "rejected" ? "Nekad" : "Pausad"}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground text-xs block">Utbetalning</span>
+            <span>{affiliate.payout_method || "–"}</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => onStartEdit(affiliate)}>
+            <Pencil className="h-3.5 w-3.5 mr-1" />
+            Redigera
+          </Button>
+        </div>
+      )}
+
+      {isEditing && editForm && (
+        <div className="bg-background border border-border rounded-lg p-4 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Affiliate-kod</Label>
+              <Input
+                value={editForm.referral_code}
+                onChange={(e) => onChange("referral_code", e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
+                maxLength={30}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Provision %</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={editForm.commission_rate}
+                onChange={(e) => onChange("commission_rate", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Status</Label>
+              <Select value={editForm.status} onValueChange={(v) => onChange("status", v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Väntande</SelectItem>
+                  <SelectItem value="approved">Godkänd</SelectItem>
+                  <SelectItem value="suspended">Pausad</SelectItem>
+                  <SelectItem value="rejected">Nekad</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Utbetalningsmetod</Label>
+              <Input
+                value={editForm.payout_method}
+                onChange={(e) => onChange("payout_method", e.target.value)}
+                placeholder="T.ex. PayPal, Bank"
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <Label className="text-xs">Utbetalningsdetaljer</Label>
+              <Input
+                value={editForm.payout_details}
+                onChange={(e) => onChange("payout_details", e.target.value)}
+                placeholder="Kontonummer, e-post etc."
+                maxLength={255}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={onSave} disabled={saving}>
+              <Save className="h-4 w-4 mr-1" />
+              {saving ? "Sparar..." : "Spara"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={onCancelEdit}>Avbryt</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
