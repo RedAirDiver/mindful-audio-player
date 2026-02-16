@@ -38,12 +38,12 @@ const Header = () => {
             >
               Hem
             </Link>
-            <a 
-              href="/#programs" 
-              className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+            <Link 
+              to="/produkter" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/produkter') ? 'text-primary' : 'text-muted-foreground'}`}
             >
               Produkter
-            </a>
+            </Link>
             <Link 
               to="/about" 
               className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/about') ? 'text-primary' : 'text-muted-foreground'}`}
@@ -114,13 +114,13 @@ const Header = () => {
             >
               Hem
             </Link>
-            <a 
-              href="/#programs" 
+            <Link 
+              to="/produkter" 
               className="py-2 text-foreground font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
               Produkter
-            </a>
+            </Link>
             <Link 
               to="/about" 
               className="py-2 text-foreground font-medium"
