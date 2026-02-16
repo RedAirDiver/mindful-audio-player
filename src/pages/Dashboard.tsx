@@ -259,13 +259,13 @@ const Dashboard = () => {
                 <ShoppingBag className="w-10 h-10 text-primary" />
               </div>
               <h1 className="font-display text-2xl font-semibold text-foreground mb-3">
-                Inga produkter ännu
+                Inga mentala program ännu
               </h1>
               <p className="text-muted-foreground mb-8">
-                Du har inte köpt några produkter ännu. Utforska vårt utbud och börja din resa mot inre lugn.
+                Du har inte köpt några mentala program ännu. Utforska vårt utbud och börja din resa mot inre lugn.
               </p>
               <Button asChild size="lg">
-                <Link to="/#programs">Utforska produkter</Link>
+                <Link to="/#programs">Utforska mentala program</Link>
               </Button>
             </div>
           </div>
@@ -298,16 +298,16 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl font-semibold text-foreground">
-                {activeView === 'profile' ? 'Min profil' : 'Mina produkter'}
+                {activeView === 'profile' ? 'Min profil' : 'Mina mentala program'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {activeView === 'profile' ? 'Hantera din kontoinformation.' : 'Välkommen tillbaka! Här är dina köpta produkter.'}
+                {activeView === 'profile' ? 'Hantera din kontoinformation.' : 'Välkommen tillbaka! Här är dina köpta mentala program.'}
               </p>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" asChild>
                 <Link to="/#programs">
-                  Utforska fler produkter
+                  Utforska fler mentala program
                 </Link>
               </Button>
               <Button 
@@ -396,7 +396,7 @@ const Dashboard = () => {
               {/* Programs List - hidden on mobile when viewing player */}
               {(!isMobile || !mobileShowPlayer) && (
                 <div className="lg:col-span-1 space-y-4">
-                  <h2 className="font-semibold text-foreground mb-4">Dina produkter</h2>
+                  <h2 className="font-semibold text-foreground mb-4">Dina mentala program</h2>
                   {purchasedPrograms.map((program) => (
                     <button
                       key={program.id}

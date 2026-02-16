@@ -65,10 +65,10 @@ const ProgramsSection = () => {
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-              Populära produkter
+              Populära mentala program
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Laddar produkter...
+              Laddar mentala program...
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -91,7 +91,7 @@ const ProgramsSection = () => {
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-            Populära produkter
+            Populära mentala program
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
             Våra mest efterfrågade program för mental träning och avslappning.
