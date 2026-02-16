@@ -24,7 +24,7 @@ const AdminLayout = () => {
     { href: "/admin", label: "Översikt", icon: LayoutDashboard, exact: true },
     { href: "/admin/programs", label: "Produkter", icon: Package },
     { href: "/admin/categories", label: "Kategorier", icon: FolderOpen },
-    { href: "/admin/audio", label: "Program", icon: Music },
+    { href: "/admin/program", label: "Program", icon: Music },
     { href: "/admin/purchases", label: "Köp", icon: ShoppingCart },
     { href: "/admin/users", label: "Användare", icon: Users },
     { href: "/admin/import", label: "WP Import", icon: DatabaseBackup },
