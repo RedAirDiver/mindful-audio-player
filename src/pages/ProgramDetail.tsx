@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
@@ -16,6 +17,7 @@ import {
   Lock,
   Check,
   ShoppingCart,
+  Mail,
   Download,
   CloudOff,
   Wifi,
@@ -82,6 +84,9 @@ const ProgramDetail = () => {
   const [previewTrack, setPreviewTrack] = useState<string | null>(null);
   const [previewProgress, setPreviewProgress] = useState(0);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -337,37 +342,71 @@ const ProgramDetail = () => {
   }, []);
 
   const handlePurchase = async () => {
-    if (!user) {
-      toast.error("Logga in för att köpa", {
-        description: "Du måste vara inloggad för att köpa produkter"
-      });
+    if (!user && !guestEmail.trim()) {
+      toast.error("Ange din e-postadress för att köpa");
       return;
     }
 
-    // For now, simulate purchase (Stripe integration later)
+    setPurchaseLoading(true);
+
     try {
-      const { error } = await supabase
-        .from('purchases')
-        .insert({
-          user_id: user.id,
-          program_id: program?.id,
-          amount_paid: program?.price || 0,
+      if (user) {
+        // Logged-in user: direct insert
+        const { error } = await supabase
+          .from('purchases')
+          .insert({
+            user_id: user.id,
+            program_id: program?.id,
+            amount_paid: program?.price || 0,
+          });
+        if (error) throw error;
+      } else {
+        // Guest purchase via edge function
+        const { data, error } = await supabase.functions.invoke('guest-purchase', {
+          body: {
+            email: guestEmail.trim(),
+            name: guestName.trim(),
+            program_id: program?.id,
+          },
         });
 
-      if (error) throw error;
+        if (error) throw error;
+        if (data?.error) {
+          if (data.already_purchased) {
+            toast.info("Du har redan köpt denna produkt", {
+              description: "Logga in för att komma åt dina spår"
+            });
+            setPurchaseLoading(false);
+            return;
+          }
+          throw new Error(data.error);
+        }
+
+        if (data?.user_created) {
+          toast.success("Konto skapat!", {
+            description: "Kolla din e-post för att sätta ett lösenord och logga in.",
+            duration: 8000,
+          });
+        }
+      }
 
       setIsPurchased(true);
       toast.success("Köp genomfört!", {
-        description: "Du kan nu lyssna på alla spår"
+        description: user 
+          ? "Du kan nu lyssna på alla spår" 
+          : "Logga in för att börja lyssna"
       });
       
-      // Refresh to get actual tracks
-      fetchProgram();
+      if (user) {
+        fetchProgram();
+      }
     } catch (error: any) {
       console.error('Purchase error:', error);
       toast.error("Kunde inte genomföra köp", {
         description: error.message
       });
+    } finally {
+      setPurchaseLoading(false);
     }
   };
 
@@ -601,13 +640,50 @@ const ProgramDetail = () => {
                         Engångsköp • Livstidsåtkomst
                       </div>
                     </div>
+
+                    {/* Guest checkout fields */}
+                    {!user && (
+                      <div className="space-y-3 pt-2">
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="Din e-postadress"
+                            value={guestEmail}
+                            onChange={(e) => setGuestEmail(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                        <Input
+                          type="text"
+                          placeholder="Ditt namn (valfritt)"
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Ett konto skapas automatiskt. Du får ett e-postmeddelande för att välja lösenord.
+                        </p>
+                      </div>
+                    )}
+
                     <Button 
                       size="lg" 
                       className="w-full"
                       onClick={handlePurchase}
+                      disabled={purchaseLoading}
                     >
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      {user ? 'Köp nu' : 'Logga in för att köpa'}
+                      {purchaseLoading ? (
+                        <span className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          Bearbetar...
+                        </span>
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-5 h-5 mr-2" />
+                          Köp nu
+                        </>
+                      )}
                     </Button>
                   </>
                 )}
