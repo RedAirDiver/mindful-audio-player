@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import ProgramCard from "./ProgramCard";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Program {
@@ -16,20 +15,10 @@ interface Program {
   categories: string[] | null;
 }
 
-const CATEGORIES = [
-  { id: 'all', label: 'Alla' },
-  { id: 'Personlig Utveckling', label: 'Personlig Utveckling' },
-  { id: 'Bättre hälsa', label: 'Bättre hälsa' },
-  { id: 'Barn & Ungdom', label: 'Barn & Ungdom' },
-  { id: 'Sport excellens', label: 'Sport' },
-  { id: 'Gratisprogram', label: 'Gratis' },
-];
-
 const ProgramsSection = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     fetchPrograms();
@@ -41,6 +30,7 @@ const ProgramsSection = () => {
         .from('programs')
         .select('*')
         .eq('is_active', true)
+        .contains('categories', ['Populära Produkter'])
         .order('price', { ascending: false });
 
       if (programsError) throw programsError;
@@ -69,18 +59,13 @@ const ProgramsSection = () => {
     }
   };
 
-  const filteredPrograms = programs.filter(program => {
-    if (selectedCategory === 'all') return true;
-    return program.categories?.includes(selectedCategory);
-  });
-
   if (loading) {
     return (
       <section className="py-20 md:py-28 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-            Våra produkter
+              Populära produkter
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
               Laddar produkter...
@@ -96,37 +81,26 @@ const ProgramsSection = () => {
     );
   }
 
+  if (programs.length === 0) {
+    return null;
+  }
+
   return (
     <section id="programs" className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-            Våra produkter
+            Populära produkter
           </h2>
           <p className="mt-4 text-lg text-muted-foreground">
-            Välj bland våra professionellt framtagna produkter för mental träning och avslappning.
+            Våra mest efterfrågade program för mental träning och avslappning.
           </p>
-        </div>
-
-        {/* Category Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
-          {CATEGORIES.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedCategory(category.id)}
-              className="rounded-full"
-            >
-              {category.label}
-            </Button>
-          ))}
         </div>
 
         {/* Programs Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredPrograms.map((program, index) => (
+          {programs.map((program, index) => (
             <div 
               key={program.id} 
               className="animate-fade-in-up"
@@ -140,20 +114,12 @@ const ProgramsSection = () => {
                 trackCount={trackCounts[program.id] || 0}
                 price={program.price}
                 image={program.image_url || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop'}
-                
-                featured={index === 0 && selectedCategory === 'all'}
+                featured={index === 0}
                 categories={program.categories || []}
               />
             </div>
           ))}
         </div>
-
-        {/* Empty State */}
-        {filteredPrograms.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Inga produkter hittades i denna kategori.</p>
-          </div>
-        )}
       </div>
     </section>
   );
