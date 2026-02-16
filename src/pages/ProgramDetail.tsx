@@ -416,73 +416,41 @@ const ProgramDetail = () => {
             <span>Tillbaka till produkter</span>
           </Link>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Program Image & Info */}
-            <div className="space-y-6">
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-muted">
-                <img 
-                  src={program.image_url || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop'} 
-                  alt={program.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+          {/* Hero Image */}
+          <div className="aspect-[21/9] md:aspect-[3/1] rounded-2xl overflow-hidden bg-muted mb-10">
+            <img 
+              src={program.image_url || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop'} 
+              alt={program.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-              {/* Meta */}
-              <div className="flex items-center gap-6 text-muted-foreground">
+          {/* Title & Meta */}
+          <div className="max-w-3xl mx-auto mb-10">
+            <h1 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
+              {program.title}
+            </h1>
+            <div className="flex items-center gap-6 text-muted-foreground mt-4">
+              <div className="flex items-center gap-2">
+                <Headphones className="w-5 h-5" />
+                <span>{tracks.length} spår</span>
+              </div>
+              {program.duration_text && (
                 <div className="flex items-center gap-2">
-                  <Headphones className="w-5 h-5" />
-                  <span>{tracks.length} spår</span>
+                  <Clock className="w-5 h-5" />
+                  <span>{program.duration_text}</span>
                 </div>
-                {program.duration_text && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    <span>{program.duration_text}</span>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
+          </div>
 
-            {/* Program Details */}
-            <div className="space-y-8">
-              <div>
-                <h1 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-                  {program.title}
-                </h1>
-                <div 
-                  className="mt-4 text-lg text-muted-foreground leading-relaxed prose prose-lg max-w-none"
-                  dangerouslySetInnerHTML={{ __html: program.description || program.short_description || "" }}
-                />
-              </div>
-
-              {/* Price & Purchase */}
-              <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
-                {isPurchased ? (
-                  <div className="flex items-center gap-3 text-primary">
-                    <Check className="w-6 h-6" />
-                    <span className="font-semibold text-lg">Du äger denna produkt</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-3xl font-semibold text-foreground">{program.price}</span>
-                        <span className="text-lg text-muted-foreground ml-1">kr</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Engångsköp • Livstidsåtkomst
-                      </div>
-                    </div>
-                    <Button 
-                      size="lg" 
-                      className="w-full"
-                      onClick={handlePurchase}
-                    >
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      {user ? 'Köp nu' : 'Logga in för att köpa'}
-                    </Button>
-                  </>
-                )}
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-5xl mx-auto">
+            {/* Left: Description */}
+            <div className="lg:col-span-2 space-y-8">
+              <div 
+                className="text-lg text-muted-foreground leading-relaxed prose prose-lg max-w-none"
+                dangerouslySetInnerHTML={{ __html: program.description || program.short_description || "" }}
+              />
 
               {/* Audio Player for purchased programs */}
               {isPurchased && tracks.length > 0 && (
@@ -553,7 +521,6 @@ const ProgramDetail = () => {
                             <p className="font-medium text-foreground truncate">
                               {track.title}
                             </p>
-                            {/* Offline indicator */}
                             {isPurchased && isTrackSaved && (
                               <span title="Sparad offline">
                                 <CloudOff className="w-3.5 h-3.5 text-primary flex-shrink-0" />
@@ -569,7 +536,6 @@ const ProgramDetail = () => {
                               </span>
                             )}
                           </div>
-                          {/* Preview Progress for non-purchased */}
                           {!isPurchased && previewTrack === track.id && (
                             <div className="mt-2 space-y-1">
                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -586,7 +552,6 @@ const ProgramDetail = () => {
                           )}
                         </div>
 
-                        {/* Offline Save/Remove Button for purchased tracks */}
                         {isPurchased && track.file_path && (
                           <Button
                             variant="ghost"
@@ -606,7 +571,6 @@ const ProgramDetail = () => {
                           </Button>
                         )}
 
-                        {/* Lock Icon for non-purchased */}
                         {!isPurchased && (
                           <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                         )}
@@ -614,6 +578,39 @@ const ProgramDetail = () => {
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            {/* Right Sidebar: Price & Features */}
+            <div className="space-y-6 lg:sticky lg:top-32 lg:self-start">
+              {/* Price & Purchase */}
+              <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
+                {isPurchased ? (
+                  <div className="flex items-center gap-3 text-primary">
+                    <Check className="w-6 h-6" />
+                    <span className="font-semibold text-lg">Du äger denna produkt</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-3xl font-semibold text-foreground">{program.price}</span>
+                        <span className="text-lg text-muted-foreground ml-1">kr</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Engångsköp • Livstidsåtkomst
+                      </div>
+                    </div>
+                    <Button 
+                      size="lg" 
+                      className="w-full"
+                      onClick={handlePurchase}
+                    >
+                      <ShoppingCart className="w-5 h-5 mr-2" />
+                      {user ? 'Köp nu' : 'Logga in för att köpa'}
+                    </Button>
+                  </>
+                )}
               </div>
 
               {/* Features */}
