@@ -37,7 +37,7 @@ const RichTextEditor = ({ value, onChange, className }: RichTextEditorProps) => 
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm max-w-none min-h-[120px] p-3 focus:outline-none",
+          "prose prose-sm max-w-none min-h-[120px] p-3 focus:outline-none [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6",
       },
     },
   });
