@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/RichTextEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -349,13 +350,11 @@ const AdminPrograms = () => {
               </div>
               <div>
                 <Label htmlFor="description">Fullständig beskrivning</Label>
-                <Textarea
-                  id="description"
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
+                  onChange={(val) =>
+                    setFormData({ ...formData, description: val })
                   }
-                  rows={4}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
