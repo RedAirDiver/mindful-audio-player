@@ -4,11 +4,14 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
-import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface AudioFile {
   id: string;
@@ -25,6 +28,17 @@ interface Program {
   image_url: string | null;
 }
 
+interface Profile {
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  address_line1: string;
+  address_postcode: string;
+  address_city: string;
+  address_country: string;
+}
+
 interface PurchasedProgram extends Program {
   tracks: AudioFile[];
 }
@@ -33,17 +47,65 @@ const Dashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { savedTracks, savingTrack, saveTrackOffline, removeTrackOffline, getDecryptedAudioUrl, isOnline } = useOfflineAudio();
   const navigate = useNavigate();
+  const [activeView, setActiveView] = useState<'programs' | 'profile'>('programs');
   const [purchasedPrograms, setPurchasedPrograms] = useState<PurchasedProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<PurchasedProgram | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<AudioFile | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile>({ name: '', email: '', phone: '', company: '', address_line1: '', address_postcode: '', address_city: '', address_country: '' });
+  const [savingProfile, setSavingProfile] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && user) {
       fetchPurchasedPrograms();
+      fetchProfile();
     }
   }, [user, authLoading]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, email, phone, company, address_line1, address_postcode, address_city, address_country')
+      .eq('user_id', user.id)
+      .single();
+    if (data) {
+      setProfile({
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        company: data.company || '',
+        address_line1: data.address_line1 || '',
+        address_postcode: data.address_postcode || '',
+        address_city: data.address_city || '',
+        address_country: data.address_country || '',
+      });
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        name: profile.name.trim(),
+        phone: profile.phone.trim(),
+        company: profile.company.trim(),
+        address_line1: profile.address_line1.trim(),
+        address_postcode: profile.address_postcode.trim(),
+        address_city: profile.address_city.trim(),
+        address_country: profile.address_country.trim(),
+      })
+      .eq('user_id', user.id);
+    setSavingProfile(false);
+    if (error) {
+      toast.error('Kunde inte spara profilen');
+    } else {
+      toast.success('Profilen har sparats');
+    }
+  };
 
   // Get audio URL when track changes
   useEffect(() => {
@@ -232,8 +294,12 @@ const Dashboard = () => {
           {/* Dashboard Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
-              <h1 className="font-display text-3xl font-semibold text-foreground">Mina produkter</h1>
-              <p className="text-muted-foreground mt-1">Välkommen tillbaka! Här är dina köpta produkter.</p>
+              <h1 className="font-display text-3xl font-semibold text-foreground">
+                {activeView === 'profile' ? 'Min profil' : 'Mina produkter'}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {activeView === 'profile' ? 'Hantera din kontoinformation.' : 'Välkommen tillbaka! Här är dina köpta produkter.'}
+              </p>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" asChild>
@@ -241,9 +307,17 @@ const Dashboard = () => {
                   Utforska fler produkter
                 </Link>
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                <User className="w-4 h-4 mr-2" />
-                Profil
+              <Button 
+                variant={activeView === 'profile' ? 'default' : 'ghost'} 
+                size="sm" 
+                className={activeView === 'profile' ? '' : 'text-muted-foreground'}
+                onClick={() => setActiveView(activeView === 'profile' ? 'programs' : 'profile')}
+              >
+                {activeView === 'profile' ? (
+                  <><ArrowLeft className="w-4 h-4 mr-2" />Tillbaka</>
+                ) : (
+                  <><User className="w-4 h-4 mr-2" />Profil</>
+                )}
               </Button>
               <Button 
                 variant="ghost" 
@@ -257,176 +331,229 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Programs List */}
-            <div className="lg:col-span-1 space-y-4">
-              <h2 className="font-semibold text-foreground mb-4">Dina produkter</h2>
-              {purchasedPrograms.map((program) => (
-                <button
-                  key={program.id}
-                  onClick={() => {
-                    setSelectedProgram(program);
-                    if (program.tracks.length > 0) {
-                      setSelectedTrack(program.tracks[0]);
-                    }
-                  }}
-                  className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${
-                    selectedProgram?.id === program.id 
-                      ? 'bg-primary/10 ring-2 ring-primary' 
-                      : 'bg-card hover:bg-muted'
-                  }`}
-                >
-                  <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
-                    {program.image_url ? (
-                      <img src={program.image_url} alt={program.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Headphones className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
+          {/* Profile View */}
+          {activeView === 'profile' && (
+            <div className="max-w-2xl">
+              <div className="bg-card rounded-2xl shadow-elegant p-6 md:p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-name">Namn</Label>
+                    <Input id="profile-name" value={profile.name} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} placeholder="Ditt namn" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-foreground truncate">{program.title}</h3>
-                    <p className="text-sm text-muted-foreground">{program.tracks.length} spår</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-email">E-post</Label>
+                    <Input id="profile-email" value={profile.email} disabled className="bg-muted" />
+                    <p className="text-xs text-muted-foreground">E-postadressen kan inte ändras här.</p>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-                </button>
-              ))}
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-phone">Telefon</Label>
+                    <Input id="profile-phone" value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} placeholder="Telefonnummer" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-company">Företag</Label>
+                    <Input id="profile-company" value={profile.company} onChange={e => setProfile(p => ({ ...p, company: e.target.value }))} placeholder="Företagsnamn" />
+                  </div>
+                </div>
 
-            {/* Player & Tracks */}
-            <div className="lg:col-span-2 space-y-6">
-              {selectedProgram && selectedTrack && (
-                <>
-                  {/* Current Player */}
-                  <AudioPlayer 
-                    title={selectedTrack.title}
-                    coverImage={selectedProgram.image_url || undefined}
-                    duration={selectedTrack.duration_seconds || 180}
-                    audioUrl={currentAudioUrl || undefined}
-                  />
-
-                  {/* Track List */}
-                  <div className="bg-card rounded-2xl shadow-elegant p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-display text-lg font-semibold text-foreground">
-                        {selectedProgram.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Download className="w-4 h-4" />
-                        <span>Spara för offline</span>
-                      </div>
-                    </div>
-                    
+                <div className="border-t border-border pt-6 space-y-5">
+                  <h3 className="font-semibold text-foreground">Adress</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-address">Gatuadress</Label>
+                    <Input id="profile-address" value={profile.address_line1} onChange={e => setProfile(p => ({ ...p, address_line1: e.target.value }))} placeholder="Gatuadress" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="space-y-2">
-                      {selectedProgram.tracks.map((track, index) => {
-                        const isSaved = savedTracks.has(track.id);
-                        const isSaving = savingTrack === track.id;
-                        const canPlay = isOnline || isSaved;
+                      <Label htmlFor="profile-postcode">Postnummer</Label>
+                      <Input id="profile-postcode" value={profile.address_postcode} onChange={e => setProfile(p => ({ ...p, address_postcode: e.target.value }))} placeholder="123 45" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-city">Stad</Label>
+                      <Input id="profile-city" value={profile.address_city} onChange={e => setProfile(p => ({ ...p, address_city: e.target.value }))} placeholder="Stad" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-country">Land</Label>
+                      <Input id="profile-country" value={profile.address_country} onChange={e => setProfile(p => ({ ...p, address_country: e.target.value }))} placeholder="Sverige" />
+                    </div>
+                  </div>
+                </div>
 
-                        return (
-                          <div
-                            key={track.id}
-                            className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
-                              canPlay ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
-                            } ${
-                              selectedTrack.id === track.id 
-                                ? 'bg-primary/10' 
-                                : canPlay ? 'hover:bg-muted' : ''
-                            }`}
-                            onClick={() => canPlay && setSelectedTrack(track)}
-                          >
-                            {/* Track Number / Playing Indicator */}
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                              selectedTrack.id === track.id 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-muted text-muted-foreground'
-                            }`}>
-                              {selectedTrack.id === track.id ? (
-                                <Headphones className="w-4 h-4" />
-                              ) : (
-                                index + 1
-                              )}
-                            </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleSaveProfile} disabled={savingProfile}>
+                    <Save className="w-4 h-4 mr-2" />
+                    {savingProfile ? 'Sparar...' : 'Spara ändringar'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
-                            {/* Track Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-medium truncate ${
-                                selectedTrack.id === track.id ? 'text-primary' : 'text-foreground'
+          {/* Programs View */}
+          {activeView === 'programs' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Programs List */}
+              <div className="lg:col-span-1 space-y-4">
+                <h2 className="font-semibold text-foreground mb-4">Dina produkter</h2>
+                {purchasedPrograms.map((program) => (
+                  <button
+                    key={program.id}
+                    onClick={() => {
+                      setSelectedProgram(program);
+                      if (program.tracks.length > 0) {
+                        setSelectedTrack(program.tracks[0]);
+                      }
+                    }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-xl text-left transition-all ${
+                      selectedProgram?.id === program.id 
+                        ? 'bg-primary/10 ring-2 ring-primary' 
+                        : 'bg-card hover:bg-muted'
+                    }`}
+                  >
+                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                      {program.image_url ? (
+                        <img src={program.image_url} alt={program.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Headphones className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-foreground truncate">{program.title}</h3>
+                      <p className="text-sm text-muted-foreground">{program.tracks.length} spår</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Player & Tracks */}
+              <div className="lg:col-span-2 space-y-6">
+                {selectedProgram && selectedTrack && (
+                  <>
+                    <AudioPlayer 
+                      title={selectedTrack.title}
+                      coverImage={selectedProgram.image_url || undefined}
+                      duration={selectedTrack.duration_seconds || 180}
+                      audioUrl={currentAudioUrl || undefined}
+                    />
+
+                    <div className="bg-card rounded-2xl shadow-elegant p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-display text-lg font-semibold text-foreground">
+                          {selectedProgram.title}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Download className="w-4 h-4" />
+                          <span>Spara för offline</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {selectedProgram.tracks.map((track, index) => {
+                          const isSaved = savedTracks.has(track.id);
+                          const isSaving = savingTrack === track.id;
+                          const canPlay = isOnline || isSaved;
+
+                          return (
+                            <div
+                              key={track.id}
+                              className={`flex items-center gap-4 p-3 rounded-lg transition-all ${
+                                canPlay ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
+                              } ${
+                                selectedTrack.id === track.id 
+                                  ? 'bg-primary/10' 
+                                  : canPlay ? 'hover:bg-muted' : ''
+                              }`}
+                              onClick={() => canPlay && setSelectedTrack(track)}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                selectedTrack.id === track.id 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'bg-muted text-muted-foreground'
                               }`}>
-                                {track.title}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatDuration(track.duration_seconds)}
-                              </p>
-                            </div>
+                                {selectedTrack.id === track.id ? (
+                                  <Headphones className="w-4 h-4" />
+                                ) : (
+                                  index + 1
+                                )}
+                              </div>
 
-                            {/* Offline Status */}
-                            <div className="flex items-center gap-2">
-                              {isSaved ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="flex items-center gap-1 text-sm text-primary">
-                                    <WifiOff className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Sparad</span>
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-medium truncate ${
+                                  selectedTrack.id === track.id ? 'text-primary' : 'text-foreground'
+                                }`}>
+                                  {track.title}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {formatDuration(track.duration_seconds)}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                {isSaved ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 text-sm text-primary">
+                                      <WifiOff className="w-4 h-4" />
+                                      <span className="hidden sm:inline">Sparad</span>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveOffline(track.id);
+                                      }}
+                                      className="text-muted-foreground hover:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
                                   </div>
+                                ) : (
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleRemoveOffline(track.id);
+                                      handleSaveOffline(track);
                                     }}
-                                    className="text-muted-foreground hover:text-destructive"
+                                    disabled={isSaving || !isOnline}
+                                    className="text-muted-foreground"
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    {isSaving ? (
+                                      <span className="flex items-center gap-1">
+                                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                        <span className="hidden sm:inline">Sparar...</span>
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center gap-1">
+                                        <Download className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Spara</span>
+                                      </span>
+                                    )}
                                   </Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSaveOffline(track);
-                                  }}
-                                  disabled={isSaving || !isOnline}
-                                  className="text-muted-foreground"
-                                >
-                                  {isSaving ? (
-                                    <span className="flex items-center gap-1">
-                                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                      <span className="hidden sm:inline">Sparar...</span>
-                                    </span>
-                                  ) : (
-                                    <span className="flex items-center gap-1">
-                                      <Download className="w-4 h-4" />
-                                      <span className="hidden sm:inline">Spara</span>
-                                    </span>
-                                  )}
-                                </Button>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
 
-              {/* Offline Info */}
-              <div className="bg-muted/50 rounded-xl p-4 flex items-start gap-3">
-                <Wifi className="w-5 h-5 text-primary mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Om offline-läge</p>
-                  <p className="text-muted-foreground">
-                    Sparade spår krypteras och lagras lokalt på din enhet. Du kan lyssna på dem utan internet, 
-                    men filerna kan inte laddas ner eller kopieras till andra enheter.
-                  </p>
+                <div className="bg-muted/50 rounded-xl p-4 flex items-start gap-3">
+                  <Wifi className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">Om offline-läge</p>
+                    <p className="text-muted-foreground">
+                      Sparade spår krypteras och lagras lokalt på din enhet. Du kan lyssna på dem utan internet, 
+                      men filerna kan inte laddas ner eller kopieras till andra enheter.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 
