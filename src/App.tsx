@@ -11,6 +11,7 @@ import Products from "./pages/Products";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProgramDetail from "./pages/ProgramDetail";
+import AffiliateDashboard from "./pages/AffiliateDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -22,6 +23,7 @@ import AdminPurchases from "./pages/admin/AdminPurchases";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminImportUsers from "./pages/admin/AdminImportUsers";
+import AdminAffiliates from "./pages/admin/AdminAffiliates";
 
 const App = () => {
   // Create queryClient inside component with useState to survive HMR
@@ -51,6 +53,14 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/program/:slug" element={<ProgramDetail />} />
               <Route
+                path="/affiliate"
+                element={
+                  <ProtectedRoute>
+                    <AffiliateDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
@@ -74,6 +84,7 @@ const App = () => {
                 <Route path="purchases" element={<AdminPurchases />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="import" element={<AdminImportUsers />} />
+                <Route path="affiliates" element={<AdminAffiliates />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

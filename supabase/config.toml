@@ -2,3 +2,6 @@ project_id = "jjllqcgywodfnaotnkxe"
 
 [functions.guest-purchase]
 verify_jwt = false
+
+[functions.track-referral]
+verify_jwt = false
