@@ -469,16 +469,23 @@ const AdminUsers = () => {
                                   affiliate={getAffiliateForUser(profile.user_id)}
                                   editForm={affEditForm?.userId === profile.user_id ? affEditForm : null}
                                   saving={affSaving}
-                                  onStartEdit={(aff) =>
+                                  onStartEdit={(aff) => {
+                                    const defaultCode = aff?.referral_code ||
+                                      (profile.name
+                                        ? profile.name.trim().toLowerCase()
+                                            .replace(/[åä]/g, "a").replace(/ö/g, "o")
+                                            .replace(/[^a-z0-9]/g, "").slice(0, 15)
+                                          + Math.floor(Math.random() * 100)
+                                        : "aff" + Math.random().toString(36).slice(2, 8));
                                     setAffEditForm({
                                       userId: profile.user_id,
-                                      referral_code: aff?.referral_code || "",
+                                      referral_code: defaultCode,
                                       commission_rate: String(aff?.commission_rate ?? 10),
-                                      status: aff?.status || "pending",
+                                      status: aff?.status || "approved",
                                       payout_method: aff?.payout_method || "",
                                       payout_details: aff?.payout_details || "",
-                                    })
-                                  }
+                                    });
+                                  }}
                                   onCancelEdit={() => setAffEditForm(null)}
                                   onChange={(field, value) =>
                                     setAffEditForm((f) => f ? { ...f, [field]: value } : null)
@@ -778,33 +785,41 @@ const AffiliateSection = ({ affiliate, editForm, saving, onStartEdit, onCancelEd
       )}
 
       {affiliate && !isEditing && (
-        <div className="flex items-center gap-6 text-sm flex-wrap">
-          <div>
-            <span className="text-muted-foreground text-xs block">Kod</span>
-            <span className="font-mono">{affiliate.referral_code}</span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-6 text-sm flex-wrap">
+            <div>
+              <span className="text-muted-foreground text-xs block">Kod</span>
+              <span className="font-mono">{affiliate.referral_code}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-xs block">Provision</span>
+              <span>{affiliate.commission_rate}%</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-xs block">Status</span>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                affiliate.status === "approved" ? "bg-primary/10 text-primary"
+                : affiliate.status === "pending" ? "bg-amber-500/10 text-amber-600"
+                : "bg-destructive/10 text-destructive"
+              }`}>
+                {affiliate.status === "approved" ? "Godkänd" : affiliate.status === "pending" ? "Väntande" : affiliate.status === "rejected" ? "Nekad" : "Pausad"}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-xs block">Utbetalning</span>
+              <span>{affiliate.payout_method || "–"}</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => onStartEdit(affiliate)}>
+              <Pencil className="h-3.5 w-3.5 mr-1" />
+              Redigera
+            </Button>
           </div>
-          <div>
-            <span className="text-muted-foreground text-xs block">Provision</span>
-            <span>{affiliate.commission_rate}%</span>
+          <div className="bg-muted/50 rounded-md px-3 py-2">
+            <span className="text-muted-foreground text-xs block mb-0.5">Trackerlänk</span>
+            <code className="text-xs font-mono select-all break-all">
+              {window.location.origin}/?ref={affiliate.referral_code}
+            </code>
           </div>
-          <div>
-            <span className="text-muted-foreground text-xs block">Status</span>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-              affiliate.status === "approved" ? "bg-primary/10 text-primary"
-              : affiliate.status === "pending" ? "bg-amber-500/10 text-amber-600"
-              : "bg-destructive/10 text-destructive"
-            }`}>
-              {affiliate.status === "approved" ? "Godkänd" : affiliate.status === "pending" ? "Väntande" : affiliate.status === "rejected" ? "Nekad" : "Pausad"}
-            </span>
-          </div>
-          <div>
-            <span className="text-muted-foreground text-xs block">Utbetalning</span>
-            <span>{affiliate.payout_method || "–"}</span>
-          </div>
-          <Button size="sm" variant="outline" onClick={() => onStartEdit(affiliate)}>
-            <Pencil className="h-3.5 w-3.5 mr-1" />
-            Redigera
-          </Button>
         </div>
       )}
 
