@@ -114,7 +114,7 @@ const ProgramsSection = () => {
                 trackCount={trackCounts[program.id] || 0}
                 price={program.price}
                 image={program.image_url || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop'}
-                featured={index === 0}
+                featured={true}
                 categories={program.categories || []}
               />
             </div>
