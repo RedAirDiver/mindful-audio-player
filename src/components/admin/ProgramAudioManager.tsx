@@ -289,7 +289,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
       
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Ljudfiler</h3>
+          <h3 className="text-lg font-semibold">Program</h3>
           <p className="text-sm text-muted-foreground">
             {audioFiles?.length || 0} spår i detta program
           </p>
@@ -376,7 +376,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
         <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
           <Music className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
           <p className="text-muted-foreground">
-            Inga ljudfiler tillagda ännu
+            Inga program tillagda ännu
           </p>
           <Button type="button" variant="outline" size="sm" className="mt-3" onClick={handleAddNew}>
             <Plus className="h-4 w-4 mr-2" />
