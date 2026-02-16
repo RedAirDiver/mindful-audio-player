@@ -447,23 +447,22 @@ const AdminPrograms = () => {
                 </div>
               </div>
               <div>
-                <Label htmlFor="country">Land</Label>
+                <Label htmlFor="country">Språk</Label>
                 <Select
                   value={formData.country}
                   onValueChange={(value) => setFormData({ ...formData, country: value })}
                 >
                   <SelectTrigger id="country">
-                    <SelectValue placeholder="Välj land" />
+                    <SelectValue placeholder="Välj språk" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SE">🇸🇪 Sverige</SelectItem>
-                    <SelectItem value="NO">🇳🇴 Norge</SelectItem>
-                    <SelectItem value="DK">🇩🇰 Danmark</SelectItem>
-                    <SelectItem value="FI">🇫🇮 Finland</SelectItem>
-                    <SelectItem value="DE">🇩🇪 Tyskland</SelectItem>
-                    <SelectItem value="GB">🇬🇧 Storbritannien</SelectItem>
-                    <SelectItem value="US">🇺🇸 USA</SelectItem>
-                    <SelectItem value="ALL">🌍 Alla länder</SelectItem>
+                    <SelectItem value="SE">🇸🇪 Svenska</SelectItem>
+                    <SelectItem value="NO">🇳🇴 Norska</SelectItem>
+                    <SelectItem value="DK">🇩🇰 Danska</SelectItem>
+                    <SelectItem value="FI">🇫🇮 Finska</SelectItem>
+                    <SelectItem value="DE">🇩🇪 Tyska</SelectItem>
+                    <SelectItem value="GB">🇬🇧 Engelska</SelectItem>
+                    <SelectItem value="ALL">🌍 Alla språk</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
