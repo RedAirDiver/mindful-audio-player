@@ -38,7 +38,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePlus, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePlus, Loader2, FileText } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
@@ -66,6 +66,7 @@ const AdminPrograms = () => {
     short_description: "",
     price: 0,
     image_url: "",
+    pdf_file_path: "" as string | null,
     is_active: true,
     categories: [] as string[],
     country: "SE",
@@ -163,6 +164,7 @@ const AdminPrograms = () => {
       short_description: "",
       price: 0,
       image_url: "",
+      pdf_file_path: null,
       is_active: true,
       categories: [],
       country: "SE",
@@ -179,6 +181,7 @@ const AdminPrograms = () => {
       short_description: program.short_description || "",
       price: program.price,
       image_url: program.image_url || "",
+      pdf_file_path: (program as any).pdf_file_path || null,
       is_active: program.is_active,
       categories: program.categories || [],
       country: (program as any).country || "SE",
@@ -537,6 +540,66 @@ const AdminPrograms = () => {
                   >
                     <ImagePlus className="h-4 w-4 mr-2" />
                     {formData.image_url ? "Byt bild" : "Ladda upp bild"}
+                  </Button>
+                </div>
+              </div>
+              {/* PDF Upload */}
+              <div>
+                <Label>PDF-fil (valfritt)</Label>
+                {formData.pdf_file_path && (
+                  <div className="mb-2 flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="text-sm truncate flex-1">PDF uppladdad</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-destructive"
+                      onClick={() => setFormData({ ...formData, pdf_file_path: null })}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <div>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    className="hidden"
+                    id="product-pdf-upload"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 20 * 1024 * 1024) {
+                        toast.error("PDF-filen får inte vara större än 20 MB");
+                        e.target.value = "";
+                        return;
+                      }
+                      try {
+                        const path = `pdfs/${crypto.randomUUID()}.pdf`;
+                        const { error } = await supabase.storage
+                          .from('product-images')
+                          .upload(path, file, { contentType: 'application/pdf' });
+                        if (error) throw error;
+                        const { data: urlData } = supabase.storage
+                          .from('product-images')
+                          .getPublicUrl(path);
+                        setFormData({ ...formData, pdf_file_path: urlData.publicUrl });
+                        toast.success("PDF uppladdad");
+                      } catch (err: any) {
+                        toast.error("Kunde inte ladda upp PDF: " + err.message);
+                      } finally {
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('product-pdf-upload')?.click()}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {formData.pdf_file_path ? "Byt PDF" : "Ladda upp PDF"}
                   </Button>
                 </div>
               </div>

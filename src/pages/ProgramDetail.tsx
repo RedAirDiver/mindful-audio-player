@@ -24,7 +24,8 @@ import {
   Wifi,
   WifiOff,
   Loader2,
-  Trash2
+  Trash2,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -526,6 +527,24 @@ const ProgramDetail = () => {
 
               {/* Hidden audio element for preview playback (non-purchased users) */}
               {!isPurchased && <audio ref={previewAudioRef} className="hidden" />}
+
+              {/* PDF Download */}
+              {isPurchased && (program as any).pdf_file_path && (
+                <div className="bg-card rounded-2xl shadow-elegant p-5 flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">Medföljande PDF</p>
+                    <p className="text-sm text-muted-foreground">Ladda ner dokumentet som ingår i programmet</p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={(program as any).pdf_file_path} target="_blank" rel="noopener noreferrer" download>
+                      Ladda ner
+                    </a>
+                  </Button>
+                </div>
+              )}
 
               {/* Track List */}
               <div className="space-y-4">
