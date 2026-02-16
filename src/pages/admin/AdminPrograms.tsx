@@ -462,6 +462,19 @@ const AdminPrograms = () => {
                     <SelectItem value="FI">🇫🇮 Finska</SelectItem>
                     <SelectItem value="DE">🇩🇪 Tyska</SelectItem>
                     <SelectItem value="GB">🇬🇧 Engelska</SelectItem>
+                    <SelectItem value="FR">🇫🇷 Franska</SelectItem>
+                    <SelectItem value="ES">🇪🇸 Spanska</SelectItem>
+                    <SelectItem value="IT">🇮🇹 Italienska</SelectItem>
+                    <SelectItem value="PT">🇵🇹 Portugisiska</SelectItem>
+                    <SelectItem value="NL">🇳🇱 Nederländska</SelectItem>
+                    <SelectItem value="PL">🇵🇱 Polska</SelectItem>
+                    <SelectItem value="RU">🇷🇺 Ryska</SelectItem>
+                    <SelectItem value="TR">🇹🇷 Turkiska</SelectItem>
+                    <SelectItem value="AR">🇸🇦 Arabiska</SelectItem>
+                    <SelectItem value="HI">🇮🇳 Hindi</SelectItem>
+                    <SelectItem value="ZH">🇨🇳 Kinesiska</SelectItem>
+                    <SelectItem value="JA">🇯🇵 Japanska</SelectItem>
+                    <SelectItem value="KO">🇰🇷 Koreanska</SelectItem>
                     <SelectItem value="ALL">🌍 Alla språk</SelectItem>
                   </SelectContent>
                 </Select>
