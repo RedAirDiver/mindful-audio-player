@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   CheckCircle2,
-  XCircle,
   Ban,
   DollarSign,
   Loader2,
   Search,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 interface AffiliateRow {
@@ -31,16 +32,15 @@ interface CommissionRow {
   amount: number;
   status: string;
   created_at: string;
-  referral_code?: string;
 }
 
 const AdminAffiliates = () => {
   const [affiliates, setAffiliates] = useState<AffiliateRow[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"affiliates" | "commissions">("affiliates");
   const [search, setSearch] = useState("");
   const [editingRate, setEditingRate] = useState<{ id: string; rate: string } | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -55,7 +55,6 @@ const AdminAffiliates = () => {
 
     let affiliateRows = (affRes.data || []) as AffiliateRow[];
 
-    // Fetch profile info for each affiliate
     if (affiliateRows.length > 0) {
       const userIds = affiliateRows.map((a) => a.user_id);
       const { data: profiles } = await supabase
@@ -74,14 +73,7 @@ const AdminAffiliates = () => {
     }
 
     setAffiliates(affiliateRows);
-
-    // Enrich commissions with referral_code
-    let commRows = (commRes.data || []) as CommissionRow[];
-    if (commRows.length > 0 && affiliateRows.length > 0) {
-      const affMap = new Map(affiliateRows.map((a) => [a.id, a.referral_code]));
-      commRows = commRows.map((c) => ({ ...c, referral_code: affMap.get(c.affiliate_id) || "?" }));
-    }
-    setCommissions(commRows);
+    setCommissions((commRes.data || []) as CommissionRow[]);
     setLoading(false);
   };
 
@@ -90,7 +82,7 @@ const AdminAffiliates = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(`Status uppdaterad till ${status}`);
+      toast.success(`Status uppdaterad till ${status === "approved" ? "Godkänd" : "Pausad"}`);
       fetchData();
     }
   };
@@ -132,6 +124,14 @@ const AdminAffiliates = () => {
       (a.profile_email || "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const getCommissionsForAffiliate = (affiliateId: string) =>
+    commissions.filter((c) => c.affiliate_id === affiliateId);
+
+  const getPendingTotal = (affiliateId: string) =>
+    getCommissionsForAffiliate(affiliateId)
+      .filter((c) => c.status === "pending")
+      .reduce((sum, c) => sum + Number(c.amount), 0);
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center">
@@ -142,62 +142,59 @@ const AdminAffiliates = () => {
 
   return (
     <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-foreground">Affiliates</h1>
+      <h1 className="font-display text-2xl font-semibold text-foreground">Affiliates</h1>
+
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Sök affiliate..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
-        <button
-          onClick={() => setTab("affiliates")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            tab === "affiliates" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-          }`}
-        >
-          Affiliates ({affiliates.length})
-        </button>
-        <button
-          onClick={() => setTab("commissions")}
-          className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-            tab === "commissions" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-          }`}
-        >
-          Provisioner ({commissions.length})
-        </button>
-      </div>
+      <div className="bg-card rounded-xl shadow-elegant overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="px-4 py-3 w-8" />
+                <th className="px-4 py-3 font-medium">Kod</th>
+                <th className="px-4 py-3 font-medium">Namn</th>
+                <th className="px-4 py-3 font-medium">E-post</th>
+                <th className="px-4 py-3 font-medium">Provision %</th>
+                <th className="px-4 py-3 font-medium">Väntande</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Åtgärder</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((a) => {
+                const isExpanded = expandedId === a.id;
+                const affCommissions = getCommissionsForAffiliate(a.id);
+                const pendingTotal = getPendingTotal(a.id);
 
-      {tab === "affiliates" && (
-        <>
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Sök affiliate..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <div className="bg-card rounded-xl shadow-elegant overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">Kod</th>
-                    <th className="px-4 py-3 font-medium">Namn</th>
-                    <th className="px-4 py-3 font-medium">E-post</th>
-                    <th className="px-4 py-3 font-medium">Provision %</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Åtgärder</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((a) => (
-                    <tr key={a.id} className="border-b border-border last:border-0">
+                return (
+                  <>
+                    <tr
+                      key={a.id}
+                      className={`border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${isExpanded ? "bg-muted/30" : ""}`}
+                      onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                    >
+                      <td className="px-4 py-3">
+                        {affCommissions.length > 0 ? (
+                          isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          )
+                        ) : null}
+                      </td>
                       <td className="px-4 py-3 font-mono text-xs">{a.referral_code}</td>
                       <td className="px-4 py-3">{a.profile_name || "–"}</td>
                       <td className="px-4 py-3 text-muted-foreground">{a.profile_email || "–"}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         {editingRate?.id === a.id ? (
                           <div className="flex items-center gap-1">
                             <Input
@@ -205,6 +202,7 @@ const AdminAffiliates = () => {
                               value={editingRate.rate}
                               onChange={(e) => setEditingRate({ ...editingRate, rate: e.target.value })}
                               onKeyDown={(e) => e.key === "Enter" && saveRate(a.id)}
+                              autoFocus
                             />
                             <Button size="sm" variant="ghost" onClick={() => saveRate(a.id)}>
                               OK
@@ -217,6 +215,13 @@ const AdminAffiliates = () => {
                           >
                             {a.commission_rate}%
                           </button>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {pendingTotal > 0 ? (
+                          <span className="font-medium text-amber-600">{pendingTotal.toFixed(0)} kr</span>
+                        ) : (
+                          <span className="text-muted-foreground">0 kr</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -238,93 +243,85 @@ const AdminAffiliates = () => {
                             : "Pausad"}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
                           {a.status !== "approved" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => updateStatus(a.id, "approved")}
-                              title="Godkänn"
-                            >
+                            <Button size="sm" variant="ghost" onClick={() => updateStatus(a.id, "approved")} title="Godkänn">
                               <CheckCircle2 className="w-4 h-4 text-primary" />
                             </Button>
                           )}
                           {a.status !== "rejected" && a.status !== "suspended" && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => updateStatus(a.id, "suspended")}
-                              title="Pausa"
-                            >
+                            <Button size="sm" variant="ghost" onClick={() => updateStatus(a.id, "suspended")} title="Pausa">
                               <Ban className="w-4 h-4 text-destructive" />
                             </Button>
                           )}
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
 
-      {tab === "commissions" && (
-        <div className="bg-card rounded-xl shadow-elegant overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Datum</th>
-                  <th className="px-4 py-3 font-medium">Affiliate</th>
-                  <th className="px-4 py-3 font-medium">Belopp</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Åtgärd</th>
+                    {isExpanded && (
+                      <tr key={`${a.id}-details`} className="bg-muted/20">
+                        <td colSpan={8} className="px-8 py-4">
+                          {affCommissions.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Inga provisioner ännu</p>
+                          ) : (
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="text-left text-muted-foreground text-xs">
+                                  <th className="pb-2 font-medium">Datum</th>
+                                  <th className="pb-2 font-medium">Belopp</th>
+                                  <th className="pb-2 font-medium">Status</th>
+                                  <th className="pb-2 font-medium">Åtgärd</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {affCommissions.map((c) => (
+                                  <tr key={c.id} className="border-t border-border/50">
+                                    <td className="py-2">{new Date(c.created_at).toLocaleDateString("sv-SE")}</td>
+                                    <td className="py-2 font-medium">{Number(c.amount).toFixed(0)} kr</td>
+                                    <td className="py-2">
+                                      <span
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                          c.status === "paid"
+                                            ? "bg-primary/10 text-primary"
+                                            : c.status === "cancelled"
+                                            ? "bg-destructive/10 text-destructive"
+                                            : "bg-amber-500/10 text-amber-600"
+                                        }`}
+                                      >
+                                        {c.status === "paid" ? "Utbetald" : c.status === "cancelled" ? "Avbruten" : "Väntande"}
+                                      </span>
+                                    </td>
+                                    <td className="py-2">
+                                      {c.status === "pending" && (
+                                        <Button size="sm" variant="ghost" onClick={() => markCommissionPaid(c.id)}>
+                                          <DollarSign className="w-4 h-4 mr-1" />
+                                          Markera betald
+                                        </Button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
+                    Inga affiliates hittade
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {commissions.map((c) => (
-                  <tr key={c.id} className="border-b border-border last:border-0">
-                    <td className="px-4 py-3">{new Date(c.created_at).toLocaleDateString("sv-SE")}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{c.referral_code}</td>
-                    <td className="px-4 py-3 font-medium">{Number(c.amount).toFixed(0)} kr</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          c.status === "paid"
-                            ? "bg-primary/10 text-primary"
-                            : c.status === "cancelled"
-                            ? "bg-destructive/10 text-destructive"
-                            : "bg-amber-500/10 text-amber-600"
-                        }`}
-                      >
-                        {c.status === "paid" ? "Utbetald" : c.status === "cancelled" ? "Avbruten" : "Väntande"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {c.status === "pending" && (
-                        <Button size="sm" variant="ghost" onClick={() => markCommissionPaid(c.id)}>
-                          <DollarSign className="w-4 h-4 mr-1" />
-                          Markera betald
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {commissions.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
-                      Inga provisioner ännu
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };
