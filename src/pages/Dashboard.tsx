@@ -187,7 +187,7 @@ const Dashboard = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="pt-24 pb-16">
+        <main className="pt-28 md:pt-36 pb-16">
           <div className="container mx-auto px-4">
             <div className="max-w-md mx-auto text-center py-16">
               <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -214,7 +214,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="pt-24 pb-16">
+      <main className="pt-28 md:pt-36 pb-16">
         <div className="container mx-auto px-4">
           {/* Offline Banner */}
           {!isOnline && (
