@@ -26,7 +26,7 @@ const Hero = () => {
           {/* Headline */}
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight text-balance animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             Stärk ditt mentala välbefinnande med{' '}
-            <span className="text-white/90">guidat ljud</span>
+            <span className="text-white/90">guidade program</span>
           </h1>
 
           {/* Subheadline */}
