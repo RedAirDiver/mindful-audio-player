@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliates: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          id: string
+          payout_details: string | null
+          payout_method: string | null
+          referral_code: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          payout_details?: string | null
+          payout_method?: string | null
+          referral_code: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          id?: string
+          payout_details?: string | null
+          payout_method?: string | null
+          referral_code?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       audio_files: {
         Row: {
           created_at: string
@@ -81,6 +117,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      commissions: {
+        Row: {
+          affiliate_id: string
+          amount: number
+          created_at: string
+          id: string
+          paid_at: string | null
+          purchase_id: string
+          status: string
+        }
+        Insert: {
+          affiliate_id: string
+          amount?: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          purchase_id: string
+          status?: string
+        }
+        Update: {
+          affiliate_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          purchase_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -223,6 +304,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          affiliate_id: string
+          converted: boolean
+          converted_user_id: string | null
+          id: string
+          landed_at: string
+          referrer_url: string | null
+          visitor_ip: string | null
+        }
+        Insert: {
+          affiliate_id: string
+          converted?: boolean
+          converted_user_id?: string | null
+          id?: string
+          landed_at?: string
+          referrer_url?: string | null
+          visitor_ip?: string | null
+        }
+        Update: {
+          affiliate_id?: string
+          converted?: boolean
+          converted_user_id?: string | null
+          id?: string
+          landed_at?: string
+          referrer_url?: string | null
+          visitor_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
           },
         ]
       }
