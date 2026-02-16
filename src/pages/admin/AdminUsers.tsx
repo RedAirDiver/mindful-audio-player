@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Loader2,
   ShoppingCart,
 } from "lucide-react";
@@ -42,9 +43,8 @@ const AdminUsers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [purchasesUserId, setPurchasesUserId] = useState<string | null>(null);
-  const [purchasesUserName, setPurchasesUserName] = useState("");
   const [editingUser, setEditingUser] = useState<{
     user_id: string;
     name: string | null;
@@ -135,20 +135,20 @@ const AdminUsers = () => {
     },
   });
 
-  // Fetch purchases for a specific user when viewing
+  // Fetch purchases for expanded user
   const { data: userPurchases, isLoading: loadingPurchases } = useQuery({
-    queryKey: ["admin-user-purchases", purchasesUserId],
+    queryKey: ["admin-user-purchases", expandedUserId],
     queryFn: async () => {
-      if (!purchasesUserId) return [];
+      if (!expandedUserId) return [];
       const { data, error } = await supabase
         .from("purchases")
         .select("*, programs (title)")
-        .eq("user_id", purchasesUserId)
+        .eq("user_id", expandedUserId)
         .order("purchase_date", { ascending: false });
       if (error) throw error;
       return data;
     },
-    enabled: !!purchasesUserId,
+    enabled: !!expandedUserId,
   });
 
   const toggleAdminMutation = useMutation({
@@ -346,82 +346,132 @@ const AdminUsers = () => {
                 <TableBody>
                   {profiles.map((profile) => {
                     const admin = isUserAdmin(profile.user_id);
+                    const isExpanded = expandedUserId === profile.user_id;
                     return (
-                      <TableRow key={profile.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">
-                              {profile.name || "Inget namn"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {profile.email || "-"}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(profile.created_at).toLocaleDateString(
-                            "sv-SE"
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-primary underline-offset-4 hover:underline p-0 h-auto font-normal"
-                            onClick={() => {
-                              setPurchasesUserId(profile.user_id);
-                              setPurchasesUserName(profile.name || profile.email || "Okänd");
-                            }}
-                          >
+                      <Fragment key={profile.id}>
+                        <TableRow
+                          className="cursor-pointer"
+                          onClick={() =>
+                            setExpandedUserId(isExpanded ? null : profile.user_id)
+                          }
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+                                  isExpanded ? "rotate-0" : "-rotate-90"
+                                }`}
+                              />
+                              <div>
+                                <p className="font-medium">
+                                  {profile.name || "Inget namn"}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {profile.email || "-"}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(profile.created_at).toLocaleDateString(
+                              "sv-SE"
+                            )}
+                          </TableCell>
+                          <TableCell>
                             {purchaseCounts?.[profile.user_id] || 0} st
-                          </Button>
-                        </TableCell>
-                        <TableCell>
-                          {admin ? (
-                            <Badge variant="default" className="bg-primary">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Admin
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">Användare</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEdit(profile)}
+                          </TableCell>
+                          <TableCell>
+                            {admin ? (
+                              <Badge variant="default" className="bg-primary">
+                                <Shield className="h-3 w-3 mr-1" />
+                                Admin
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">Användare</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div
+                              className="flex items-center justify-end gap-1"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <Pencil className="h-4 w-4 mr-1" />
-                              Redigera
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                toggleAdminMutation.mutate({
-                                  userId: profile.user_id,
-                                  isAdmin: !!admin,
-                                })
-                              }
-                              disabled={toggleAdminMutation.isPending}
-                            >
-                              {admin ? (
-                                <>
-                                  <ShieldOff className="h-4 w-4 mr-1" />
-                                  Ta bort admin
-                                </>
-                              ) : (
-                                <>
-                                  <Shield className="h-4 w-4 mr-1" />
-                                  Gör till admin
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openEdit(profile)}
+                              >
+                                <Pencil className="h-4 w-4 mr-1" />
+                                Redigera
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  toggleAdminMutation.mutate({
+                                    userId: profile.user_id,
+                                    isAdmin: !!admin,
+                                  })
+                                }
+                                disabled={toggleAdminMutation.isPending}
+                              >
+                                {admin ? (
+                                  <>
+                                    <ShieldOff className="h-4 w-4 mr-1" />
+                                    Ta bort admin
+                                  </>
+                                ) : (
+                                  <>
+                                    <Shield className="h-4 w-4 mr-1" />
+                                    Gör till admin
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        {isExpanded && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="bg-muted/30 p-0">
+                              <div className="px-8 py-4">
+                                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                                  <ShoppingCart className="h-4 w-4" />
+                                  Köphistorik
+                                </h4>
+                                {loadingPurchases ? (
+                                  <div className="flex justify-center py-4">
+                                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                  </div>
+                                ) : userPurchases && userPurchases.length > 0 ? (
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Datum</TableHead>
+                                        <TableHead>Produkt</TableHead>
+                                        <TableHead className="text-right">Belopp</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {userPurchases.map((p) => (
+                                        <TableRow key={p.id}>
+                                          <TableCell className="text-sm">
+                                            {new Date(p.purchase_date).toLocaleDateString("sv-SE")}
+                                          </TableCell>
+                                          <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
+                                          <TableCell className="text-right font-medium">
+                                            {Number(p.amount_paid).toLocaleString("sv-SE")} kr
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground py-2">Inga köp registrerade</p>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </Fragment>
                     );
                   })}
                 </TableBody>
@@ -589,50 +639,6 @@ const AdminUsers = () => {
               {editingUser ? "Spara" : "Skapa"}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* User Purchases Dialog */}
-      <Dialog open={!!purchasesUserId} onOpenChange={(open) => { if (!open) setPurchasesUserId(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5" />
-              Köp – {purchasesUserName}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
-            {loadingPurchases ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : userPurchases && userPurchases.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Produkt</TableHead>
-                    <TableHead className="text-right">Belopp</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {userPurchases.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell className="text-sm">
-                        {new Date(p.purchase_date).toLocaleDateString("sv-SE")}
-                      </TableCell>
-                      <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {Number(p.amount_paid).toLocaleString("sv-SE")} kr
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">Inga köp registrerade</p>
-            )}
-          </div>
         </DialogContent>
       </Dialog>
     </div>
