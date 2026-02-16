@@ -50,6 +50,12 @@ const Header = () => {
             >
               Om oss
             </Link>
+            <Link 
+              to="/bli-affiliate" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/bli-affiliate') ? 'text-primary' : 'text-muted-foreground'}`}
+            >
+              Bli Affiliate
+            </Link>
           </nav>
 
           {/* Desktop Actions */}
@@ -127,6 +133,13 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Om oss
+            </Link>
+            <Link 
+              to="/bli-affiliate" 
+              className="py-2 text-foreground font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Bli Affiliate
             </Link>
             <div className="pt-3 border-t border-border flex flex-col gap-2">
               {user ? (
