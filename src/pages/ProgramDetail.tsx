@@ -648,6 +648,7 @@ const ProgramDetail = () => {
                       <div>
                         <span className="text-3xl font-semibold text-foreground">{program.price}</span>
                         <span className="text-lg text-muted-foreground ml-1">kr</span>
+                        <p className="text-xs text-muted-foreground mt-1">Inkl. 6% moms</p>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Engångsköp • Livstidsåtkomst
