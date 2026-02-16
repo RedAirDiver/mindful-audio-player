@@ -299,9 +299,10 @@ const AdminAffiliates = () => {
                                     <Label className="text-xs">Affiliate-kod</Label>
                                     <Input
                                       value={editForm.referral_code}
-                                      onChange={(e) => setEditForm({ ...editForm, referral_code: e.target.value.replace(/[^a-zA-Z0-9_-]/g, "") })}
-                                      maxLength={30}
+                                      readOnly
+                                      className="bg-muted cursor-not-allowed"
                                     />
+                                    <p className="text-xs text-muted-foreground">Koden kan inte ändras</p>
                                   </div>
                                   <div className="space-y-1.5">
                                     <Label className="text-xs">Provision %</Label>

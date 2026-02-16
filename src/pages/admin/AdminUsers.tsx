@@ -832,7 +832,10 @@ const AffiliateSection = ({ affiliate, editForm, saving, onStartEdit, onCancelEd
                 value={editForm.referral_code}
                 onChange={(e) => onChange("referral_code", e.target.value.replace(/[^a-zA-Z0-9_-]/g, ""))}
                 maxLength={30}
+                readOnly={!!affiliate}
+                className={affiliate ? "bg-muted cursor-not-allowed" : ""}
               />
+              {affiliate && <p className="text-xs text-muted-foreground">Koden kan inte ändras efter skapande</p>}
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Provision %</Label>
