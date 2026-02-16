@@ -82,7 +82,7 @@ const App = () => {
                 <Route index element={<AdminDashboard />} />
                 <Route path="programs" element={<AdminPrograms />} />
                 <Route path="categories" element={<AdminCategories />} />
-                <Route path="audio" element={<AdminAudio />} />
+                <Route path="program" element={<AdminAudio />} />
                 <Route path="purchases" element={<AdminPurchases />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="import" element={<AdminImportUsers />} />
