@@ -57,7 +57,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
     });
-    if (error) throw error;
+
+    if (error) {
+      // Try legacy WordPress password verification
+      try {
+        const { data: legacyResult } = await supabase.functions.invoke(
+          "verify-legacy-password",
+          { body: { email, password } }
+        );
+
+        if (legacyResult?.verified) {
+          // Password was migrated, retry login
+          const { error: retryError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (retryError) throw retryError;
+          toast.success("Välkommen tillbaka!");
+          return;
+        }
+      } catch {
+        // Legacy check failed, throw original error
+      }
+      throw error;
+    }
+
     toast.success("Välkommen tillbaka!");
   };
 
