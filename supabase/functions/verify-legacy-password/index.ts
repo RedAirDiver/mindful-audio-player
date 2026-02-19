@@ -1,17 +1,18 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { crypto } from "https://deno.land/std@0.224.0/crypto/mod.ts";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 // WordPress phpass portable hash verification
-// Implements the iterated MD5 scheme used by WordPress ($P$ / $H$ prefix)
 const ITOA64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-async function md5Binary(data: Uint8Array): Promise<Uint8Array> {
-  const hash = await crypto.subtle.digest("MD5", data);
+function md5Binary(data: Uint8Array): Uint8Array {
+  const hash = crypto.subtle.digestSync("MD5", data);
   return new Uint8Array(hash);
 }
 
@@ -47,8 +48,7 @@ function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   return result;
 }
 
-async function checkPhpassHash(password: string, storedHash: string): Promise<boolean> {
-  // WordPress uses $P$ or $H$ prefix
+function checkPhpassHash(password: string, storedHash: string): boolean {
   if (!storedHash.startsWith("$P$") && !storedHash.startsWith("$H$")) {
     return false;
   }
@@ -62,9 +62,9 @@ async function checkPhpassHash(password: string, storedHash: string): Promise<bo
   const passwordBytes = textToBytes(password);
   const saltBytes = textToBytes(salt);
 
-  let hash = await md5Binary(concatBytes(saltBytes, passwordBytes));
+  let hash = md5Binary(concatBytes(saltBytes, passwordBytes));
   do {
-    hash = await md5Binary(concatBytes(hash, passwordBytes));
+    hash = md5Binary(concatBytes(hash, passwordBytes));
   } while (--count > 0);
 
   const encoded = "$P$" + storedHash[3] + salt + encodePhpass(hash, 16);
@@ -76,6 +76,23 @@ async function checkPhpassHash(password: string, storedHash: string): Promise<bo
     diff |= encoded.charCodeAt(i) ^ storedHash.charCodeAt(i);
   }
   return diff === 0;
+}
+
+async function checkBcryptHash(password: string, storedHash: string): Promise<boolean> {
+  // WordPress stores bcrypt as $wp$2y$... - strip the $wp$ prefix
+  let hash = storedHash;
+  if (hash.startsWith("$wp$")) {
+    hash = "$" + hash.substring(4); // $wp$2y$... -> $2y$...
+  }
+  // Deno bcrypt expects $2a$ prefix
+  hash = hash.replace("$2y$", "$2a$");
+  
+  try {
+    return await bcrypt.compare(password, hash);
+  } catch (e) {
+    console.error("bcrypt compare error:", e);
+    return false;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -113,8 +130,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify against WordPress hash
-    const isValid = await checkPhpassHash(password, profile.legacy_password_hash);
+    const storedHash = profile.legacy_password_hash;
+    let isValid = false;
+
+    // Check hash type
+    if (storedHash.startsWith("$P$") || storedHash.startsWith("$H$")) {
+      isValid = checkPhpassHash(password, storedHash);
+    } else if (storedHash.startsWith("$wp$2y$") || storedHash.startsWith("$2y$") || storedHash.startsWith("$2a$")) {
+      isValid = await checkBcryptHash(password, storedHash);
+    }
 
     if (!isValid) {
       return new Response(
@@ -123,7 +147,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Password matches! Update the auth user's password to the new one
+    // Password matches! Update the auth user's password
     const { error: updateError } = await adminClient.auth.admin.updateUserById(
       profile.user_id,
       { password }
@@ -137,7 +161,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Clear the legacy hash since password is now migrated
+    // Clear the legacy hash
     await adminClient
       .from("profiles")
       .update({ legacy_password_hash: null })
@@ -148,6 +172,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("Legacy password error:", err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
