@@ -78,7 +78,7 @@ function checkPhpassHash(password: string, storedHash: string): boolean {
   return diff === 0;
 }
 
-async function checkBcryptHash(password: string, storedHash: string): Promise<boolean> {
+function checkBcryptHash(password: string, storedHash: string): boolean {
   // WordPress stores bcrypt as $wp$2y$... - strip the $wp$ prefix
   let hash = storedHash;
   if (hash.startsWith("$wp$")) {
@@ -88,7 +88,7 @@ async function checkBcryptHash(password: string, storedHash: string): Promise<bo
   hash = hash.replace("$2y$", "$2a$");
   
   try {
-    return await bcrypt.compare(password, hash);
+    return bcrypt.compareSync(password, hash);
   } catch (e) {
     console.error("bcrypt compare error:", e);
     return false;
@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
     if (storedHash.startsWith("$P$") || storedHash.startsWith("$H$")) {
       isValid = checkPhpassHash(password, storedHash);
     } else if (storedHash.startsWith("$wp$2y$") || storedHash.startsWith("$2y$") || storedHash.startsWith("$2a$")) {
-      isValid = await checkBcryptHash(password, storedHash);
+      isValid = checkBcryptHash(password, storedHash);
     }
 
     if (!isValid) {
