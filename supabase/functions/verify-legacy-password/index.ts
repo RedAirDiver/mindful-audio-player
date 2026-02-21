@@ -87,8 +87,22 @@ function checkBcryptHash(password: string, storedHash: string): boolean {
   // Deno bcrypt expects $2a$ prefix
   hash = hash.replace("$2y$", "$2a$");
   
+  console.log("bcrypt debug:", {
+    originalHash: storedHash,
+    strippedHash: hash,
+    hashLength: hash.length,
+    passwordLength: password.length,
+  });
+  
+  // Self-test: hash the password and verify the library works
   try {
-    return bcrypt.compareSync(password, hash);
+    const testHash = bcrypt.hashSync(password);
+    const selfTest = bcrypt.compareSync(password, testHash);
+    console.log("bcrypt self-test:", { selfTest, testHash: testHash.substring(0, 20) + "..." });
+    
+    const result = bcrypt.compareSync(password, hash);
+    console.log("bcrypt compareSync result:", result);
+    return result;
   } catch (e) {
     console.error("bcrypt compare error:", e);
     return false;
@@ -133,12 +147,21 @@ Deno.serve(async (req) => {
     const storedHash = profile.legacy_password_hash;
     let isValid = false;
 
+    console.log("Hash type detection:", {
+      hashPrefix: storedHash.substring(0, 10),
+      hashLength: storedHash.length,
+      isPhpass: storedHash.startsWith("$P$") || storedHash.startsWith("$H$"),
+      isBcrypt: storedHash.startsWith("$wp$2y$") || storedHash.startsWith("$2y$") || storedHash.startsWith("$2a$"),
+    });
+
     // Check hash type
     if (storedHash.startsWith("$P$") || storedHash.startsWith("$H$")) {
       isValid = checkPhpassHash(password, storedHash);
     } else if (storedHash.startsWith("$wp$2y$") || storedHash.startsWith("$2y$") || storedHash.startsWith("$2a$")) {
       isValid = checkBcryptHash(password, storedHash);
     }
+
+    console.log("Verification result:", { isValid, email });
 
     if (!isValid) {
       return new Response(
