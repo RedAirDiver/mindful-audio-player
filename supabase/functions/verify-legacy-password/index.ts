@@ -78,22 +78,50 @@ function checkPhpassHash(password: string, storedHash: string): boolean {
   return diff === 0;
 }
 
-function checkBcryptHash(password: string, storedHash: string): boolean {
+async function wpPreHash(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode("wp-sha384"),
+    { name: "HMAC", hash: "SHA-384" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(password));
+  // base64 encode the HMAC result
+  const bytes = new Uint8Array(signature);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
+async function checkBcryptHash(password: string, storedHash: string): Promise<boolean> {
   let hash = storedHash;
-  if (hash.startsWith("$wp$")) {
+  const isWpBcrypt = hash.startsWith("$wp$");
+  
+  if (isWpBcrypt) {
     hash = "$" + hash.substring(4);
   }
-  // bcryptjs requires $2b$ (not $2y$ which is PHP-specific)
+  // bcryptjs needs $2a$ or $2b$
   hash = hash.replace("$2y$", "$2b$");
   
+  let passwordToCheck = password;
+  if (isWpBcrypt) {
+    // WordPress 6.8+: bcrypt(base64(hmac-sha384(key="wp-sha384", password)))
+    passwordToCheck = await wpPreHash(password.trim());
+    console.log("WP pre-hash applied, result length:", passwordToCheck.length);
+  }
+  
   console.log("bcrypt debug:", {
-    originalHash: storedHash,
-    strippedHash: hash,
+    isWpBcrypt,
+    strippedHash: hash.substring(0, 10) + "...",
     hashLength: hash.length,
   });
   
   try {
-    const result = bcrypt.compareSync(password, hash);
+    const result = bcrypt.compareSync(passwordToCheck, hash);
     console.log("bcrypt compareSync result:", result);
     return result;
   } catch (e) {
@@ -151,7 +179,7 @@ Deno.serve(async (req) => {
     if (storedHash.startsWith("$P$") || storedHash.startsWith("$H$")) {
       isValid = checkPhpassHash(password, storedHash);
     } else if (storedHash.startsWith("$wp$2y$") || storedHash.startsWith("$2y$") || storedHash.startsWith("$2a$")) {
-      isValid = checkBcryptHash(password, storedHash);
+      isValid = await checkBcryptHash(password, storedHash);
     }
 
     console.log("Verification result:", { isValid, email });
