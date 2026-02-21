@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { crypto } from "https://deno.land/std@0.224.0/crypto/mod.ts";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import bcrypt from "npm:bcryptjs@2.4.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,27 +79,19 @@ function checkPhpassHash(password: string, storedHash: string): boolean {
 }
 
 function checkBcryptHash(password: string, storedHash: string): boolean {
-  // WordPress stores bcrypt as $wp$2y$... - strip the $wp$ prefix
   let hash = storedHash;
   if (hash.startsWith("$wp$")) {
-    hash = "$" + hash.substring(4); // $wp$2y$... -> $2y$...
+    hash = "$" + hash.substring(4);
   }
-  // Deno bcrypt expects $2a$ prefix
   hash = hash.replace("$2y$", "$2a$");
   
   console.log("bcrypt debug:", {
     originalHash: storedHash,
     strippedHash: hash,
     hashLength: hash.length,
-    passwordLength: password.length,
   });
   
-  // Self-test: hash the password and verify the library works
   try {
-    const testHash = bcrypt.hashSync(password);
-    const selfTest = bcrypt.compareSync(password, testHash);
-    console.log("bcrypt self-test:", { selfTest, testHash: testHash.substring(0, 20) + "..." });
-    
     const result = bcrypt.compareSync(password, hash);
     console.log("bcrypt compareSync result:", result);
     return result;
