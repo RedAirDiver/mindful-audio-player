@@ -83,7 +83,8 @@ function checkBcryptHash(password: string, storedHash: string): boolean {
   if (hash.startsWith("$wp$")) {
     hash = "$" + hash.substring(4);
   }
-  hash = hash.replace("$2y$", "$2a$");
+  // bcryptjs requires $2b$ (not $2y$ which is PHP-specific)
+  hash = hash.replace("$2y$", "$2b$");
   
   console.log("bcrypt debug:", {
     originalHash: storedHash,
