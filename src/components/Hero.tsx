@@ -63,7 +63,7 @@ const Hero = () => {
               {benefits.map((benefit, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 bg-primary/8 backdrop-blur-sm rounded-xl px-4 py-3 transition-all hover:bg-primary/15"
+                  className="flex items-start gap-3 bg-primary/15 backdrop-blur-sm rounded-xl px-4 py-3 transition-all hover:bg-primary/20"
                 >
                   <benefit.icon className="w-5 h-5 mt-0.5 flex-shrink-0 text-primary" />
                   <span className="text-sm md:text-base text-foreground/85">{benefit.text}</span>
