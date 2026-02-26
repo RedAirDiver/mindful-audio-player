@@ -27,7 +27,7 @@ const categories = [
     title: "Sport",
     slug: "Sport",
     icon: Trophy,
-    image: "https://images.unsplash.com/photo-1461896836934-bd45ba8b2d36?w=600&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&auto=format&fit=crop&q=80",
     color: "from-primary/80 to-primary/40",
   },
   {
