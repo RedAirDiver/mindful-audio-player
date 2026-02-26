@@ -73,7 +73,7 @@ const Hero = () => {
           </div>
 
           {/* Closing statement */}
-          <p className="text-lg text-white/80 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
             Med mental träning kan du utveckla vilket område du än väljer.
           </p>
 
