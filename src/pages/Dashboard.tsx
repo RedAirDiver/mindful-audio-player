@@ -517,14 +517,15 @@ const Dashboard = () => {
                                       </div>
                                       <Button
                                         variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        size="sm"
+                                        className="h-8 text-muted-foreground hover:text-destructive text-xs gap-1"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleRemoveOffline(track.id);
                                         }}
                                       >
                                         <Trash2 className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Ta bort offline</span>
                                       </Button>
                                     </div>
                                   ) : (
