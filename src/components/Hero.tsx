@@ -56,7 +56,7 @@ const Hero = () => {
 
           {/* Benefits section */}
           <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <p className="text-lg text-white/80 font-medium mb-6">
+            <p className="text-lg text-muted-foreground font-medium mb-6">
               Genom våra program lär du dig att:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto text-left">
