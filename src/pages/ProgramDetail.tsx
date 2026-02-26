@@ -466,7 +466,7 @@ const ProgramDetail = () => {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Tillbaka till mentala program</span>
+            <span>Tillbaka till mentala träningsprogram</span>
           </Link>
 
           {/* Hero Image */}

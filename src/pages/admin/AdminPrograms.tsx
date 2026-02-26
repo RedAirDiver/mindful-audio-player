@@ -292,7 +292,7 @@ const AdminPrograms = () => {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Mentala Program</h1>
+          <h1 className="text-3xl font-bold text-foreground">Mentala Träningsprogram</h1>
           <p className="text-muted-foreground mt-1">
             Hantera alla mentala träningsprogram
           </p>
@@ -648,14 +648,14 @@ const AdminPrograms = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Sök mentala program..."
+                placeholder="Sök mentala träningsprogram..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              {filteredPrograms?.length || 0} mentala program
+              {filteredPrograms?.length || 0} mentala träningsprogram
             </p>
           </div>
         </CardHeader>

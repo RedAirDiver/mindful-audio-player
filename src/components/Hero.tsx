@@ -31,14 +31,14 @@ const Hero = () => {
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Professionella mentala program för träning, avslappning och fokus. Lyssna var du vill – online eller offline.
+            Professionella mentala träningsprogram för avslappning och fokus. Lyssna var du vill – online eller offline.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Button variant="hero" size="xl" asChild>
               <Link to="/programs">
-                Utforska mentala program
+                Utforska mentala träningsprogram
               </Link>
             </Button>
             <Button variant="heroOutline" size="xl" asChild>
