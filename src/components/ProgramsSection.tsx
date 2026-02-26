@@ -13,6 +13,7 @@ interface Program {
   image_url: string | null;
   is_active: boolean;
   categories: string[] | null;
+  country: string | null;
 }
 
 const ProgramsSection = () => {
@@ -115,6 +116,7 @@ const ProgramsSection = () => {
                 trackCount={trackCounts[program.id] || 0}
                 price={program.price}
                 image={program.image_url || 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&auto=format&fit=crop'}
+                country={program.country}
                 featured={true}
                 categories={program.categories || []}
               />

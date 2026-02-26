@@ -21,6 +21,27 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+const countryFlags: Record<string, { flag: string; label: string }> = {
+  SE: { flag: "🇸🇪", label: "Svenska" },
+  NO: { flag: "🇳🇴", label: "Norsk" },
+  DK: { flag: "🇩🇰", label: "Dansk" },
+  FI: { flag: "🇫🇮", label: "Finska" },
+  EN: { flag: "🇬🇧", label: "English" },
+  US: { flag: "🇺🇸", label: "English" },
+  DE: { flag: "🇩🇪", label: "Deutsch" },
+  FR: { flag: "🇫🇷", label: "Français" },
+  ES: { flag: "🇪🇸", label: "Español" },
+  IT: { flag: "🇮🇹", label: "Italiano" },
+  PT: { flag: "🇵🇹", label: "Português" },
+  NL: { flag: "🇳🇱", label: "Nederlands" },
+  PL: { flag: "🇵🇱", label: "Polski" },
+  RU: { flag: "🇷🇺", label: "Русский" },
+  JP: { flag: "🇯🇵", label: "日本語" },
+  CN: { flag: "🇨🇳", label: "中文" },
+  KR: { flag: "🇰🇷", label: "한국어" },
+  AR: { flag: "🇸🇦", label: "العربية" },
+};
+
 interface ProgramCardProps {
   slug: string;
   title: string;
@@ -29,7 +50,7 @@ interface ProgramCardProps {
   trackCount: number;
   price: number;
   image: string;
-  
+  country?: string | null;
   featured?: boolean;
   categories?: string[];
 }
@@ -42,12 +63,13 @@ const ProgramCard = ({
   trackCount,
   price,
   image,
-  
+  country,
   featured = false,
   categories = [],
 }: ProgramCardProps) => {
   const isFree = price === 0;
   const displayCategory = categories.find(c => c !== 'Gratisprogram') || categories[0];
+  const showFlag = country && country !== 'SE' && countryFlags[country];
 
   return (
     <article 
@@ -70,12 +92,18 @@ const ProgramCard = ({
       )}
 
       {/* Image */}
-      <div className="aspect-[4/3] overflow-hidden bg-muted">
+      <div className="aspect-[4/3] overflow-hidden bg-muted relative">
         <img 
           src={image} 
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
+        {showFlag && (
+          <div className="absolute bottom-3 right-3 z-10 bg-card/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-sm font-medium shadow-sm flex items-center gap-1.5 border border-border/50">
+            <span className="text-lg leading-none">{countryFlags[country!].flag}</span>
+            <span className="text-xs text-foreground">{countryFlags[country!].label}</span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
