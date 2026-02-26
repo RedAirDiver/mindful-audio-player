@@ -20,16 +20,16 @@ const Hero = () => {
       
       {/* Decorative Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-primary/8 rounded-full blur-3xl" />
       </div>
 
       {/* Content */}
-      <div className="relative container mx-auto px-4 py-32 md:py-40 text-center text-white">
+      <div className="relative container mx-auto px-4 py-32 md:py-40 text-center text-foreground">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in">
+            <Sparkles className="w-4 h-4 text-primary" />
             <span>Upptäck kraften i ditt sinne</span>
           </div>
 
@@ -39,16 +39,16 @@ const Hero = () => {
           </h1>
 
           {/* Description */}
-          <p className="text-lg md:text-xl text-white/85 max-w-3xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             Här får du tillgång till beprövad mental träning baserad på Uneståls metodik – kombinerad med modern forskning inom hjärnan, och dina tankar, beteende, känslor och inlärning.
           </p>
 
           {/* Sub-headline */}
           <div className="animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
-            <h2 className="font-display text-2xl md:text-3xl font-semibold text-white mb-4">
+            <h2 className="font-display text-2xl md:text-3xl font-semibold text-foreground mb-4">
               Utveckla din fulla potential
             </h2>
-            <p className="text-lg text-white/75 max-w-2xl mx-auto leading-relaxed italic">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed italic">
               Mental träning handlar inte om att bli någon annan –<br className="hidden md:block" />
               det handlar om att bli mer av den du är, när du är som bäst i alla situationer.
             </p>
@@ -56,24 +56,24 @@ const Hero = () => {
 
           {/* Benefits section */}
           <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <p className="text-lg text-white/80 font-medium mb-6">
+            <p className="text-lg text-muted-foreground font-medium mb-6">
               Genom våra program lär du dig att:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto text-left">
               {benefits.map((benefit, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 transition-all hover:bg-white/15"
+                  className="flex items-start gap-3 bg-primary/8 backdrop-blur-sm rounded-xl px-4 py-3 transition-all hover:bg-primary/15"
                 >
-                  <benefit.icon className="w-5 h-5 mt-0.5 flex-shrink-0 text-white/90" />
-                  <span className="text-sm md:text-base text-white/90">{benefit.text}</span>
+                  <benefit.icon className="w-5 h-5 mt-0.5 flex-shrink-0 text-primary" />
+                  <span className="text-sm md:text-base text-foreground/85">{benefit.text}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Closing statement */}
-          <p className="text-lg text-white/80 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
             Med mental träning kan du utveckla vilket område du än väljer.
           </p>
 
@@ -87,17 +87,17 @@ const Hero = () => {
           </div>
 
           {/* Trust Indicators */}
-          <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-white/60 text-sm animate-fade-in-up" style={{ animationDelay: '0.45s' }}>
+          <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-muted-foreground text-sm animate-fade-in-up" style={{ animationDelay: '0.45s' }}>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-white/40 rounded-full" />
+              <div className="w-2 h-2 bg-primary/40 rounded-full" />
               <span>Över 1000+ nöjda användare</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-white/40 rounded-full" />
+              <div className="w-2 h-2 bg-primary/40 rounded-full" />
               <span>Lyssna offline</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-white/40 rounded-full" />
+              <div className="w-2 h-2 bg-primary/40 rounded-full" />
               <span>Livstids tillgång</span>
             </div>
           </div>
