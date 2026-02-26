@@ -39,7 +39,7 @@ const Hero = () => {
           </h1>
 
           {/* Description */}
-          <p className="text-lg md:text-xl text-white/85 max-w-3xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             Här får du tillgång till beprövad mental träning baserad på Uneståls metodik – kombinerad med modern forskning inom hjärnan, och dina tankar, beteende, känslor och inlärning.
           </p>
 
