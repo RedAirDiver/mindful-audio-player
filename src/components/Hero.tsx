@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Play, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 const Hero = () => {
   return (
@@ -35,16 +35,10 @@ const Hero = () => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <div className="flex items-center justify-center pt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <Button variant="hero" size="xl" asChild>
-              <Link to="/programs">
+              <Link to="/products">
                 Utforska mentala träningsprogram
-              </Link>
-            </Button>
-            <Button variant="heroOutline" size="xl" asChild>
-              <Link to="/programs" className="flex items-center gap-2">
-                <Play className="w-5 h-5" />
-                Prova gratis
               </Link>
             </Button>
           </div>
