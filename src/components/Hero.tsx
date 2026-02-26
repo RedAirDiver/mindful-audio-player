@@ -28,8 +28,8 @@ const Hero = () => {
       <div className="relative container mx-auto px-4 py-32 md:py-40 text-center text-foreground">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in">
+            <Sparkles className="w-4 h-4 text-primary" />
             <span>Upptäck kraften i ditt sinne</span>
           </div>
 
