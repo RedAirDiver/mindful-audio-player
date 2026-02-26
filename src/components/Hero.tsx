@@ -1,10 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Brain, Target, Heart, Zap, Shield, Clock, Star } from "lucide-react";
+
+const benefits = [
+  { icon: Heart, text: "Stärka din självbild och självkänsla" },
+  { icon: Target, text: "Skapa tydliga magiska målbilder, värden och riktning i livet" },
+  { icon: Brain, text: "Hantera stress och hitta inre lugn" },
+  { icon: Zap, text: "Förbättra fokus, motivation och prestation" },
+  { icon: Shield, text: "Bygga ett starkt självledarskap" },
+  { icon: Clock, text: "Städa upp ditt förflutna, forma din framtid och lev i nuet" },
+  { icon: Star, text: "Förebygg ohälsa" },
+];
 
 const Hero = () => {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Gradient */}
       <div className="absolute inset-0 gradient-hero" />
       
@@ -15,8 +25,8 @@ const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="relative container mx-auto px-4 py-20 text-center text-white">
-        <div className="max-w-3xl mx-auto space-y-8">
+      <div className="relative container mx-auto px-4 py-24 md:py-32 text-center text-white">
+        <div className="max-w-4xl mx-auto space-y-10">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in">
             <Sparkles className="w-4 h-4" />
@@ -24,18 +34,51 @@ const Hero = () => {
           </div>
 
           {/* Headline */}
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight text-balance animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Stärk ditt mentala välbefinnande med{' '}
-            <span className="text-white/90">guidade program</span>
+          <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight text-balance animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            Välkommen till vår plattform och app där 100-tals Mentala Träningsprogram finns för dig.
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-lg md:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Professionella mentala träningsprogram för avslappning och fokus. Lyssna var du vill – online eller offline.
+          {/* Description */}
+          <p className="text-lg md:text-xl text-white/85 max-w-3xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            Här får du tillgång till beprövad mental träning baserad på Uneståls metodik – kombinerad med modern forskning inom hjärnan, och dina tankar, beteende, känslor och inlärning.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex items-center justify-center pt-4 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          {/* Sub-headline */}
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+            <h2 className="font-display text-2xl md:text-3xl font-semibold text-white mb-4">
+              Utveckla din fulla potential
+            </h2>
+            <p className="text-lg text-white/75 max-w-2xl mx-auto leading-relaxed italic">
+              Mental träning handlar inte om att bli någon annan –<br className="hidden md:block" />
+              det handlar om att bli mer av den du är, när du är som bäst i alla situationer.
+            </p>
+          </div>
+
+          {/* Benefits section */}
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+            <p className="text-lg text-white/80 font-medium mb-6">
+              Genom våra program lär du dig att:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl mx-auto text-left">
+              {benefits.map((benefit, i) => (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 transition-all hover:bg-white/15"
+                >
+                  <benefit.icon className="w-5 h-5 mt-0.5 flex-shrink-0 text-white/90" />
+                  <span className="text-sm md:text-base text-white/90">{benefit.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Closing statement */}
+          <p className="text-lg text-white/80 max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+            Med mental träning kan du utveckla vilket område du än väljer.
+          </p>
+
+          {/* CTA */}
+          <div className="flex items-center justify-center pt-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <Button variant="hero" size="xl" asChild>
               <Link to="/products">
                 Utforska mentala träningsprogram
@@ -44,7 +87,7 @@ const Hero = () => {
           </div>
 
           {/* Trust Indicators */}
-          <div className="pt-12 flex flex-wrap items-center justify-center gap-8 text-white/60 text-sm animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-white/60 text-sm animate-fade-in-up" style={{ animationDelay: '0.45s' }}>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-white/40 rounded-full" />
               <span>Över 1000+ nöjda användare</span>
