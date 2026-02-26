@@ -48,7 +48,7 @@ const Hero = () => {
             <h2 className="font-display text-2xl md:text-3xl font-semibold text-foreground mb-4">
               Utveckla din fulla potential
             </h2>
-            <p className="text-lg text-white/75 max-w-2xl mx-auto leading-relaxed italic">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed italic">
               Mental träning handlar inte om att bli någon annan –<br className="hidden md:block" />
               det handlar om att bli mer av den du är, när du är som bäst i alla situationer.
             </p>
