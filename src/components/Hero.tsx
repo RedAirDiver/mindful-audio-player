@@ -45,7 +45,7 @@ const Hero = () => {
 
           {/* Sub-headline */}
           <div className="animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
-            <h2 className="font-display text-2xl md:text-3xl font-semibold text-white mb-4">
+            <h2 className="font-display text-2xl md:text-3xl font-semibold text-foreground mb-4">
               Utveckla din fulla potential
             </h2>
             <p className="text-lg text-white/75 max-w-2xl mx-auto leading-relaxed italic">
