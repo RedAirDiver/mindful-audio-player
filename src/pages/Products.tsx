@@ -81,10 +81,13 @@ const Products = () => {
     (c) => c.name !== "Populära Produkter" && c.name !== "Dolda"
   );
 
-  const filteredPrograms = programs.filter((p) => {
-    if (selectedCategory === "all") return true;
-    return p.categories?.includes(selectedCategory);
-  });
+  // Exclude hidden programs, then apply category filter
+  const filteredPrograms = programs
+    .filter((p) => !p.categories?.includes("Dolda"))
+    .filter((p) => {
+      if (selectedCategory === "all") return true;
+      return p.categories?.includes(selectedCategory);
+    });
 
   return (
     <div className="min-h-screen">

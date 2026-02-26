@@ -31,6 +31,7 @@ const ProgramsSection = () => {
         .select('*')
         .eq('is_active', true)
         .contains('categories', ['Populära Produkter'])
+        .not('categories', 'cs', '{"Dolda"}')
         .order('price', { ascending: false });
 
       if (programsError) throw programsError;
