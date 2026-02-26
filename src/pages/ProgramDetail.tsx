@@ -249,7 +249,7 @@ const ProgramDetail = () => {
     await removeTrackOffline(trackId);
   };
 
-  // Preview playback - actual audio for first 30 seconds
+  // Preview playback - starts at 1 min, plays for 1.5 minutes
   const togglePreview = async (trackId: string) => {
     // Stop purchased playback
     setCurrentTrackIndex(null);
@@ -288,13 +288,14 @@ const ProgramDetail = () => {
       if (previewAudioRef.current) {
         previewAudioRef.current.src = data.signedUrl;
         previewAudioRef.current.volume = 0.8;
+        previewAudioRef.current.currentTime = 60; // Start 1 min in
         await previewAudioRef.current.play();
         
         setPreviewTrack(trackId);
         setIsPlaying(true);
         setPreviewProgress(0);
         
-        toast.info("Förhandslyssning: 30 sekunder", {
+        toast.info("Förhandslyssning: 1,5 minuter", {
           description: "Köp produkten för att lyssna på hela spåret"
         });
       }
@@ -312,11 +313,11 @@ const ProgramDetail = () => {
     if (!previewAudio) return;
 
     const handleTimeUpdate = () => {
-      const currentSeconds = Math.floor(previewAudio.currentTime);
-      setPreviewProgress(currentSeconds);
+      const elapsed = Math.floor(previewAudio.currentTime - 60);
+      setPreviewProgress(Math.max(0, elapsed));
       
-      // Stop at 30 seconds
-      if (previewAudio.currentTime >= 30) {
+      // Stop after 1.5 minutes (at 2:30 mark = 150s)
+      if (previewAudio.currentTime >= 150) {
         previewAudio.pause();
         previewAudio.currentTime = 0;
         setIsPlaying(false);
@@ -612,12 +613,12 @@ const ProgramDetail = () => {
                               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                                 <div 
                                   className="h-full bg-primary rounded-full transition-all duration-300"
-                                  style={{ width: `${(previewProgress / 30) * 100}%` }}
+                                  style={{ width: `${(previewProgress / 90) * 100}%` }}
                                 />
                               </div>
                               <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>{previewProgress}s</span>
-                                <span>30s förhandslyssning</span>
+                                <span>{Math.floor(previewProgress / 60)}:{(previewProgress % 60).toString().padStart(2, '0')}</span>
+                                <span>1:30 förhandslyssning</span>
                               </div>
                             </div>
                           )}
