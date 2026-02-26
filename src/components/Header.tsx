@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, User, LogOut, Settings, LinkIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
-import logo from "@/assets/logo.svg";
+import logo from "@/assets/logo.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
