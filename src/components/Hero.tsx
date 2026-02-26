@@ -25,7 +25,7 @@ const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="relative container mx-auto px-4 py-32 md:py-40 text-center text-white">
+      <div className="relative container mx-auto px-4 py-32 md:py-40 text-center text-foreground">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium animate-fade-in">
