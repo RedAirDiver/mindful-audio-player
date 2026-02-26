@@ -23,7 +23,7 @@ const AdminLayout = () => {
 
   const navItems = [
     { href: "/admin", label: "Översikt", icon: LayoutDashboard, exact: true },
-    { href: "/admin/programs", label: "Mentala Program", icon: Package },
+    { href: "/admin/programs", label: "Mentala Träningsprogram", icon: Package },
     { href: "/admin/categories", label: "Kategorier", icon: FolderOpen },
     { href: "/admin/program", label: "Ljudfiler", icon: Music },
     { href: "/admin/purchases", label: "Köp", icon: ShoppingCart },

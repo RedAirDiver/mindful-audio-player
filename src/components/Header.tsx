@@ -42,7 +42,7 @@ const Header = () => {
               to="/produkter" 
               className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/produkter') ? 'text-primary' : 'text-muted-foreground'}`}
             >
-              Mentala Program
+              Mentala Träningsprogram
             </Link>
             <Link 
               to="/about" 
@@ -125,7 +125,7 @@ const Header = () => {
               className="py-2 text-foreground font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
-              Mentala Program
+              Mentala Träningsprogram
             </Link>
             <Link 
               to="/about" 

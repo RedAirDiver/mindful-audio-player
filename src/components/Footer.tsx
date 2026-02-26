@@ -11,7 +11,7 @@ const Footer = () => {
           <div className="md:col-span-1">
             <img src={logo} alt="Mentalträning" className="h-20 md:h-24 w-auto" />
             <p className="mt-4 text-sm leading-relaxed opacity-70">
-              Professionell mental träning för ett bättre liv. Utveckla ditt sinne med våra guidade mentala program.
+              Professionell mental träning för ett bättre liv. Utveckla ditt sinne med våra guidade mentala träningsprogram.
             </p>
           </div>
 
@@ -20,7 +20,7 @@ const Footer = () => {
             <h4 className="font-semibold text-background mb-4">Navigation</h4>
             <ul className="space-y-3 text-sm">
               <li><Link to="/" className="hover:text-background transition-colors">Hem</Link></li>
-              <li><Link to="/programs" className="hover:text-background transition-colors">Mentala Program</Link></li>
+              <li><Link to="/programs" className="hover:text-background transition-colors">Mentala Träningsprogram</Link></li>
               <li><Link to="/about" className="hover:text-background transition-colors">Om oss</Link></li>
             </ul>
           </div>
@@ -31,7 +31,7 @@ const Footer = () => {
             <ul className="space-y-3 text-sm">
               <li><Link to="/login" className="hover:text-background transition-colors">Logga in</Link></li>
               <li><Link to="/login" className="hover:text-background transition-colors">Skapa konto</Link></li>
-              <li><Link to="/dashboard" className="hover:text-background transition-colors">Mina mentala program</Link></li>
+              <li><Link to="/dashboard" className="hover:text-background transition-colors">Mina mentala träningsprogram</Link></li>
             </ul>
           </div>
 

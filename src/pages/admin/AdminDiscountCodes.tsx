@@ -176,7 +176,7 @@ const AdminDiscountCodes = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Rabattkoder</h1>
           <p className="text-muted-foreground mt-1">
-            Skapa och hantera rabattkoder för dina mentala program
+            Skapa och hantera rabattkoder för dina mentala träningsprogram
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>

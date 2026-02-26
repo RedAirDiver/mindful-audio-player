@@ -94,10 +94,10 @@ const Products = () => {
           {/* Page Header */}
           <div className="text-center max-w-2xl mx-auto mb-12">
             <h1 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-              Alla mentala program
+              Alla mentala träningsprogram
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Utforska våra professionellt framtagna program för mental träning och avslappning.
+              Utforska våra professionellt framtagna mentala träningsprogram för avslappning och fokus.
             </p>
           </div>
 
@@ -160,7 +160,7 @@ const Products = () => {
           {/* Empty State */}
           {!loading && filteredPrograms.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Inga mentala program hittades i denna kategori.</p>
+              <p className="text-muted-foreground">Inga mentala träningsprogram hittades i denna kategori.</p>
             </div>
           )}
         </div>
