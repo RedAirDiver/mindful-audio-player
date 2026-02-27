@@ -770,6 +770,42 @@ const AdminPrograms = () => {
           )}
         </CardContent>
       </Card>
+      {/* Duplicate dialog */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={(open) => {
+        setIsDuplicateDialogOpen(open);
+        if (!open) { setDuplicateProgram(null); setDuplicateTitle(""); }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicera program</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (duplicateProgram && duplicateTitle.trim()) {
+              duplicateMutation.mutate({ source: duplicateProgram, newTitle: duplicateTitle.trim() });
+            }
+          }} className="space-y-4">
+            <div>
+              <Label htmlFor="duplicate-title">Nytt namn</Label>
+              <Input
+                id="duplicate-title"
+                value={duplicateTitle}
+                onChange={(e) => setDuplicateTitle(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsDuplicateDialogOpen(false)}>
+                Avbryt
+              </Button>
+              <Button type="submit" disabled={duplicateMutation.isPending}>
+                {duplicateMutation.isPending ? "Duplicerar..." : "Duplicera"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
