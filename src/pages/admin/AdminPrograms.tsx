@@ -38,7 +38,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePlus, Loader2, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePlus, Loader2, FileText, Copy } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
@@ -59,6 +59,10 @@ const AdminPrograms = () => {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState("");
+  const [duplicateProgram, setDuplicateProgram] = useState<Program | null>(null);
+  const [duplicateTitle, setDuplicateTitle] = useState("");
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -144,6 +148,36 @@ const AdminPrograms = () => {
     },
     onError: (error) => {
       toast.error("Kunde inte radera produkten: " + error.message);
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: async ({ source, newTitle }: { source: Program; newTitle: string }) => {
+      const newSlug = generateSlug(newTitle) + '-' + Date.now().toString(36);
+      const { error } = await supabase.from("programs").insert([{
+        title: newTitle,
+        slug: newSlug,
+        description: source.description,
+        short_description: source.short_description,
+        price: source.price,
+        image_url: source.image_url,
+        pdf_file_path: source.pdf_file_path,
+        is_active: false,
+        categories: source.categories,
+        country: source.country,
+        duration_text: source.duration_text,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-programs"] });
+      toast.success("Programmet duplicerat!");
+      setIsDuplicateDialogOpen(false);
+      setDuplicateProgram(null);
+      setDuplicateTitle("");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte duplicera: " + error.message);
     },
   });
 
@@ -699,8 +733,21 @@ const AdminPrograms = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(program)}
+                        title="Redigera"
                       >
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setDuplicateProgram(program);
+                          setDuplicateTitle(program.title + " (kopia)");
+                          setIsDuplicateDialogOpen(true);
+                        }}
+                        title="Duplicera"
+                      >
+                        <Copy className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -711,6 +758,7 @@ const AdminPrograms = () => {
                             deleteMutation.mutate(program.id);
                           }
                         }}
+                        title="Radera"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -722,6 +770,42 @@ const AdminPrograms = () => {
           )}
         </CardContent>
       </Card>
+      {/* Duplicate dialog */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={(open) => {
+        setIsDuplicateDialogOpen(open);
+        if (!open) { setDuplicateProgram(null); setDuplicateTitle(""); }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicera program</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (duplicateProgram && duplicateTitle.trim()) {
+              duplicateMutation.mutate({ source: duplicateProgram, newTitle: duplicateTitle.trim() });
+            }
+          }} className="space-y-4">
+            <div>
+              <Label htmlFor="duplicate-title">Nytt namn</Label>
+              <Input
+                id="duplicate-title"
+                value={duplicateTitle}
+                onChange={(e) => setDuplicateTitle(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsDuplicateDialogOpen(false)}>
+                Avbryt
+              </Button>
+              <Button type="submit" disabled={duplicateMutation.isPending}>
+                {duplicateMutation.isPending ? "Duplicerar..." : "Duplicera"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
