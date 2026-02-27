@@ -59,6 +59,10 @@ const AdminPrograms = () => {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState("");
+  const [duplicateProgram, setDuplicateProgram] = useState<Program | null>(null);
+  const [duplicateTitle, setDuplicateTitle] = useState("");
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
