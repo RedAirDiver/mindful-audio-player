@@ -151,6 +151,36 @@ const AdminPrograms = () => {
     },
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: async ({ source, newTitle }: { source: Program; newTitle: string }) => {
+      const newSlug = generateSlug(newTitle) + '-' + Date.now().toString(36);
+      const { error } = await supabase.from("programs").insert([{
+        title: newTitle,
+        slug: newSlug,
+        description: source.description,
+        short_description: source.short_description,
+        price: source.price,
+        image_url: source.image_url,
+        pdf_file_path: source.pdf_file_path,
+        is_active: false,
+        categories: source.categories,
+        country: source.country,
+        duration_text: source.duration_text,
+      }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-programs"] });
+      toast.success("Programmet duplicerat!");
+      setIsDuplicateDialogOpen(false);
+      setDuplicateProgram(null);
+      setDuplicateTitle("");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte duplicera: " + error.message);
+    },
+  });
+
   // Generate slug from title
   const generateSlug = (title: string): string => {
     let slug = title.toLowerCase();
