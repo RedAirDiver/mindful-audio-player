@@ -733,8 +733,21 @@ const AdminPrograms = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(program)}
+                        title="Redigera"
                       >
                         <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setDuplicateProgram(program);
+                          setDuplicateTitle(program.title + " (kopia)");
+                          setIsDuplicateDialogOpen(true);
+                        }}
+                        title="Duplicera"
+                      >
+                        <Copy className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -745,6 +758,7 @@ const AdminPrograms = () => {
                             deleteMutation.mutate(program.id);
                           }
                         }}
+                        title="Radera"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
