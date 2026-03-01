@@ -72,19 +72,6 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Closing statement */}
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
-            Med mental träning kan du utveckla vilket område du än väljer.
-          </p>
-
-          {/* CTA */}
-          <div className="flex items-center justify-center pt-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <Button variant="hero" size="xl" asChild>
-              <Link to="/products">
-                Utforska mentala träningsprogram
-              </Link>
-            </Button>
-          </div>
 
           {/* Trust Indicators */}
           <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-muted-foreground text-sm animate-fade-in-up" style={{ animationDelay: '0.45s' }}>
