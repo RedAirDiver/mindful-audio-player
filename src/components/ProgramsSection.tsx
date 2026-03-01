@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { User, Heart, Baby, Trophy, Gift, Globe, ArrowRight } from "lucide-react";
+import { User, Heart, Baby, Trophy, Gift, Globe, Briefcase, ArrowRight } from "lucide-react";
 
 const categories = [
   {
@@ -43,6 +43,13 @@ const categories = [
     icon: Globe,
     image: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=600&auto=format&fit=crop&q=80",
     color: "from-primary/80 to-primary/40",
+  },
+  {
+    title: "Företag & Ledarskap",
+    slug: "Företag & Ledarskap",
+    icon: Briefcase,
+    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&auto=format&fit=crop&q=80",
+    color: "from-secondary-foreground/70 to-secondary-foreground/30",
   },
 ];
 
