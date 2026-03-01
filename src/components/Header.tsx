@@ -125,7 +125,7 @@ const Header = () => {
               className="py-2 text-foreground font-medium"
               onClick={() => setIsMenuOpen(false)}
             >
-              Mentala Träningsprogram
+              Program
             </Link>
             <Link 
               to="/about" 
