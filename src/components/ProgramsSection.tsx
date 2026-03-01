@@ -32,7 +32,7 @@ const categories = [
   },
   {
     title: "Gratis",
-    slug: "Gratisprogram",
+    slug: "Gratis",
     icon: Gift,
     image: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=600&auto=format&fit=crop&q=80",
     color: "from-accent/80 to-accent/40",
