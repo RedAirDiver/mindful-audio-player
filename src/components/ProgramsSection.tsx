@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { User, Heart, Baby, Trophy, Gift, Globe, ArrowRight } from "lucide-react";
+import { User, Heart, Baby, Trophy, Gift, Globe, Briefcase, ArrowRight } from "lucide-react";
 
 const categories = [
   {
