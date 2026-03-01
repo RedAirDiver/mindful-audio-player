@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -20,6 +20,28 @@ interface Program {
   country: string | null;
 }
 
+const countryLabels: Record<string, string> = {
+  SE: "🇸🇪 Svenska",
+  EN: "🇬🇧 Engelska",
+  FI: "🇫🇮 Finska",
+  NO: "🇳🇴 Norska",
+  DK: "🇩🇰 Danska",
+  DE: "🇩🇪 Tyska",
+  ES: "🇪🇸 Spanska",
+  FR: "🇫🇷 Franska",
+  PT: "🇵🇹 Portugisiska",
+  IT: "🇮🇹 Italienska",
+  NL: "🇳🇱 Nederländska",
+  PL: "🇵🇱 Polska",
+  RU: "🇷🇺 Ryska",
+  ZH: "🇨🇳 Kinesiska",
+  JA: "🇯🇵 Japanska",
+  KO: "🇰🇷 Koreanska",
+  AR: "🇸🇦 Arabiska",
+  HI: "🇮🇳 Hindi",
+  ALL: "🌐 Alla språk",
+};
+
 const Products = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
   const [categories, setCategories] = useState<{ name: string }[]>([]);
@@ -28,6 +50,7 @@ const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedCategory = searchParams.get("kategori") || "all";
+  const selectedLanguage = searchParams.get("sprak") || "all";
 
   useEffect(() => {
     fetchData();
@@ -77,17 +100,41 @@ const Products = () => {
     }
   };
 
+  const handleLanguageChange = (lang: string) => {
+    if (lang === "all") {
+      setSearchParams({ kategori: "Utländska Program" });
+    } else {
+      setSearchParams({ kategori: "Utländska Program", sprak: lang });
+    }
+  };
+
   // Filter out meta-categories like "Populära Produkter" from the filter UI
   const displayCategories = categories.filter(
     (c) => c.name !== "Populära Produkter" && c.name !== "Dolda"
   );
 
-  // Exclude hidden programs, then apply category filter
+  // Get available languages for foreign programs
+  const availableLanguages = useMemo(() => {
+    const foreignPrograms = programs.filter(
+      (p) => p.categories?.includes("Utländska Program") && !p.categories?.includes("Dolda")
+    );
+    const langs = new Set<string>();
+    foreignPrograms.forEach((p) => {
+      if (p.country && p.country !== "SE") langs.add(p.country);
+    });
+    return Array.from(langs).sort();
+  }, [programs]);
+
+  // Exclude hidden programs, then apply category + language filter
   const filteredPrograms = programs
     .filter((p) => !p.categories?.includes("Dolda"))
     .filter((p) => {
       if (selectedCategory === "all") return true;
       return p.categories?.includes(selectedCategory);
+    })
+    .filter((p) => {
+      if (selectedCategory !== "Utländska Program" || selectedLanguage === "all") return true;
+      return p.country === selectedLanguage;
     });
 
   return (
@@ -106,7 +153,7 @@ const Products = () => {
           </div>
 
           {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-2 mb-12">
+          <div className="flex flex-wrap justify-center gap-2 mb-4">
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
               size="sm"
@@ -127,6 +174,33 @@ const Products = () => {
               </Button>
             ))}
           </div>
+
+          {/* Language Sub-filter for Utländska Program */}
+          {selectedCategory === "Utländska Program" && availableLanguages.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mb-8 animate-fade-in">
+              <Button
+                variant={selectedLanguage === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleLanguageChange("all")}
+                className="rounded-full text-xs"
+              >
+                Alla språk
+              </Button>
+              {availableLanguages.map((lang) => (
+                <Button
+                  key={lang}
+                  variant={selectedLanguage === lang ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleLanguageChange(lang)}
+                  className="rounded-full text-xs"
+                >
+                  {countryLabels[lang] || lang}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {selectedCategory !== "Utländska Program" && <div className="mb-8" />}
 
           {/* Loading */}
           {loading && (
