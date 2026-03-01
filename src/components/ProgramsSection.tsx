@@ -57,12 +57,6 @@ const ProgramsSection = () => {
   return (
     <section id="programs" className="py-20 md:py-28 bg-background">
       <div className="container mx-auto px-4">
-        {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="font-display text-3xl md:text-4xl font-semibold text-foreground">
-            Mentala Träningsprogram
-          </h2>
-        </div>
 
         {/* Category Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
