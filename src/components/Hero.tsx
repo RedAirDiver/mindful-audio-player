@@ -74,21 +74,7 @@ const Hero = () => {
           </div>
 
 
-          {/* Trust Indicators */}
-          <div className="pt-8 flex flex-wrap items-center justify-center gap-8 text-muted-foreground text-sm animate-fade-in-up" style={{ animationDelay: '0.45s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-primary/40 rounded-full" />
-              <span>Över 1000+ nöjda användare</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-primary/40 rounded-full" />
-              <span>Lyssna offline</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-primary/40 rounded-full" />
-              <span>Livstids tillgång</span>
-            </div>
-          </div>
+
         </div>
       </div>
 
