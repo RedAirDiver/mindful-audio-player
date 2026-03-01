@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Sparkles, Brain, Target, Heart, Zap, Shield, Clock, Star } from "lucide-react";
+import { Sparkles, Brain, Target, Heart, Zap, Shield, Clock, Star, Moon } from "lucide-react";
 
 const benefits = [
   { icon: Heart, text: "Stärka din självbild och självkänsla" },
@@ -10,6 +10,7 @@ const benefits = [
   { icon: Shield, text: "Bygga ett starkt självledarskap" },
   { icon: Clock, text: "Städa upp ditt förflutna, forma din framtid och lev i nuet" },
   { icon: Star, text: "Förebygg ohälsa" },
+  { icon: Moon, text: "Öka ditt immunförsvar och få bästa sömnen" },
 ];
 
 const Hero = () => {
