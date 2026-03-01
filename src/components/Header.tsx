@@ -42,7 +42,7 @@ const Header = () => {
               to="/produkter" 
               className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/produkter') ? 'text-primary' : 'text-muted-foreground'}`}
             >
-              Mentala Träningsprogram
+              Program
             </Link>
             <Link 
               to="/about" 
