@@ -10,6 +10,7 @@ const benefits = [
   { icon: Shield, text: "Bygga ett starkt självledarskap" },
   { icon: Clock, text: "Städa upp ditt förflutna, forma din framtid och lev i nuet" },
   { icon: Star, text: "Förebygg ohälsa" },
+  { icon: Shield, text: "Öka ditt immunförsvar och få bästa sömnen" },
 ];
 
 const Hero = () => {
