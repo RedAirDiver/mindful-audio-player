@@ -16,7 +16,7 @@ const AdminCategoryPurchases = () => {
       const { data, error } = await supabase
         .from("categories")
         .select("*")
-        .order("sort_order");
+        .order("name", { ascending: true });
       if (error) throw error;
       return data;
     },
