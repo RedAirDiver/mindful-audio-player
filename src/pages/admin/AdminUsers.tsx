@@ -1,6 +1,7 @@
 import { useState, useEffect, Fragment } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useImpersonation } from "@/hooks/useImpersonation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -43,12 +44,14 @@ import {
   ShoppingCart,
   LinkIcon,
   Save,
+  Eye,
 } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
 const AdminUsers = () => {
   const queryClient = useQueryClient();
+  const { startImpersonation } = useImpersonation();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -432,6 +435,15 @@ const AdminUsers = () => {
                               >
                                 <Pencil className="h-4 w-4 mr-1" />
                                 Redigera
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startImpersonation(profile.user_id)}
+                                title="Logga in som denna användare"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Visa som
                               </Button>
                               <Button
                                 variant="ghost"

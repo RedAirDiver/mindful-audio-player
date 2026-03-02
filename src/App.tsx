@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ImpersonationProvider } from "@/hooks/useImpersonation";
+import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Products from "./pages/Products";
@@ -46,7 +48,9 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
+          <ImpersonationProvider>
           <TooltipProvider>
+            <ImpersonationBanner />
             <Toaster />
             <Sonner />
             <Routes>
@@ -96,6 +100,7 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
+          </ImpersonationProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
