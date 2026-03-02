@@ -17,8 +17,8 @@ const ImpersonationBanner = () => {
       </div>
       <Button
         size="sm"
-        variant="outline"
-        className="border-destructive-foreground/50 text-destructive-foreground hover:bg-destructive-foreground/10 hover:text-destructive-foreground"
+        variant="ghost"
+        className="border border-white/50 bg-white/20 text-white hover:bg-white/30 hover:text-white"
         onClick={stopImpersonation}
       >
         <LogOut className="h-3 w-3 mr-1" />
