@@ -50,7 +50,7 @@ const AdminCategoryPurchases = () => {
             program_id,
             amount_paid,
             purchase_date,
-            profiles!purchases_user_id_fkey (user_id, email, name)
+            profiles!purchases_user_id_profiles_fkey (user_id, email, name)
           `)
           .range(from, from + batchSize - 1)
           .order("purchase_date", { ascending: false });
