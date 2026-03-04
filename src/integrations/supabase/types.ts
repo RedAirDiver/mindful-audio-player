@@ -174,6 +174,7 @@ export type Database = {
           discount_value: number
           id: string
           is_active: boolean
+          program_ids: string[] | null
           times_used: number
           updated_at: string
           usage_limit: number | null
@@ -187,6 +188,7 @@ export type Database = {
           discount_value?: number
           id?: string
           is_active?: boolean
+          program_ids?: string[] | null
           times_used?: number
           updated_at?: string
           usage_limit?: number | null
@@ -200,6 +202,7 @@ export type Database = {
           discount_value?: number
           id?: string
           is_active?: boolean
+          program_ids?: string[] | null
           times_used?: number
           updated_at?: string
           usage_limit?: number | null

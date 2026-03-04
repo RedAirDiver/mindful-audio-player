@@ -1,0 +1,1 @@
+ALTER TABLE public.discount_codes ADD COLUMN program_ids uuid[] DEFAULT NULL;
