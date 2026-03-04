@@ -42,6 +42,12 @@ interface DiscountCode {
   valid_from: string | null;
   valid_until: string | null;
   created_at: string;
+  program_ids: string[] | null;
+}
+
+interface Program {
+  id: string;
+  title: string;
 }
 
 const emptyForm = {
@@ -52,6 +58,7 @@ const emptyForm = {
   usage_limit: "",
   valid_from: "",
   valid_until: "",
+  program_ids: [] as string[],
 };
 
 const AdminDiscountCodes = () => {
@@ -61,6 +68,18 @@ const AdminDiscountCodes = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { data: programs } = useQuery({
+    queryKey: ["programs-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("id, title")
+        .order("title", { ascending: true });
+      if (error) throw error;
+      return data as Program[];
+    },
+  });
 
   const { data: codes, isLoading } = useQuery({
     queryKey: ["discount-codes"],
@@ -84,6 +103,7 @@ const AdminDiscountCodes = () => {
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
         valid_from: form.valid_from || null,
         valid_until: form.valid_until || null,
+        program_ids: form.program_ids.length > 0 ? form.program_ids : null,
       };
 
       if (editingId) {
@@ -156,6 +176,7 @@ const AdminDiscountCodes = () => {
       usage_limit: code.usage_limit ? String(code.usage_limit) : "",
       valid_from: code.valid_from ? code.valid_from.slice(0, 10) : "",
       valid_until: code.valid_until ? code.valid_until.slice(0, 10) : "",
+      program_ids: code.program_ids || [],
     });
     setDialogOpen(true);
   };
