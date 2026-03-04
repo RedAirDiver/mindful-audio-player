@@ -378,6 +378,15 @@ const AdminDiscountCodes = () => {
                       </div>
                     </TableCell>
                     <TableCell>{formatDiscount(code.discount_type, code.discount_value)}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      {code.program_ids?.length ? (
+                        <span className="text-xs">
+                          {code.program_ids.map((pid) => programs?.find((p) => p.id === pid)?.title || pid).join(", ")}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Alla</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {code.times_used}
                       {code.usage_limit ? ` / ${code.usage_limit}` : ""}
