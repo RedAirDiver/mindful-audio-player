@@ -250,6 +250,7 @@ const AdminCategories = () => {
                   <TableHead>Slug</TableHead>
                   <TableHead>Beskrivning</TableHead>
                   <TableHead>Program</TableHead>
+                  <TableHead>Synlighet</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
               </TableHeader>
@@ -271,6 +272,20 @@ const AdminCategories = () => {
                     </TableCell>
                     <TableCell>
                       {programCounts?.[category.name] || 0} st
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleHiddenMutation.mutate({ id: category.id, is_hidden: !category.is_hidden })}
+                        title={category.is_hidden ? "Dold – klicka för att visa" : "Synlig – klicka för att dölja"}
+                      >
+                        {category.is_hidden ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-primary" />
+                        )}
+                      </Button>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
