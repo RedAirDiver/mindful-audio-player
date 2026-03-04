@@ -350,6 +350,7 @@ const AdminDiscountCodes = () => {
                 <TableRow>
                   <TableHead>Kod</TableHead>
                   <TableHead>Rabatt</TableHead>
+                  <TableHead>Program</TableHead>
                   <TableHead>Använd</TableHead>
                   <TableHead>Giltig till</TableHead>
                   <TableHead>Status</TableHead>
