@@ -93,6 +93,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_hidden: boolean
           name: string
           slug: string
           sort_order: number
@@ -102,6 +103,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_hidden?: boolean
           name: string
           slug: string
           sort_order?: number
@@ -111,6 +113,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_hidden?: boolean
           name?: string
           slug?: string
           sort_order?: number
