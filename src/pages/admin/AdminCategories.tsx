@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FolderOpen, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye } from "lucide-react";
 
 interface Category {
   id: string;
@@ -30,6 +30,7 @@ interface Category {
   slug: string;
   description: string | null;
   sort_order: number;
+  is_hidden: boolean;
   created_at: string;
 }
 

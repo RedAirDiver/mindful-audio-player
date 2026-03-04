@@ -44,7 +44,7 @@ const countryLabels: Record<string, string> = {
 
 const Products = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [categories, setCategories] = useState<{ name: string }[]>([]);
+  const [categories, setCategories] = useState<{ name: string; is_hidden: boolean }[]>([]);
   const [trackCounts, setTrackCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -60,7 +60,7 @@ const Products = () => {
     try {
       const [programsRes, categoriesRes] = await Promise.all([
         supabase.from("programs").select("*").eq("is_active", true).order("title"),
-        supabase.from("categories").select("name").order("sort_order"),
+        supabase.from("categories").select("name, is_hidden").order("sort_order"),
       ]);
 
       if (programsRes.error) throw programsRes.error;
@@ -108,9 +108,9 @@ const Products = () => {
     }
   };
 
-  // Filter out meta-categories like "Populära Produkter" from the filter UI
+  // Filter out hidden categories from the filter UI
   const displayCategories = categories.filter(
-    (c) => c.name !== "Populära Produkter" && c.name !== "Dolda"
+    (c) => !c.is_hidden && c.name !== "Populära Produkter" && c.name !== "Dolda"
   );
 
   // Get available languages for foreign programs
