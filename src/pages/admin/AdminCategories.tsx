@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FolderOpen, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye } from "lucide-react";
 
 interface Category {
   id: string;
@@ -30,6 +30,7 @@ interface Category {
   slug: string;
   description: string | null;
   sort_order: number;
+  is_hidden: boolean;
   created_at: string;
 }
 
@@ -132,6 +133,23 @@ const AdminCategories = () => {
     },
     onError: (error) => {
       toast.error("Kunde inte ta bort kategori: " + error.message);
+    },
+  });
+
+  const toggleHiddenMutation = useMutation({
+    mutationFn: async ({ id, is_hidden }: { id: string; is_hidden: boolean }) => {
+      const { error } = await supabase
+        .from("categories")
+        .update({ is_hidden })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Synlighet uppdaterad");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte uppdatera synlighet: " + error.message);
     },
   });
 
@@ -249,6 +267,7 @@ const AdminCategories = () => {
                   <TableHead>Slug</TableHead>
                   <TableHead>Beskrivning</TableHead>
                   <TableHead>Program</TableHead>
+                  <TableHead>Synlighet</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
               </TableHeader>
@@ -270,6 +289,20 @@ const AdminCategories = () => {
                     </TableCell>
                     <TableCell>
                       {programCounts?.[category.name] || 0} st
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleHiddenMutation.mutate({ id: category.id, is_hidden: !category.is_hidden })}
+                        title={category.is_hidden ? "Dold – klicka för att visa" : "Synlig – klicka för att dölja"}
+                      >
+                        {category.is_hidden ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-primary" />
+                        )}
+                      </Button>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
