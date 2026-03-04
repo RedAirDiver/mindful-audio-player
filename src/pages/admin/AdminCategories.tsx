@@ -136,6 +136,23 @@ const AdminCategories = () => {
     },
   });
 
+  const toggleHiddenMutation = useMutation({
+    mutationFn: async ({ id, is_hidden }: { id: string; is_hidden: boolean }) => {
+      const { error } = await supabase
+        .from("categories")
+        .update({ is_hidden })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Synlighet uppdaterad");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte uppdatera synlighet: " + error.message);
+    },
+  });
+
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
