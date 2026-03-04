@@ -42,6 +42,12 @@ interface DiscountCode {
   valid_from: string | null;
   valid_until: string | null;
   created_at: string;
+  program_ids: string[] | null;
+}
+
+interface Program {
+  id: string;
+  title: string;
 }
 
 const emptyForm = {
@@ -52,6 +58,7 @@ const emptyForm = {
   usage_limit: "",
   valid_from: "",
   valid_until: "",
+  program_ids: [] as string[],
 };
 
 const AdminDiscountCodes = () => {
@@ -61,6 +68,18 @@ const AdminDiscountCodes = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { data: programs } = useQuery({
+    queryKey: ["programs-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("id, title")
+        .order("title", { ascending: true });
+      if (error) throw error;
+      return data as Program[];
+    },
+  });
 
   const { data: codes, isLoading } = useQuery({
     queryKey: ["discount-codes"],
@@ -84,6 +103,7 @@ const AdminDiscountCodes = () => {
         usage_limit: form.usage_limit ? Number(form.usage_limit) : null,
         valid_from: form.valid_from || null,
         valid_until: form.valid_until || null,
+        program_ids: form.program_ids.length > 0 ? form.program_ids : null,
       };
 
       if (editingId) {
@@ -156,6 +176,7 @@ const AdminDiscountCodes = () => {
       usage_limit: code.usage_limit ? String(code.usage_limit) : "",
       valid_from: code.valid_from ? code.valid_from.slice(0, 10) : "",
       valid_until: code.valid_until ? code.valid_until.slice(0, 10) : "",
+      program_ids: code.program_ids || [],
     });
     setDialogOpen(true);
   };
@@ -275,6 +296,30 @@ const AdminDiscountCodes = () => {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label>Gäller för program (lämna tomt = alla)</Label>
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {programs?.map((p) => (
+                    <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={form.program_ids.includes(p.id)}
+                        onChange={(e) => {
+                          setForm((f) => ({
+                            ...f,
+                            program_ids: e.target.checked
+                              ? [...f.program_ids, p.id]
+                              : f.program_ids.filter((id) => id !== p.id),
+                          }));
+                        }}
+                        className="rounded"
+                      />
+                      {p.title}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Switch
                   id="is_active"
@@ -305,6 +350,7 @@ const AdminDiscountCodes = () => {
                 <TableRow>
                   <TableHead>Kod</TableHead>
                   <TableHead>Rabatt</TableHead>
+                  <TableHead>Program</TableHead>
                   <TableHead>Använd</TableHead>
                   <TableHead>Giltig till</TableHead>
                   <TableHead>Status</TableHead>
@@ -332,6 +378,15 @@ const AdminDiscountCodes = () => {
                       </div>
                     </TableCell>
                     <TableCell>{formatDiscount(code.discount_type, code.discount_value)}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      {code.program_ids?.length ? (
+                        <span className="text-xs">
+                          {code.program_ids.map((pid) => programs?.find((p) => p.id === pid)?.title || pid).join(", ")}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">Alla</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {code.times_used}
                       {code.usage_limit ? ` / ${code.usage_limit}` : ""}

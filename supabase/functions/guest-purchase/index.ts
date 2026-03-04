@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     });
 
     const body = await req.json();
-    const { email, name, program_id, referral_code } = body;
+    const { email, name, program_id, referral_code, discount_code } = body;
 
     if (!email || !program_id) {
       return new Response(
@@ -121,13 +121,60 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate and apply discount code
+    let finalPrice = program.price;
+    if (discount_code) {
+      const { data: dc } = await adminClient
+        .from("discount_codes")
+        .select("*")
+        .eq("code", discount_code.toUpperCase().trim())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!dc) {
+        return new Response(
+          JSON.stringify({ error: "Ogiltig rabattkod" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check program restriction
+      if (dc.program_ids && dc.program_ids.length > 0 && !dc.program_ids.includes(program_id)) {
+        return new Response(
+          JSON.stringify({ error: "Rabattkoden gäller inte för detta program" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check usage limit
+      if (dc.usage_limit && dc.times_used >= dc.usage_limit) {
+        return new Response(
+          JSON.stringify({ error: "Rabattkoden har nått sin användningsgräns" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Apply discount
+      if (dc.discount_type === "percentage") {
+        finalPrice = Math.max(0, program.price * (1 - dc.discount_value / 100));
+      } else {
+        finalPrice = Math.max(0, program.price - dc.discount_value);
+      }
+
+      // Increment times_used
+      await adminClient
+        .from("discount_codes")
+        .update({ times_used: dc.times_used + 1 })
+        .eq("id", dc.id);
+    }
+
     // Create purchase
     const { data: purchaseRow, error: purchaseError } = await adminClient
       .from("purchases")
       .insert({
         user_id: userId,
         program_id: program_id,
-        amount_paid: program.price,
+        amount_paid: finalPrice,
       })
       .select("id")
       .single();
