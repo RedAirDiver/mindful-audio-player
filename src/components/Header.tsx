@@ -60,7 +60,7 @@ const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {!loading && (
+            {!loading && !adminLoading && (
               user ? (
                 <>
                   {isAdmin && (
