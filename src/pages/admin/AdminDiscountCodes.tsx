@@ -296,6 +296,30 @@ const AdminDiscountCodes = () => {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label>Gäller för program (lämna tomt = alla)</Label>
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {programs?.map((p) => (
+                    <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5">
+                      <input
+                        type="checkbox"
+                        checked={form.program_ids.includes(p.id)}
+                        onChange={(e) => {
+                          setForm((f) => ({
+                            ...f,
+                            program_ids: e.target.checked
+                              ? [...f.program_ids, p.id]
+                              : f.program_ids.filter((id) => id !== p.id),
+                          }));
+                        }}
+                        className="rounded"
+                      />
+                      {p.title}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Switch
                   id="is_active"
