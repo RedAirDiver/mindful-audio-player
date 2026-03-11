@@ -115,15 +115,19 @@ const ProgramDetail = () => {
 
       setProgram(programData);
 
-      // Fetch tracks (including file_path for preview functionality)
-      const { data: tracksData, error: tracksError } = await supabase
-        .from('audio_files')
-        .select('id, title, duration_seconds, track_order, file_path')
+      // Fetch tracks via junction table
+      const { data: linkData, error: tracksError } = await supabase
+        .from('program_audio_files')
+        .select('track_order, audio_files(id, title, duration_seconds, file_path)')
         .eq('program_id', programData.id)
-        .order('track_order', { ascending: true });
+        .order('track_order', { ascending: true }) as any;
 
-      if (!tracksError && tracksData) {
-        setTracks(tracksData);
+      if (!tracksError && linkData) {
+        const mapped = linkData.map((l: any) => ({
+          ...l.audio_files,
+          track_order: l.track_order,
+        }));
+        setTracks(mapped);
       }
 
       // Check if user has purchased this program
@@ -137,15 +141,18 @@ const ProgramDetail = () => {
 
         if (purchaseData) {
           setIsPurchased(true);
-          // If purchased, fetch actual track data
-          const { data: actualTracks } = await supabase
-            .from('audio_files')
-            .select('*')
+          // If purchased, fetch actual track data via junction
+          const { data: actualLinks } = await supabase
+            .from('program_audio_files')
+            .select('track_order, audio_files(*)')
             .eq('program_id', programData.id)
-            .order('track_order', { ascending: true });
+            .order('track_order', { ascending: true }) as any;
           
-          if (actualTracks) {
-            setTracks(actualTracks);
+          if (actualLinks) {
+            setTracks(actualLinks.map((l: any) => ({
+              ...l.audio_files,
+              track_order: l.track_order,
+            })));
           }
         }
       }

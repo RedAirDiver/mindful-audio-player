@@ -74,17 +74,35 @@ const AdminAudio = () => {
   const { data: audioFiles, isLoading } = useQuery({
     queryKey: ["admin-audio-files"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch all audio files
+      const { data: files, error } = await supabase
         .from("audio_files")
-        .select(`
-          *,
-          programs (title)
-        `)
-        .order("program_id")
-        .order("track_order");
+        .select("*")
+        .order("title");
 
       if (error) throw error;
-      return data;
+
+      // Fetch junction table to know which programs each file belongs to
+      const { data: links } = await supabase
+        .from("program_audio_files")
+        .select("audio_file_id, program_id, track_order, programs:program_id(title)")
+        .order("track_order") as any;
+
+      // Attach program info to each audio file
+      const linkMap: Record<string, { programId: string; programTitle: string; trackOrder: number }[]> = {};
+      (links || []).forEach((l: any) => {
+        if (!linkMap[l.audio_file_id]) linkMap[l.audio_file_id] = [];
+        linkMap[l.audio_file_id].push({
+          programId: l.program_id,
+          programTitle: (l.programs as any)?.title || "Okänt",
+          trackOrder: l.track_order,
+        });
+      });
+
+      return (files || []).map((f: any) => ({
+        ...f,
+        linkedPrograms: linkMap[f.id] || [],
+      }));
     },
   });
 
@@ -250,12 +268,12 @@ const AdminAudio = () => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const filteredAudioFiles = audioFiles?.filter((a) => {
+  const filteredAudioFiles = audioFiles?.filter((a: any) => {
     const matchesSearch =
       a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (a.programs as any)?.title?.toLowerCase().includes(searchQuery.toLowerCase());
+      a.linkedPrograms?.some((lp: any) => lp.programTitle.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesProgram =
-      filterProgramId === "all" || a.program_id === filterProgramId;
+      filterProgramId === "all" || a.linkedPrograms?.some((lp: any) => lp.programId === filterProgramId);
     return matchesSearch && matchesProgram;
   });
 
@@ -566,75 +584,66 @@ const AdminAudio = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(() => {
-                  // Group by program
-                  const grouped: Record<string, { programTitle: string; tracks: typeof filteredAudioFiles }> = {};
-                  filteredAudioFiles?.forEach((audio) => {
-                    const progTitle = (audio.programs as any)?.title || "Okänt program";
-                    if (!grouped[audio.program_id]) {
-                      grouped[audio.program_id] = { programTitle: progTitle, tracks: [] };
-                    }
-                    grouped[audio.program_id].tracks!.push(audio);
-                  });
-
-                  return Object.entries(grouped).map(([programId, group]) => (
-                    <>
-                      <TableRow key={`header-${programId}`} className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={5} className="py-2">
-                          <span className="font-semibold text-foreground">{group.programTitle}</span>
-                          <span className="text-sm text-muted-foreground ml-2">({group.tracks!.length} spår)</span>
-                        </TableCell>
-                      </TableRow>
-                      {group.tracks!.map((audio) => (
-                        <TableRow key={audio.id}>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
-                              onClick={() => handlePlayTrack(audio)}
-                            >
-                              {playingTrackId === audio.id && isPlaying ? (
-                                <Pause className="h-4 w-4" />
-                              ) : (
-                                <Play className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Music className="h-4 w-4 text-muted-foreground" />
-                              {audio.track_order}
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{audio.title}</TableCell>
-                          <TableCell>{formatDuration(audio.duration_seconds)}</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEdit(audio)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                if (confirm("Är du säker på att du vill radera denna ljudfil?")) {
-                                  deleteMutation.mutate(audio.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </>
-                  ));
-                })()}
+                {filteredAudioFiles?.map((audio: any) => (
+                  <TableRow key={audio.id}>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
+                        onClick={() => handlePlayTrack(audio)}
+                      >
+                        {playingTrackId === audio.id && isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Music className="h-4 w-4 text-muted-foreground" />
+                        {audio.linkedPrograms?.length > 0
+                          ? audio.linkedPrograms.map((lp: any) => lp.trackOrder).join(", ")
+                          : "-"}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {audio.title}
+                      {audio.linkedPrograms?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {audio.linkedPrograms.map((lp: any) => (
+                            <span key={lp.programId} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
+                              {lp.programTitle}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDuration(audio.duration_seconds)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(audio)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => {
+                          if (confirm("Är du säker på att du vill radera denna ljudfil?")) {
+                            deleteMutation.mutate(audio.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}

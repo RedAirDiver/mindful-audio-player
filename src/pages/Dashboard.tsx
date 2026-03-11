@@ -182,17 +182,23 @@ const Dashboard = () => {
       }
 
       const programIds = purchases.map(p => p.program_id);
-      const { data: audioFiles, error: audioError } = await supabase
-        .from('audio_files')
-        .select('*')
+      // Fetch audio files via junction table
+      const { data: audioLinks, error: audioError } = await supabase
+        .from('program_audio_files')
+        .select('program_id, track_order, audio_files(*)')
         .in('program_id', programIds)
-        .order('track_order', { ascending: true });
+        .order('track_order', { ascending: true }) as any;
 
       if (audioError) throw audioError;
 
       const programsWithTracks: PurchasedProgram[] = purchases.map(purchase => {
         const program = purchase.programs as unknown as Program;
-        const tracks = (audioFiles || []).filter(af => af.program_id === program.id);
+        const tracks = (audioLinks || [])
+          .filter((l: any) => l.program_id === program.id)
+          .map((l: any) => ({
+            ...l.audio_files,
+            track_order: l.track_order,
+          }));
         return {
           ...program,
           tracks,
