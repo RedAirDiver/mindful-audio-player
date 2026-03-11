@@ -19,11 +19,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Music, Upload, FileAudio, X, Play, Pause, Volume2 } from "lucide-react";
-import type { Tables } from "@/integrations/supabase/types";
+import { Plus, Pencil, Trash2, Music, Upload, FileAudio, X, Play, Pause, Search, Link2 } from "lucide-react";
 
-type AudioFile = Tables<"audio_files">;
+interface AudioFile {
+  id: string;
+  title: string;
+  file_path: string;
+  duration_seconds: number | null;
+  track_order: number;
+  program_id: string | null;
+  created_at: string;
+}
+
+interface ProgramAudioLink {
+  id: string;
+  audio_file_id: string;
+  track_order: number;
+  audio_files: AudioFile;
+}
 
 interface ProgramAudioManagerProps {
   programId: string;
@@ -35,41 +51,108 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAudio, setEditingAudio] = useState<AudioFile | null>(null);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<ProgramAudioLink | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [playingTrackId, setPlayingTrackId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [searchExisting, setSearchExisting] = useState("");
+  const [selectedExistingIds, setSelectedExistingIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     title: "",
     track_order: 1,
     duration_seconds: null as number | null,
   });
 
-  const { data: audioFiles, isLoading } = useQuery({
-    queryKey: ["program-audio-files", programId],
+  // Fetch linked audio files for this program via junction table
+  const { data: linkedAudio, isLoading } = useQuery({
+    queryKey: ["program-audio-links", programId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_audio_files")
+        .select("id, audio_file_id, track_order, audio_files(*)")
+        .eq("program_id", programId)
+        .order("track_order") as any;
+
+      if (error) throw error;
+      return (data || []) as ProgramAudioLink[];
+    },
+  });
+
+  // Fetch all audio files for the "link existing" dialog
+  const { data: allAudioFiles } = useQuery({
+    queryKey: ["all-audio-files"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audio_files")
         .select("*")
-        .eq("program_id", programId)
-        .order("track_order");
+        .order("title");
 
       if (error) throw error;
-      return data;
+      return data as AudioFile[];
     },
+    enabled: isLinkDialogOpen,
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: { title: string; file_path: string; program_id: string; track_order: number; duration_seconds: number | null }) => {
-      const { error } = await supabase.from("audio_files").insert([data]);
+  // Already linked audio file IDs
+  const linkedIds = new Set(linkedAudio?.map((l) => l.audio_file_id) || []);
+
+  // Filtered existing audio for search
+  const filteredExisting = allAudioFiles?.filter(
+    (af) =>
+      !linkedIds.has(af.id) &&
+      af.title.toLowerCase().includes(searchExisting.toLowerCase())
+  );
+
+  // Link existing audio files to this program
+  const linkMutation = useMutation({
+    mutationFn: async (audioFileIds: string[]) => {
+      const nextOrder = (linkedAudio?.length || 0) + 1;
+      const rows = audioFileIds.map((id, i) => ({
+        program_id: programId,
+        audio_file_id: id,
+        track_order: nextOrder + i,
+      }));
+      const { error } = await supabase.from("program_audio_files").insert(rows) as any;
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program-audio-files", programId] });
+      queryClient.invalidateQueries({ queryKey: ["program-audio-links", programId] });
       queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
-      toast.success("Ljudfil tillagd!");
+      toast.success("Ljudfiler kopplade till programmet!");
+      setIsLinkDialogOpen(false);
+      setSelectedExistingIds(new Set());
+      setSearchExisting("");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte koppla ljudfiler: " + error.message);
+    },
+  });
+
+  // Upload new audio file and link it
+  const uploadAndLinkMutation = useMutation({
+    mutationFn: async (data: { title: string; file_path: string; track_order: number; duration_seconds: number | null }) => {
+      // Create audio_files record (program_id null – standalone)
+      const { data: audioFile, error: insertError } = await supabase
+        .from("audio_files")
+        .insert([{ title: data.title, file_path: data.file_path, program_id: programId, track_order: data.track_order, duration_seconds: data.duration_seconds }])
+        .select()
+        .single();
+      if (insertError) throw insertError;
+
+      // Create junction record
+      const { error: linkError } = await supabase
+        .from("program_audio_files")
+        .insert([{ program_id: programId, audio_file_id: audioFile.id, track_order: data.track_order }]) as any;
+      if (linkError) throw linkError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["program-audio-links", programId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+      queryClient.invalidateQueries({ queryKey: ["all-audio-files"] });
+      toast.success("Ljudfil uppladdad och kopplad!");
       setIsDialogOpen(false);
       resetForm();
     },
@@ -78,53 +161,50 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<AudioFile> }) => {
+  // Update track order for a link
+  const updateLinkMutation = useMutation({
+    mutationFn: async ({ id, track_order }: { id: string; track_order: number }) => {
       const { error } = await supabase
-        .from("audio_files")
-        .update(data)
-        .eq("id", id);
+        .from("program_audio_files")
+        .update({ track_order })
+        .eq("id", id) as any;
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program-audio-files", programId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
-      toast.success("Ljudfil uppdaterad!");
-      setIsDialogOpen(false);
-      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["program-audio-links", programId] });
+      toast.success("Spårnummer uppdaterat!");
+      setEditingLink(null);
     },
     onError: (error) => {
-      toast.error("Kunde inte uppdatera ljudfilen: " + error.message);
+      toast.error("Kunde inte uppdatera: " + error.message);
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (audio: AudioFile) => {
-      // Delete from storage first
-      if (audio.file_path) {
-        await supabase.storage.from("audio-files").remove([audio.file_path]);
-      }
-      // Then delete from database
-      const { error } = await supabase.from("audio_files").delete().eq("id", audio.id);
+  // Unlink audio from this program (doesn't delete the audio file)
+  const unlinkMutation = useMutation({
+    mutationFn: async (linkId: string) => {
+      const { error } = await supabase
+        .from("program_audio_files")
+        .delete()
+        .eq("id", linkId) as any;
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program-audio-files", programId] });
+      queryClient.invalidateQueries({ queryKey: ["program-audio-links", programId] });
       queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
-      toast.success("Ljudfil raderad!");
+      toast.success("Ljudfil bortkopplad från programmet");
     },
     onError: (error) => {
-      toast.error("Kunde inte radera ljudfilen: " + error.message);
+      toast.error("Kunde inte koppla bort ljudfilen: " + error.message);
     },
   });
 
   const resetForm = () => {
     setFormData({
       title: "",
-      track_order: (audioFiles?.length || 0) + 1,
+      track_order: (linkedAudio?.length || 0) + 1,
       duration_seconds: null,
     });
-    setEditingAudio(null);
     setSelectedFile(null);
     setUploadProgress(0);
     if (fileInputRef.current) {
@@ -140,12 +220,10 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
         return;
       }
       setSelectedFile(file);
-      // Auto-fill title from filename if empty
       if (!formData.title) {
         const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
         setFormData((prev) => ({ ...prev, title: nameWithoutExt }));
       }
-      // Try to get duration
       const audio = new Audio();
       audio.src = URL.createObjectURL(file);
       audio.onloadedmetadata = () => {
@@ -183,19 +261,9 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
     return fileName;
   };
 
-  const handleEdit = (audio: AudioFile) => {
-    setEditingAudio(audio);
-    setFormData({
-      title: audio.title,
-      track_order: audio.track_order,
-      duration_seconds: audio.duration_seconds,
-    });
-    setIsDialogOpen(true);
-  };
-
   const handleAddNew = () => {
     resetForm();
-    setFormData((prev) => ({ ...prev, track_order: (audioFiles?.length || 0) + 1 }));
+    setFormData((prev) => ({ ...prev, track_order: (linkedAudio?.length || 0) + 1 }));
     setIsDialogOpen(true);
   };
 
@@ -203,44 +271,29 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
     e.preventDefault();
     
     try {
-      if (editingAudio) {
-        // Update existing audio file
-        let updateData: Partial<AudioFile> = {
-          title: formData.title,
-          track_order: formData.track_order,
-          duration_seconds: formData.duration_seconds,
-        };
-
-        // If a new file is selected, upload it
-        if (selectedFile) {
-          const filePath = await uploadFile(selectedFile);
-          updateData.file_path = filePath;
-          // Delete old file from storage
-          if (editingAudio.file_path) {
-            await supabase.storage.from("audio-files").remove([editingAudio.file_path]);
-          }
-        }
-
-        updateMutation.mutate({ id: editingAudio.id, data: updateData });
-      } else {
-        // Create new audio file
-        if (!selectedFile) {
-          toast.error("Vänligen välj en ljudfil att ladda upp");
-          return;
-        }
-        
-        const filePath = await uploadFile(selectedFile);
-        createMutation.mutate({
-          title: formData.title,
-          file_path: filePath,
-          program_id: programId,
-          track_order: formData.track_order,
-          duration_seconds: formData.duration_seconds,
-        });
+      if (!selectedFile) {
+        toast.error("Vänligen välj en ljudfil att ladda upp");
+        return;
       }
+      
+      const filePath = await uploadFile(selectedFile);
+      uploadAndLinkMutation.mutate({
+        title: formData.title,
+        file_path: filePath,
+        track_order: formData.track_order,
+        duration_seconds: formData.duration_seconds,
+      });
     } catch (error: any) {
       toast.error("Kunde inte ladda upp filen: " + error.message);
     }
+  };
+
+  const handleLinkExisting = () => {
+    if (selectedExistingIds.size === 0) {
+      toast.error("Välj minst en ljudfil");
+      return;
+    }
+    linkMutation.mutate(Array.from(selectedExistingIds));
   };
 
   const formatDuration = (seconds: number | null) => {
@@ -252,17 +305,15 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
 
   const handlePlayTrack = async (audio: AudioFile) => {
     if (playingTrackId === audio.id && isPlaying) {
-      // Pause current track
       audioRef.current?.pause();
       setIsPlaying(false);
       return;
     }
 
     try {
-      // Get signed URL for the audio file
       const { data, error } = await supabase.storage
         .from("audio-files")
-        .createSignedUrl(audio.file_path, 3600); // 1 hour expiry
+        .createSignedUrl(audio.file_path, 3600);
 
       if (error) throw error;
 
@@ -284,27 +335,32 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
 
   return (
     <div className="space-y-4">
-      {/* Hidden audio element for playback */}
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
       
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Program</h3>
           <p className="text-sm text-muted-foreground">
-            {audioFiles?.length || 0} spår i detta program
+            {linkedAudio?.length || 0} spår i detta program
           </p>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={handleAddNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Lägg till spår
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => setIsLinkDialogOpen(true)}>
+            <Link2 className="h-4 w-4 mr-2" />
+            Välj befintlig
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ladda upp ny
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-4">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : audioFiles && audioFiles.length > 0 ? (
+      ) : linkedAudio && linkedAudio.length > 0 ? (
         <div className="border rounded-lg overflow-hidden">
           <Table>
             <TableHeader>
@@ -317,58 +373,80 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
               </TableRow>
             </TableHeader>
             <TableBody>
-              {audioFiles.map((audio) => (
-                <TableRow key={audio.id}>
-                  <TableCell>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
-                      onClick={() => handlePlayTrack(audio)}
-                    >
-                      {playingTrackId === audio.id && isPlaying ? (
-                        <Pause className="h-4 w-4" />
+              {linkedAudio.map((link) => {
+                const audio = link.audio_files;
+                return (
+                  <TableRow key={link.id}>
+                    <TableCell>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
+                        onClick={() => handlePlayTrack(audio)}
+                      >
+                        {playingTrackId === audio.id && isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell>
+                      {editingLink?.id === link.id ? (
+                        <Input
+                          type="number"
+                          min="1"
+                          className="w-16 h-8"
+                          defaultValue={link.track_order}
+                          onBlur={(e) => {
+                            const val = Number(e.target.value);
+                            if (val !== link.track_order) {
+                              updateLinkMutation.mutate({ id: link.id, track_order: val });
+                            } else {
+                              setEditingLink(null);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              (e.target as HTMLInputElement).blur();
+                            }
+                          }}
+                          autoFocus
+                        />
                       ) : (
-                        <Play className="h-4 w-4" />
+                        <div
+                          className="flex items-center gap-2 cursor-pointer"
+                          onClick={() => setEditingLink(link)}
+                        >
+                          <Music className="h-4 w-4 text-muted-foreground" />
+                          {link.track_order}
+                        </div>
                       )}
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Music className="h-4 w-4 text-muted-foreground" />
-                      {audio.track_order}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{audio.title}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDuration(audio.duration_seconds)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(audio)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => {
-                        if (confirm("Är du säker på att du vill radera denna ljudfil?")) {
-                          deleteMutation.mutate(audio);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell className="font-medium">{audio.title}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDuration(audio.duration_seconds)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        title="Koppla bort från programmet"
+                        onClick={() => {
+                          if (confirm("Koppla bort denna ljudfil från programmet? (Filen tas inte bort)")) {
+                            unlinkMutation.mutate(link.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -376,24 +454,29 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
         <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
           <Music className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
           <p className="text-muted-foreground">
-            Inga program tillagda ännu
+            Inga spår kopplade till detta program
           </p>
-          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Lägg till första spåret
-          </Button>
+          <div className="flex justify-center gap-2 mt-3">
+            <Button type="button" variant="outline" size="sm" onClick={() => setIsLinkDialogOpen(true)}>
+              <Link2 className="h-4 w-4 mr-2" />
+              Välj befintlig
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={handleAddNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Ladda upp ny
+            </Button>
+          </div>
         </div>
       )}
 
+      {/* Upload New Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {editingAudio ? "Redigera ljudfil" : "Lägg till ljudfil"}
-            </DialogTitle>
+            <DialogTitle>Ladda upp ny ljudfil</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -409,20 +492,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
             </div>
             <div>
               <Label>Ljudfil</Label>
-              {editingAudio && !selectedFile ? (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                  <FileAudio className="h-5 w-5 text-primary" />
-                  <span className="text-sm flex-1 truncate">Nuvarande fil</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Byt fil
-                  </Button>
-                </div>
-              ) : selectedFile ? (
+              {selectedFile ? (
                 <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                   <FileAudio className="h-5 w-5 text-primary" />
                   <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
@@ -502,11 +572,86 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
               >
                 Avbryt
               </Button>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
-                {editingAudio ? "Spara ändringar" : "Lägg till"}
+              <Button type="submit" disabled={uploadAndLinkMutation.isPending || isUploading}>
+                Ladda upp & koppla
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Existing Dialog */}
+      <Dialog open={isLinkDialogOpen} onOpenChange={(open) => {
+        setIsLinkDialogOpen(open);
+        if (!open) {
+          setSelectedExistingIds(new Set());
+          setSearchExisting("");
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Välj befintliga ljudfiler</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Sök ljudfiler..."
+                value={searchExisting}
+                onChange={(e) => setSearchExisting(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <div className="max-h-[400px] overflow-y-auto space-y-1 border rounded-lg p-2">
+              {filteredExisting && filteredExisting.length > 0 ? (
+                filteredExisting.map((af) => (
+                  <div
+                    key={af.id}
+                    className="flex items-center gap-3 p-2 rounded-md hover:bg-muted cursor-pointer"
+                    onClick={() => {
+                      setSelectedExistingIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(af.id)) {
+                          next.delete(af.id);
+                        } else {
+                          next.add(af.id);
+                        }
+                        return next;
+                      });
+                    }}
+                  >
+                    <Checkbox checked={selectedExistingIds.has(af.id)} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{af.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDuration(af.duration_seconds)}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {searchExisting ? "Inga matchande ljudfiler hittades" : "Inga tillgängliga ljudfiler"}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-sm text-muted-foreground">
+                {selectedExistingIds.size} valda
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)}>
+                  Avbryt
+                </Button>
+                <Button
+                  onClick={handleLinkExisting}
+                  disabled={selectedExistingIds.size === 0 || linkMutation.isPending}
+                >
+                  Koppla till program
+                </Button>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
