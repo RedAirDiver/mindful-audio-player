@@ -115,12 +115,12 @@ const ProgramDetail = () => {
 
       setProgram(programData);
 
-      // Fetch tracks (including file_path for preview functionality)
-      const { data: tracksData, error: tracksError } = await supabase
-        .from('audio_files')
-        .select('id, title, duration_seconds, track_order, file_path')
+      // Fetch tracks via junction table
+      const { data: linkData, error: tracksError } = await supabase
+        .from('program_audio_files')
+        .select('track_order, audio_files(id, title, duration_seconds, file_path)')
         .eq('program_id', programData.id)
-        .order('track_order', { ascending: true });
+        .order('track_order', { ascending: true }) as any;
 
       if (!tracksError && tracksData) {
         setTracks(tracksData);
