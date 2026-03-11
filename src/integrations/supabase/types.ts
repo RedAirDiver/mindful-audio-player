@@ -56,7 +56,7 @@ export type Database = {
           duration_seconds: number | null
           file_path: string
           id: string
-          program_id: string
+          program_id: string | null
           title: string
           track_order: number
         }
@@ -65,7 +65,7 @@ export type Database = {
           duration_seconds?: number | null
           file_path: string
           id?: string
-          program_id: string
+          program_id?: string | null
           title: string
           track_order?: number
         }
@@ -74,7 +74,7 @@ export type Database = {
           duration_seconds?: number | null
           file_path?: string
           id?: string
-          program_id?: string
+          program_id?: string | null
           title?: string
           track_order?: number
         }
@@ -261,6 +261,45 @@ export type Database = {
           wp_user_id?: number | null
         }
         Relationships: []
+      }
+      program_audio_files: {
+        Row: {
+          audio_file_id: string
+          created_at: string
+          id: string
+          program_id: string
+          track_order: number
+        }
+        Insert: {
+          audio_file_id: string
+          created_at?: string
+          id?: string
+          program_id: string
+          track_order?: number
+        }
+        Update: {
+          audio_file_id?: string
+          created_at?: string
+          id?: string
+          program_id?: string
+          track_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_audio_files_audio_file_id_fkey"
+            columns: ["audio_file_id"]
+            isOneToOne: false
+            referencedRelation: "audio_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_audio_files_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       programs: {
         Row: {
