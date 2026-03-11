@@ -141,15 +141,18 @@ const ProgramDetail = () => {
 
         if (purchaseData) {
           setIsPurchased(true);
-          // If purchased, fetch actual track data
-          const { data: actualTracks } = await supabase
-            .from('audio_files')
-            .select('*')
+          // If purchased, fetch actual track data via junction
+          const { data: actualLinks } = await supabase
+            .from('program_audio_files')
+            .select('track_order, audio_files(*)')
             .eq('program_id', programData.id)
-            .order('track_order', { ascending: true });
+            .order('track_order', { ascending: true }) as any;
           
-          if (actualTracks) {
-            setTracks(actualTracks);
+          if (actualLinks) {
+            setTracks(actualLinks.map((l: any) => ({
+              ...l.audio_files,
+              track_order: l.track_order,
+            })));
           }
         }
       }
