@@ -74,17 +74,35 @@ const AdminAudio = () => {
   const { data: audioFiles, isLoading } = useQuery({
     queryKey: ["admin-audio-files"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch all audio files
+      const { data: files, error } = await supabase
         .from("audio_files")
-        .select(`
-          *,
-          programs (title)
-        `)
-        .order("program_id")
-        .order("track_order");
+        .select("*")
+        .order("title");
 
       if (error) throw error;
-      return data;
+
+      // Fetch junction table to know which programs each file belongs to
+      const { data: links } = await supabase
+        .from("program_audio_files")
+        .select("audio_file_id, program_id, track_order, programs:program_id(title)")
+        .order("track_order") as any;
+
+      // Attach program info to each audio file
+      const linkMap: Record<string, { programId: string; programTitle: string; trackOrder: number }[]> = {};
+      (links || []).forEach((l: any) => {
+        if (!linkMap[l.audio_file_id]) linkMap[l.audio_file_id] = [];
+        linkMap[l.audio_file_id].push({
+          programId: l.program_id,
+          programTitle: (l.programs as any)?.title || "Okänt",
+          trackOrder: l.track_order,
+        });
+      });
+
+      return (files || []).map((f: any) => ({
+        ...f,
+        linkedPrograms: linkMap[f.id] || [],
+      }));
     },
   });
 
