@@ -122,8 +122,12 @@ const ProgramDetail = () => {
         .eq('program_id', programData.id)
         .order('track_order', { ascending: true }) as any;
 
-      if (!tracksError && tracksData) {
-        setTracks(tracksData);
+      if (!tracksError && linkData) {
+        const mapped = linkData.map((l: any) => ({
+          ...l.audio_files,
+          track_order: l.track_order,
+        }));
+        setTracks(mapped);
       }
 
       // Check if user has purchased this program
