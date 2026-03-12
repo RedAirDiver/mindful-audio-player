@@ -458,6 +458,21 @@ const AdminAudio = () => {
             <Download className="h-4 w-4 mr-2" />
             {isImporting ? "Importerar..." : "Importera från WordPress XML"}
           </Button>
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleCsvImport}
+          />
+          <Button
+            variant="outline"
+            onClick={() => csvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {isImporting ? "Importerar..." : "Importera spårnamn (CSV)"}
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
