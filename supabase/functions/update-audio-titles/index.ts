@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Strip BOM and normalize
+    xmlContent = xmlContent.replace(/^\uFEFF/, '').replace(/^\xEF\xBB\xBF/, '');
+
     // Parse XML posts
     const postRegex = /<post>([\s\S]*?)<\/post>/g;
     const posts: Array<{ id: string; title: string; paths: string[]; names: string[] }> = [];
