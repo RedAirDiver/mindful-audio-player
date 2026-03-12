@@ -157,7 +157,15 @@ Deno.serve(async (req) => {
           const isDifferent = audioFile.title !== newName;
           const isFilenameTitle = /\.(mp3|mp4|m4a|wav|ogg|flac)$/i.test(newName);
           const isGenericTitle = /^Spår \d+$/i.test(newName) || /^Introduction to Mental Training/i.test(newName);
-          if (isDifferent && !isFilenameTitle && !isGenericTitle) {
+          // Skip hash-based titles (long hex strings)
+          const isHashTitle = /^[a-f0-9]{32,}$/i.test(newName);
+          // Skip if new title is just lowercase of old (no real improvement)
+          const isJustLowercase = newName.toLowerCase() === audioFile.title.toLowerCase() && 
+            newName[0] === newName[0].toLowerCase() && audioFile.title[0] === audioFile.title[0].toUpperCase();
+          // Skip if new title has underscore prefix like "5_Självförtroende" or "03 Självbildsträning"
+          const hasNumPrefix = /^\d+[_\s]/.test(newName) && !/^\d+[_\s]/.test(audioFile.title);
+          
+          if (isDifferent && !isFilenameTitle && !isGenericTitle && !isHashTitle && !isJustLowercase && !hasNumPrefix) {
             updates.push({
               audioId: audioFile.id,
               oldTitle: audioFile.title,
