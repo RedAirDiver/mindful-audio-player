@@ -263,7 +263,9 @@ Deno.serve(async (req) => {
             const trackOrder = item.menuOrder > 0 ? item.menuOrder : currentCount + 1;
             
             // Generate storage path
-            const fileExt = item.filename.split(".").pop() || "mp3";
+            const fileExt = item.filename.split(".").pop()?.toLowerCase() || "mp3";
+            const contentType = fileExt === "mp3" ? "audio/mpeg" : fileExt === "mp4" || fileExt === "m4a" ? "audio/mp4" : `audio/${fileExt}`;
+            const storageExt = fileExt === "mp4" ? "m4a" : fileExt; // normalize mp4 → m4a for storage
             const cleanFilename = item.filename.toLowerCase()
               .replace(/-\d+-[a-z0-9]+\./, ".") // remove WP suffix
               .replace(/-\d+\./, "."); // remove trailing number
