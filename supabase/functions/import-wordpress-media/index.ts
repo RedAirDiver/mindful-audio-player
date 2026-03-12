@@ -53,8 +53,9 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
         const value = valueMatch[1];
 
         if (key === "_wp_attachment_metadata") {
-          // Parse serialized PHP to find length
-          const lengthMatch = value.match(/s:6:"length";s:\d+:"(\d+)"/);
+          // Parse serialized PHP to find length - try string format first, then integer format
+          const lengthMatch = value.match(/s:6:"length";s:\d+:"(\d+)"/) ||
+                              value.match(/s:6:"length";i:(\d+)/);
           if (lengthMatch) {
             duration = parseInt(lengthMatch[1], 10);
           }
