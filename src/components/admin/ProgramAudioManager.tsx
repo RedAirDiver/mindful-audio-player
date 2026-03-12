@@ -588,7 +588,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
           setSearchExisting("");
         }
       }}>
-        <DialogContent className="max-w-lg max-h-[80vh]">
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Välj befintliga ljudfiler</DialogTitle>
           </DialogHeader>
