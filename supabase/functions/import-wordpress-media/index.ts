@@ -32,7 +32,7 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
     if (!attachmentType || (postType && postType[1] !== "attachment")) continue;
 
     const url = attachmentType[1].trim();
-    if (!url.match(/\.(mp3|wav|m4a|ogg|flac)$/i)) continue;
+    if (!url.match(/\.(mp3|wav|m4a|mp4|ogg|flac)$/i)) continue;
 
     // Extract title - handle CDATA wrapping
     const titleMatch = itemBlock.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
