@@ -136,9 +136,10 @@ Deno.serve(async (req) => {
           matchMethod = 'stripped';
         }
         
-        // Try wc_id + normalized filename
+        // Try wc_id + normalized filename (strip WP suffix from XML filename first)
         if (!audioFile && post.id) {
-          const normKey = `${post.id}:${normalizeForMatch(urlFilename)}`;
+          const xmlNorm = normalizeBase(stripWpSuffix(urlFilename));
+          const normKey = `${post.id}:${xmlNorm}`;
           audioFile = wcIdFileMap.get(normKey);
           matchMethod = 'wcid_norm';
         }
