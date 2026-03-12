@@ -1,0 +1,1 @@
+ALTER TABLE public.audio_files ADD COLUMN IF NOT EXISTS description text;

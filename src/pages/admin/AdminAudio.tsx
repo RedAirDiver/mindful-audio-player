@@ -39,6 +39,7 @@ const AdminAudio = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const xmlInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
+  const mediaCsvInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
@@ -388,7 +389,7 @@ const AdminAudio = () => {
       formData.append("mode", "full");
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min
+      const timeoutId = setTimeout(() => controller.abort(), 600000);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-csv-tracks`,
@@ -432,6 +433,87 @@ const AdminAudio = () => {
     }
   };
 
+  const handleMediaCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress("Matchar media-CSV mot ljudfiler (dry run)...");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      // First do a dry run
+      const dryFormData = new FormData();
+      dryFormData.append("file", file);
+      dryFormData.append("dryRun", "true");
+
+      const dryResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-audio-from-media-csv`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: dryFormData,
+        }
+      );
+
+      const dryResult = await dryResponse.json();
+      if (!dryResponse.ok) throw new Error(dryResult.error || "Dry run misslyckades");
+
+      const matchCount = dryResult.totalMatched || 0;
+      const notFoundCount = dryResult.notFoundCount || 0;
+
+      if (matchCount === 0) {
+        toast.warning(`Inga matchningar hittades. ${notFoundCount} filer kunde inte matchas.`);
+        return;
+      }
+
+      // Confirm with user
+      const confirmed = window.confirm(
+        `Hittade ${matchCount} ljudfiler att uppdatera (titel + beskrivning).\n${notFoundCount} filer kunde inte matchas.\n\nVill du genomföra uppdateringen?`
+      );
+
+      if (!confirmed) {
+        toast.info("Uppdatering avbruten.");
+        return;
+      }
+
+      // Real run
+      setImportProgress(`Uppdaterar ${matchCount} ljudfiler...`);
+      const realFormData = new FormData();
+      realFormData.append("file", file);
+      realFormData.append("dryRun", "false");
+
+      const realResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-audio-from-media-csv`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: realFormData,
+        }
+      );
+
+      const realResult = await realResponse.json();
+      if (!realResponse.ok) throw new Error(realResult.error || "Uppdatering misslyckades");
+
+      toast.success(
+        `Klart! ${realResult.updatedCount} av ${realResult.totalMatched} ljudfiler uppdaterade med titel och beskrivning.`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      toast.error("Media-CSV-import misslyckades: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+      if (mediaCsvInputRef.current) mediaCsvInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
@@ -472,6 +554,21 @@ const AdminAudio = () => {
           >
             <Upload className="h-4 w-4 mr-2" />
             {isImporting ? "Importerar..." : "Importera spårnamn (CSV)"}
+          </Button>
+          <input
+            ref={mediaCsvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleMediaCsvImport}
+          />
+          <Button
+            variant="outline"
+            onClick={() => mediaCsvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <FileAudio className="h-4 w-4 mr-2" />
+            {isImporting ? "Importerar..." : "Uppdatera från Media-CSV"}
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
