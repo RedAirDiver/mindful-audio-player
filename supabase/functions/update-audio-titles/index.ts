@@ -156,7 +156,8 @@ Deno.serve(async (req) => {
         if (audioFile) {
           const isDifferent = audioFile.title !== newName;
           const isFilenameTitle = /\.(mp3|mp4|m4a|wav|ogg|flac)$/i.test(newName);
-          if (isDifferent && !isFilenameTitle) {
+          const isGenericTitle = /^Spår \d+$/i.test(newName) || /^Introduction to Mental Training/i.test(newName);
+          if (isDifferent && !isFilenameTitle && !isGenericTitle) {
             updates.push({
               audioId: audioFile.id,
               oldTitle: audioFile.title,
