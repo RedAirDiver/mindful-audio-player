@@ -32,7 +32,7 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
     if (!attachmentType || (postType && postType[1] !== "attachment")) continue;
 
     const url = attachmentType[1].trim();
-    if (!url.match(/\.(mp3|wav|m4a|ogg|flac)$/i)) continue;
+    if (!url.match(/\.(mp3|wav|m4a|mp4|ogg|flac)$/i)) continue;
 
     // Extract title - handle CDATA wrapping
     const titleMatch = itemBlock.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) ||
@@ -53,8 +53,9 @@ function parseWordPressXml(xmlText: string): MediaItem[] {
         const value = valueMatch[1];
 
         if (key === "_wp_attachment_metadata") {
-          // Parse serialized PHP to find length
-          const lengthMatch = value.match(/s:6:"length";s:\d+:"(\d+)"/);
+          // Parse serialized PHP to find length - try string format first, then integer format
+          const lengthMatch = value.match(/s:6:"length";s:\d+:"(\d+)"/) ||
+                              value.match(/s:6:"length";i:(\d+)/);
           if (lengthMatch) {
             duration = parseInt(lengthMatch[1], 10);
           }
@@ -262,7 +263,9 @@ Deno.serve(async (req) => {
             const trackOrder = item.menuOrder > 0 ? item.menuOrder : currentCount + 1;
             
             // Generate storage path
-            const fileExt = item.filename.split(".").pop() || "mp3";
+            const fileExt = item.filename.split(".").pop()?.toLowerCase() || "mp3";
+            const contentType = fileExt === "mp3" ? "audio/mpeg" : fileExt === "mp4" || fileExt === "m4a" ? "audio/mp4" : `audio/${fileExt}`;
+            const storageExt = fileExt === "mp4" ? "m4a" : fileExt; // normalize mp4 → m4a for storage
             const cleanFilename = item.filename.toLowerCase()
               .replace(/-\d+-[a-z0-9]+\./, ".") // remove WP suffix
               .replace(/-\d+\./, "."); // remove trailing number
@@ -283,7 +286,7 @@ Deno.serve(async (req) => {
             const { error: uploadErr } = await supabase.storage
               .from("audio-files")
               .upload(storagePath, blob, {
-                contentType: `audio/${fileExt === "mp3" ? "mpeg" : fileExt}`,
+                contentType,
                 upsert: true,
               });
 
@@ -294,7 +297,7 @@ Deno.serve(async (req) => {
             }
 
             // Create DB entry
-            const { error: insertErr } = await supabase
+            const { data: insertedFile, error: insertErr } = await supabase
               .from("audio_files")
               .insert({
                 title: item.title,
@@ -302,12 +305,20 @@ Deno.serve(async (req) => {
                 program_id: program.id,
                 track_order: trackOrder,
                 duration_seconds: item.duration,
-              });
+              })
+              .select("id")
+              .single();
 
             if (insertErr) {
               results.push({ title: item.title, action: "insert_failed", error: insertErr.message });
               failed++;
             } else {
+              // Also create junction table entry
+              await supabase.from("program_audio_files").insert({
+                program_id: program.id,
+                audio_file_id: insertedFile.id,
+                track_order: trackOrder,
+              });
               filesCreated++;
               programTrackCounts.set(program.id, (programTrackCounts.get(program.id) || 0) + 1);
               results.push({ title: item.title, action: "created" });
