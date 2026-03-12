@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
             }
 
             // Create DB entry
-            const { error: insertErr } = await supabase
+            const { data: insertedFile, error: insertErr } = await supabase
               .from("audio_files")
               .insert({
                 title: item.title,
@@ -305,12 +305,20 @@ Deno.serve(async (req) => {
                 program_id: program.id,
                 track_order: trackOrder,
                 duration_seconds: item.duration,
-              });
+              })
+              .select("id")
+              .single();
 
             if (insertErr) {
               results.push({ title: item.title, action: "insert_failed", error: insertErr.message });
               failed++;
             } else {
+              // Also create junction table entry
+              await supabase.from("program_audio_files").insert({
+                program_id: program.id,
+                audio_file_id: insertedFile.id,
+                track_order: trackOrder,
+              });
               filesCreated++;
               programTrackCounts.set(program.id, (programTrackCounts.get(program.id) || 0) + 1);
               results.push({ title: item.title, action: "created" });
