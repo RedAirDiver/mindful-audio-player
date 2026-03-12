@@ -37,10 +37,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { xmlContent, dryRun = true } = await req.json();
+    const { xmlContent: rawXml, storagePath, dryRun = true } = await req.json();
+
+    let xmlContent = rawXml;
+    if (storagePath && !xmlContent) {
+      const { data, error: dlError } = await supabase.storage.from('audio-files').download(storagePath);
+      if (dlError) throw dlError;
+      xmlContent = await data.text();
+      console.log('Downloaded XML from storage, length:', xmlContent.length);
+    }
 
     if (!xmlContent) {
-      return new Response(JSON.stringify({ error: 'xmlContent is required' }), {
+      return new Response(JSON.stringify({ error: 'xmlContent or storagePath is required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
