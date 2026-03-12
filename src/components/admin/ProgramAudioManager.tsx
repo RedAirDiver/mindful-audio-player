@@ -602,7 +602,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
                 className="pl-9"
               />
             </div>
-            <div className="max-h-[400px] overflow-y-auto space-y-1 border rounded-lg p-2">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1 border rounded-lg p-2">
               {filteredExisting && filteredExisting.length > 0 ? (
                 filteredExisting.map((af) => (
                   <div
