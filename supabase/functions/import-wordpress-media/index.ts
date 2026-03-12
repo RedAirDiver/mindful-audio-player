@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
             const { error: uploadErr } = await supabase.storage
               .from("audio-files")
               .upload(storagePath, blob, {
-                contentType: `audio/${fileExt === "mp3" ? "mpeg" : fileExt}`,
+                contentType,
                 upsert: true,
               });
 
