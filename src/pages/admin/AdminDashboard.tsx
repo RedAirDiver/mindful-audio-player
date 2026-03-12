@@ -42,8 +42,8 @@ const AdminDashboard = () => {
   });
 
   const statCards = [
-    { label: "Produkter", value: stats?.programs || 0, icon: Package, color: "text-primary" },
-    { label: "Program", value: stats?.audioFiles || 0, icon: Music, color: "text-accent" },
+    { label: "Mentala Träningsprogram", value: stats?.programs || 0, icon: Package, color: "text-primary" },
+    { label: "Ljudfiler", value: stats?.audioFiles || 0, icon: Music, color: "text-accent" },
     { label: "Köp", value: stats?.purchases || 0, icon: ShoppingCart, color: "text-green-600" },
     { label: "Användare", value: stats?.users || 0, icon: Users, color: "text-blue-600" },
   ];
