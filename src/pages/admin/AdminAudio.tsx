@@ -547,6 +547,17 @@ const AdminAudio = () => {
         </div>
       </div>
 
+      {isImporting && (
+        <div className="mb-6 space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+            <p className="text-sm font-medium text-foreground">{importProgress || "Importerar..."}</p>
+          </div>
+          <Progress value={undefined} className="h-2 [&>div]:animate-pulse" />
+          <p className="text-xs text-muted-foreground">Detta kan ta flera minuter beroende på antal filer...</p>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
