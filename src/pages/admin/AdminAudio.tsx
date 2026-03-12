@@ -38,6 +38,7 @@ const AdminAudio = () => {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const xmlInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
@@ -368,6 +369,69 @@ const AdminAudio = () => {
     }
   };
 
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress("Bearbetar CSV-fil med spårnamn...");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("mode", "full");
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 min
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-csv-tracks`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: formData,
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "CSV-import misslyckades");
+      }
+
+      setImportProgress("");
+      toast.success(
+        `CSV-import klar! ${result.titles_updated ?? 0} titlar uppdaterade, ${result.tracks_created ?? 0} nya spår, ${result.tracks_linked ?? 0} länkade, ${result.failed ?? 0} misslyckade av ${result.products_processed ?? 0} produkter.`
+      );
+
+      if (result.details?.length > 0) {
+        console.log("CSV import details:", result.details);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        toast.warning("Importen tog för lång tid men kan fortfarande köras i bakgrunden.");
+      } else {
+        toast.error("CSV-import misslyckades: " + error.message);
+      }
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+      if (csvInputRef.current) csvInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
@@ -393,6 +457,21 @@ const AdminAudio = () => {
           >
             <Download className="h-4 w-4 mr-2" />
             {isImporting ? "Importerar..." : "Importera från WordPress XML"}
+          </Button>
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleCsvImport}
+          />
+          <Button
+            variant="outline"
+            onClick={() => csvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {isImporting ? "Importerar..." : "Importera spårnamn (CSV)"}
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
