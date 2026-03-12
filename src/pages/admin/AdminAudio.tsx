@@ -322,6 +322,9 @@ const AdminAudio = () => {
       formData.append("file", file);
       formData.append("mode", "full");
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-media`,
         {
@@ -330,8 +333,11 @@ const AdminAudio = () => {
             Authorization: `Bearer ${session.access_token}`,
           },
           body: formData,
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeoutId);
 
       const result = await response.json();
 
@@ -350,7 +356,11 @@ const AdminAudio = () => {
 
       queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
     } catch (error: any) {
-      toast.error("Import misslyckades: " + error.message);
+      if (error.name === 'AbortError') {
+        toast.warning("Importen tog för lång tid, men den kan fortfarande köras i bakgrunden. Ladda om sidan om en stund för att se resultatet, och kör sedan importen igen för att hämta resterande filer.");
+      } else {
+        toast.error("Import misslyckades: " + error.message);
+      }
     } finally {
       setIsImporting(false);
       setImportProgress("");
