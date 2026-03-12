@@ -663,7 +663,7 @@ const AdminAudio = () => {
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              {filteredAudioFiles?.length || 0} program
+              {filteredAudioFiles?.length || 0} ljudfiler
             </p>
           </div>
         </CardHeader>
