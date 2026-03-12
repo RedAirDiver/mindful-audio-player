@@ -356,7 +356,11 @@ const AdminAudio = () => {
 
       queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
     } catch (error: any) {
-      toast.error("Import misslyckades: " + error.message);
+      if (error.name === 'AbortError') {
+        toast.warning("Importen tog för lång tid, men den kan fortfarande köras i bakgrunden. Ladda om sidan om en stund för att se resultatet, och kör sedan importen igen för att hämta resterande filer.");
+      } else {
+        toast.error("Import misslyckades: " + error.message);
+      }
     } finally {
       setIsImporting(false);
       setImportProgress("");
