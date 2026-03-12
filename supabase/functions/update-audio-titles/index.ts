@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     // Strip BOM and normalize
     xmlContent = xmlContent.replace(/^\uFEFF/, '').replace(/^\xEF\xBB\xBF/, '');
 
-    // Parse XML posts
+    // Parse XML posts - support both DownloadableFiles and Attachment formats
     const postRegex = /<post>([\s\S]*?)<\/post>/g;
     const posts: Array<{ id: string; title: string; paths: string[]; names: string[] }> = [];
 
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     while ((match = postRegex.exec(xmlContent)) !== null) {
       const postContent = match[1];
 
-      const getId = (tag: string) => {
+      const getField = (tag: string) => {
         // Handle CDATA
         const cdataMatch = postContent.match(new RegExp(`<${tag}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>`));
         if (cdataMatch) return cdataMatch[1].trim();
@@ -56,10 +56,17 @@ Deno.serve(async (req) => {
         return normalMatch ? normalMatch[1].trim() : '';
       };
 
-      const id = getId('ID');
-      const title = getId('Title');
-      const downloadPaths = getId('DownloadableFilesPaths');
-      const downloadNames = getId('DownloadableFilesNames');
+      const id = getField('ID');
+      const title = getField('Title');
+      
+      // Try DownloadableFiles format first, then Attachment format
+      let downloadPaths = getField('DownloadableFilesPaths');
+      let downloadNames = getField('DownloadableFilesNames');
+      
+      if (!downloadPaths) {
+        downloadPaths = getField('AttachmentURL');
+        downloadNames = getField('AttachmentTitle');
+      }
 
       if (downloadPaths && downloadNames) {
         const paths = downloadPaths.split('|').filter(p => p.trim());
@@ -67,6 +74,8 @@ Deno.serve(async (req) => {
         posts.push({ id, title, paths, names });
       }
     }
+    
+    console.log(`Parsed ${posts.length} posts with tracks`);
 
     // Get all audio files with program wc_id
     const { data: audioFiles, error: audioError } = await supabase
@@ -147,7 +156,16 @@ Deno.serve(async (req) => {
         if (audioFile) {
           const isDifferent = audioFile.title !== newName;
           const isFilenameTitle = /\.(mp3|mp4|m4a|wav|ogg|flac)$/i.test(newName);
-          if (isDifferent && !isFilenameTitle) {
+          const isGenericTitle = /^Spår \d+$/i.test(newName) || /^Introduction to Mental Training/i.test(newName);
+          // Skip hash-based titles (long hex strings)
+          const isHashTitle = /^[a-f0-9]{32,}$/i.test(newName);
+          // Skip if new title is just lowercase of old (no real improvement)
+          const isJustLowercase = newName.toLowerCase() === audioFile.title.toLowerCase() && 
+            newName[0] === newName[0].toLowerCase() && audioFile.title[0] === audioFile.title[0].toUpperCase();
+          // Skip if new title has underscore prefix like "5_Självförtroende" or "03 Självbildsträning"
+          const hasNumPrefix = /^\d+[_\s]/.test(newName) && !/^\d+[_\s]/.test(audioFile.title);
+          
+          if (isDifferent && !isFilenameTitle && !isGenericTitle && !isHashTitle && !isJustLowercase && !hasNumPrefix) {
             updates.push({
               audioId: audioFile.id,
               oldTitle: audioFile.title,
