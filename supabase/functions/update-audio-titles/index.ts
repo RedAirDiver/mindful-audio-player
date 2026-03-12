@@ -81,12 +81,15 @@ Deno.serve(async (req) => {
     // Map by wc_id + normalized filename (without leading numbers and WP suffix)
     const wcIdFileMap = new Map<string, { id: string; title: string; file_path: string; wc_id: number | null }>();
     
-    const normalizeForMatch = (fn: string) => fn
+    // Normalize: strip extension, leading track number, non-alpha. Do NOT strip WP suffix here.
+    const normalizeBase = (fn: string) => fn
       .toLowerCase()
       .replace(/\.[^/.]+$/, '')           // remove extension
-      .replace(/-[a-z0-9]{5,8}$/, '')     // remove WP suffix
-      .replace(/^\d+[\.\-]\s*/, '')        // remove leading track number like "01-" or "2. "
+      .replace(/^\d+[\.\-]\s*/, '')        // remove leading track number
       .replace(/[^a-z0-9]/g, '');          // only alphanumeric
+
+    // Strip WP random suffix (5-8 chars that look random, not real words)
+    const stripWpSuffix = (fn: string) => fn.replace(/-[a-z0-9]{5,8}(\.\w+)$/, '$1');
 
     for (const af of audioFiles || []) {
       const parts = af.file_path.split('/');
@@ -97,14 +100,14 @@ Deno.serve(async (req) => {
       filePathMap.set(filename, entry);
       
       // Stripped WP suffix version
-      const stripped = filename.replace(/-[a-z0-9]{5,8}(\.\w+)$/, '$1');
+      const stripped = stripWpSuffix(filename);
       if (stripped !== filename) {
         strippedMap.set(stripped, entry);
       }
       
-      // wc_id + normalized filename key
+      // wc_id + normalized filename key (DB files usually don't have WP suffix)
       if (wc_id) {
-        const normKey = `${wc_id}:${normalizeForMatch(filename)}`;
+        const normKey = `${wc_id}:${normalizeBase(filename)}`;
         wcIdFileMap.set(normKey, entry);
       }
     }
