@@ -68,31 +68,50 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Get all audio files
+    // Get all audio files with program wc_id
     const { data: audioFiles, error: audioError } = await supabase
       .from('audio_files')
-      .select('id, title, file_path');
+      .select('id, title, file_path, program_id, programs!audio_files_program_id_fkey(wc_id)');
 
     if (audioError) throw audioError;
 
-    // Build filename -> audio_file mapping (both with and without WP suffix)
-    const filePathMap = new Map<string, { id: string; title: string; file_path: string }>();
-    const strippedMap = new Map<string, { id: string; title: string; file_path: string }>();
+    // Build multiple lookup maps
+    const filePathMap = new Map<string, { id: string; title: string; file_path: string; wc_id: number | null }>();
+    const strippedMap = new Map<string, { id: string; title: string; file_path: string; wc_id: number | null }>();
+    // Map by wc_id + normalized filename (without leading numbers and WP suffix)
+    const wcIdFileMap = new Map<string, { id: string; title: string; file_path: string; wc_id: number | null }>();
+    
+    const normalizeForMatch = (fn: string) => fn
+      .toLowerCase()
+      .replace(/\.[^/.]+$/, '')           // remove extension
+      .replace(/-[a-z0-9]{5,8}$/, '')     // remove WP suffix
+      .replace(/^\d+[\.\-]\s*/, '')        // remove leading track number like "01-" or "2. "
+      .replace(/[^a-z0-9]/g, '');          // only alphanumeric
+
     for (const af of audioFiles || []) {
       const parts = af.file_path.split('/');
       const filename = parts[parts.length - 1].toLowerCase();
-      filePathMap.set(filename, af);
-      // Also store stripped version (remove WP suffix like -yw7cis before extension)
+      const wc_id = (af as any).programs?.wc_id ?? null;
+      const entry = { id: af.id, title: af.title, file_path: af.file_path, wc_id };
+      
+      filePathMap.set(filename, entry);
+      
+      // Stripped WP suffix version
       const stripped = filename.replace(/-[a-z0-9]{5,8}(\.\w+)$/, '$1');
       if (stripped !== filename) {
-        strippedMap.set(stripped, af);
+        strippedMap.set(stripped, entry);
+      }
+      
+      // wc_id + normalized filename key
+      if (wc_id) {
+        const normKey = `${wc_id}:${normalizeForMatch(filename)}`;
+        wcIdFileMap.set(normKey, entry);
       }
     }
 
-    // Helper to strip WP suffix from URL filename
     const stripSuffix = (fn: string) => fn.replace(/-[a-z0-9]{5,8}(\.\w+)$/, '$1');
 
-    const updates: Array<{ audioId: string; oldTitle: string; newTitle: string; filePath: string; productTitle: string }> = [];
+    const updates: Array<{ audioId: string; oldTitle: string; newTitle: string; filePath: string; productTitle: string; matchMethod: string }> = [];
     const notFound: Array<{ filename: string; expectedName: string; productId: string }> = [];
 
     for (const post of posts) {
@@ -100,33 +119,37 @@ Deno.serve(async (req) => {
         const url = post.paths[i].trim();
         const newName = post.names[i].trim();
 
-        // Extract filename from URL
         const urlParts = url.split('/');
         const urlFilename = urlParts[urlParts.length - 1].toLowerCase();
 
-        // Try exact match, then stripped match
+        // Try exact match
         let audioFile = filePathMap.get(urlFilename);
+        let matchMethod = 'exact';
+        
+        // Try stripped WP suffix
         if (!audioFile) {
           const strippedUrl = stripSuffix(urlFilename);
           audioFile = strippedMap.get(strippedUrl) || filePathMap.get(strippedUrl);
+          matchMethod = 'stripped';
+        }
+        
+        // Try wc_id + normalized filename
+        if (!audioFile && post.id) {
+          const normKey = `${post.id}:${normalizeForMatch(urlFilename)}`;
+          audioFile = wcIdFileMap.get(normKey);
+          matchMethod = 'wcid_norm';
         }
 
         if (audioFile) {
-          // Check if title actually needs updating (skip if already correct)
-          // A title needs updating if it looks like a hash or generic "Spår X"
-          const currentTitle = audioFile.title;
-          const isHash = /^[a-f0-9]{40,}/.test(currentTitle);
-          const isGenericTrack = /^(Spår \d+|[0-9]+[\.\-])/i.test(currentTitle);
-          const isFilename = currentTitle.includes('.mp3') || currentTitle.includes('.mp4') || currentTitle.includes('.m4a');
-          const isDifferent = currentTitle !== newName;
-
+          const isDifferent = audioFile.title !== newName;
           if (isDifferent) {
             updates.push({
               audioId: audioFile.id,
-              oldTitle: currentTitle,
+              oldTitle: audioFile.title,
               newTitle: newName,
               filePath: audioFile.file_path,
               productTitle: post.title,
+              matchMethod,
             });
           }
         } else {
