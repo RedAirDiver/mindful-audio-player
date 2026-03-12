@@ -16,10 +16,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { xmlContent, dryRun = true } = await req.json();
+    const { xmlUrl, xmlContent: rawXml, dryRun = true } = await req.json();
+
+    let xmlContent = rawXml;
+    if (xmlUrl && !xmlContent) {
+      const resp = await fetch(xmlUrl);
+      xmlContent = await resp.text();
+    }
 
     if (!xmlContent) {
-      return new Response(JSON.stringify({ error: 'xmlContent is required' }), {
+      return new Response(JSON.stringify({ error: 'xmlContent or xmlUrl is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
