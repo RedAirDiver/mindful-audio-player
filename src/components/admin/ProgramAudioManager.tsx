@@ -588,11 +588,11 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
           setSearchExisting("");
         }
       }}>
-        <DialogContent className="max-w-lg max-h-[80vh]">
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>Välj befintliga ljudfiler</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 flex flex-col min-h-0 flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -602,7 +602,7 @@ export const ProgramAudioManager = ({ programId, programTitle }: ProgramAudioMan
                 className="pl-9"
               />
             </div>
-            <div className="max-h-[400px] overflow-y-auto space-y-1 border rounded-lg p-2">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-1 border rounded-lg p-2">
               {filteredExisting && filteredExisting.length > 0 ? (
                 filteredExisting.map((af) => (
                   <div
