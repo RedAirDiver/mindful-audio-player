@@ -75,14 +75,22 @@ Deno.serve(async (req) => {
 
     if (audioError) throw audioError;
 
-    // Build filename -> audio_file mapping
+    // Build filename -> audio_file mapping (both with and without WP suffix)
     const filePathMap = new Map<string, { id: string; title: string; file_path: string }>();
+    const strippedMap = new Map<string, { id: string; title: string; file_path: string }>();
     for (const af of audioFiles || []) {
-      // Extract filename from file_path like "audio/5418/filename.mp3"
       const parts = af.file_path.split('/');
       const filename = parts[parts.length - 1].toLowerCase();
       filePathMap.set(filename, af);
+      // Also store stripped version (remove WP suffix like -yw7cis before extension)
+      const stripped = filename.replace(/-[a-z0-9]{5,8}(\.\w+)$/, '$1');
+      if (stripped !== filename) {
+        strippedMap.set(stripped, af);
+      }
     }
+
+    // Helper to strip WP suffix from URL filename
+    const stripSuffix = (fn: string) => fn.replace(/-[a-z0-9]{5,8}(\.\w+)$/, '$1');
 
     const updates: Array<{ audioId: string; oldTitle: string; newTitle: string; filePath: string; productTitle: string }> = [];
     const notFound: Array<{ filename: string; expectedName: string; productId: string }> = [];
@@ -96,7 +104,12 @@ Deno.serve(async (req) => {
         const urlParts = url.split('/');
         const urlFilename = urlParts[urlParts.length - 1].toLowerCase();
 
-        const audioFile = filePathMap.get(urlFilename);
+        // Try exact match, then stripped match
+        let audioFile = filePathMap.get(urlFilename);
+        if (!audioFile) {
+          const strippedUrl = stripSuffix(urlFilename);
+          audioFile = strippedMap.get(strippedUrl) || filePathMap.get(strippedUrl);
+        }
 
         if (audioFile) {
           // Check if title actually needs updating (skip if already correct)
