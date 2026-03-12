@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
     if (xmlUrl && !xmlContent) {
       const resp = await fetch(xmlUrl);
       xmlContent = await resp.text();
+      console.log('Fetched XML length:', xmlContent.length, 'First 100 chars:', xmlContent.substring(0, 100));
     }
 
     if (!xmlContent) {
