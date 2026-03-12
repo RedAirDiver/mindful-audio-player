@@ -483,7 +483,7 @@ const AdminAudio = () => {
                 Ny ljudfil
               </Button>
             </DialogTrigger>
-          <DialogContent>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>
                 {editingAudio ? "Redigera ljudfil" : "Lägg till ljudfil"}
