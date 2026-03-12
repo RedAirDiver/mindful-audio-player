@@ -322,6 +322,9 @@ const AdminAudio = () => {
       formData.append("file", file);
       formData.append("mode", "full");
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/import-wordpress-media`,
         {
@@ -330,8 +333,11 @@ const AdminAudio = () => {
             Authorization: `Bearer ${session.access_token}`,
           },
           body: formData,
+          signal: controller.signal,
         }
       );
+
+      clearTimeout(timeoutId);
 
       const result = await response.json();
 
