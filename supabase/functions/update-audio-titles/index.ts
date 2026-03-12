@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     // Strip BOM and normalize
     xmlContent = xmlContent.replace(/^\uFEFF/, '').replace(/^\xEF\xBB\xBF/, '');
 
-    // Parse XML posts
+    // Parse XML posts - support both DownloadableFiles and Attachment formats
     const postRegex = /<post>([\s\S]*?)<\/post>/g;
     const posts: Array<{ id: string; title: string; paths: string[]; names: string[] }> = [];
 
@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     while ((match = postRegex.exec(xmlContent)) !== null) {
       const postContent = match[1];
 
-      const getId = (tag: string) => {
+      const getField = (tag: string) => {
         // Handle CDATA
         const cdataMatch = postContent.match(new RegExp(`<${tag}><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>`));
         if (cdataMatch) return cdataMatch[1].trim();
@@ -56,10 +56,17 @@ Deno.serve(async (req) => {
         return normalMatch ? normalMatch[1].trim() : '';
       };
 
-      const id = getId('ID');
-      const title = getId('Title');
-      const downloadPaths = getId('DownloadableFilesPaths');
-      const downloadNames = getId('DownloadableFilesNames');
+      const id = getField('ID');
+      const title = getField('Title');
+      
+      // Try DownloadableFiles format first, then Attachment format
+      let downloadPaths = getField('DownloadableFilesPaths');
+      let downloadNames = getField('DownloadableFilesNames');
+      
+      if (!downloadPaths) {
+        downloadPaths = getField('AttachmentURL');
+        downloadNames = getField('AttachmentTitle');
+      }
 
       if (downloadPaths && downloadNames) {
         const paths = downloadPaths.split('|').filter(p => p.trim());
@@ -67,6 +74,8 @@ Deno.serve(async (req) => {
         posts.push({ id, title, paths, names });
       }
     }
+    
+    console.log(`Parsed ${posts.length} posts with tracks`);
 
     // Get all audio files with program wc_id
     const { data: audioFiles, error: audioError } = await supabase
