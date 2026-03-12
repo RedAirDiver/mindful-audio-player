@@ -16,13 +16,18 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { xmlUrl, xmlContent: rawXml, dryRun = true } = await req.json();
+    const { xmlUrl, xmlContent: rawXml, storagePath, dryRun = true } = await req.json();
 
     let xmlContent = rawXml;
-    if (xmlUrl && !xmlContent) {
+    if (storagePath && !xmlContent) {
+      const { data, error: dlError } = await supabase.storage.from('audio-files').download(storagePath);
+      if (dlError) throw dlError;
+      xmlContent = await data.text();
+      console.log('Downloaded from storage, length:', xmlContent.length);
+    } else if (xmlUrl && !xmlContent) {
       const resp = await fetch(xmlUrl);
       xmlContent = await resp.text();
-      console.log('Fetched XML length:', xmlContent.length, 'First 100 chars:', xmlContent.substring(0, 100));
+      console.log('Fetched XML length:', xmlContent.length);
     }
 
     if (!xmlContent) {
