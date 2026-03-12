@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
           const isFilename = currentTitle.includes('.mp3') || currentTitle.includes('.mp4') || currentTitle.includes('.m4a');
           const isDifferent = currentTitle !== newName;
 
-          if (isDifferent && (isHash || isGenericTrack || isFilename || dryRun)) {
+          if (isDifferent) {
             updates.push({
               audioId: audioFile.id,
               oldTitle: currentTitle,
