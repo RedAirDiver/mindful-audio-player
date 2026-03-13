@@ -278,15 +278,18 @@ Deno.serve(async (req) => {
           storagePath = `audio/unassigned/${filename}`;
         }
 
-        const fileBlob = await readResponseWithLimit(response, MAX_FILE_BYTES);
-
-        const { error: uploadErr } = await supabase.storage.from("audio-files").upload(storagePath, fileBlob, {
+        const { error: streamedUploadError } = await uploadStreamToStorage({
+          supabaseUrl,
+          serviceKey,
+          bucket: "audio-files",
+          storagePath,
+          stream: response.body,
           contentType,
-          upsert: true,
+          contentLength: Number.isFinite(contentLength) ? contentLength : remoteFileSize,
         });
 
-        if (uploadErr) {
-          errors.push(`${track.title}: Upload: ${uploadErr.message}`);
+        if (streamedUploadError) {
+          errors.push(`${track.title}: Upload: ${streamedUploadError}`);
           failed++;
           await supabase
             .from("audio_files")
