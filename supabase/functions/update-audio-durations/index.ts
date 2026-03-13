@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
         const response = await fetch(storageUrl, {
           headers: {
             "Authorization": `Bearer ${SERVICE_KEY}`,
+            "apikey": SERVICE_KEY,
             "Range": `bytes=0-${rangeBytes - 1}`,
           },
         });
