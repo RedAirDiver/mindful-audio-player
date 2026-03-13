@@ -272,8 +272,7 @@ const AdminAudio = () => {
   };
 
   const filteredAudioFiles = audioFiles?.filter((a: any) => {
-    return a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (a.description || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return a.title.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const handlePlayTrack = async (audio: AudioFile) => {
