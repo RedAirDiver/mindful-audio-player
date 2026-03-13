@@ -721,6 +721,21 @@ const AdminAudio = () => {
             <FileAudio className="h-4 w-4 mr-2" />
             {isImporting ? "Importerar..." : "Uppdatera från Media-CSV"}
           </Button>
+          <input
+            ref={strictCsvInputRef}
+            type="file"
+            accept=".csv"
+            className="hidden"
+            onChange={handleStrictCsvImport}
+          />
+          <Button
+            variant="destructive"
+            onClick={() => strictCsvInputRef.current?.click()}
+            disabled={isImporting}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            {isImporting ? "Importerar..." : "Strict import (CSV)"}
+          </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) resetForm();
