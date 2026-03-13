@@ -284,19 +284,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    const notFoundFiles = matched.filter(m => !m.foundInStorage).map(m => m.csvFilename);
+
     if (dryRun) {
       return new Response(
         JSON.stringify({
           dryRun: true,
           csvRows: csvEntries.length,
-          matched: matched.length,
-          notFound: notFound.length,
-          notFoundFiles: notFound.slice(0, 30),
+          matched: matched.filter(m => m.foundInStorage).length,
+          notFoundInStorage: notFoundFiles.length,
+          totalToCreate: matched.length,
+          notFoundFiles: notFoundFiles.slice(0, 50),
           preview: matched.slice(0, 20).map(m => ({
             title: m.title,
             filePath: m.filePath,
             programId: m.programId,
             trackOrder: m.trackOrder,
+            foundInStorage: m.foundInStorage,
           })),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
