@@ -62,14 +62,14 @@ async function probeRemoteFileSize(url: string): Promise<number | null> {
     const sizeMatch = contentRange.match(/\/(\d+)$/);
     if (sizeMatch) {
       const size = Number(sizeMatch[1]);
+      await rangeResponse.body?.cancel();
       if (Number.isFinite(size) && size > 0) {
-        await rangeResponse.arrayBuffer(); // consume body
         return size;
       }
     }
 
     const contentLength = Number(rangeResponse.headers.get("content-length") || "0");
-    await rangeResponse.arrayBuffer(); // consume body
+    await rangeResponse.body?.cancel();
     if (Number.isFinite(contentLength) && contentLength > 0) {
       return contentLength;
     }
