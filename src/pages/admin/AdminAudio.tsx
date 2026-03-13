@@ -40,6 +40,7 @@ const AdminAudio = () => {
   const xmlInputRef = useRef<HTMLInputElement>(null);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const mediaCsvInputRef = useRef<HTMLInputElement>(null);
+  const strictCsvInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
