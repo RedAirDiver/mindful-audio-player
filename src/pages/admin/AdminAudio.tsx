@@ -581,6 +581,82 @@ const AdminAudio = () => {
     }
   };
 
+  const handleStrictCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress("Analyserar CSV-fil (dry run)...");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      // Dry run
+      const dryFormData = new FormData();
+      dryFormData.append("file", file);
+      dryFormData.append("dryRun", "true");
+
+      const dryResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strict-import-audio`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: dryFormData,
+        }
+      );
+
+      const dryResult = await dryResponse.json();
+      if (!dryResponse.ok) throw new Error(dryResult.error || "Dry run misslyckades");
+
+      const confirmed = window.confirm(
+        `Strict import:\n• ${dryResult.csvRows} rader i CSV\n• ${dryResult.matched} matchade mot storage\n• ${dryResult.notFound} hittades inte\n\nDetta RADERAR alla befintliga ljudposter och skapar exakt ${dryResult.matched} nya.\n\nFortsätt?`
+      );
+
+      if (!confirmed) {
+        toast.info("Avbrutet.");
+        return;
+      }
+
+      setImportProgress(`Skapar ${dryResult.matched} ljudposter...`);
+
+      const realFormData = new FormData();
+      realFormData.append("file", file);
+      realFormData.append("dryRun", "false");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strict-import-audio`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: realFormData,
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Import misslyckades");
+
+      toast.success(
+        `Strict import klar! ${result.created} poster skapade, ${result.linked} länkade, ${result.notFound} ej hittade i storage.`
+      );
+
+      if (result.notFoundFiles?.length > 0) {
+        console.log("Filer som inte hittades i storage:", result.notFoundFiles);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      toast.error("Strict import misslyckades: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+      if (strictCsvInputRef.current) strictCsvInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
