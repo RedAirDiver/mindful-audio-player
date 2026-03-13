@@ -243,6 +243,7 @@ Deno.serve(async (req) => {
       trackOrder: number;
       foundInStorage: boolean;
       csvFileName: string;
+      fileUrl: string;
     }> = [];
 
     const unmatchedPrograms = new Set<string>();
