@@ -194,15 +194,28 @@ Deno.serve(async (req) => {
       try {
         console.log(`Downloading: ${track.title} from ${url}`);
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort("download_timeout"), DOWNLOAD_TIMEOUT_MS);
-
-        let response: Response;
-        try {
-          response = await fetch(url, { signal: controller.signal, redirect: "follow" });
-        } finally {
-          clearTimeout(timeout);
+        const remoteFileSize = await probeRemoteFileSize(url);
+        if (!remoteFileSize) {
+          errors.push(`${track.title}: Could not determine file size`);
+          failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_unknown_size" })
+            .eq("id", track.id);
+          continue;
         }
+
+        if (remoteFileSize > MAX_FILE_BYTES) {
+          errors.push(`${track.title}: File too large (${remoteFileSize} bytes)`);
+          failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_too_large" })
+            .eq("id", track.id);
+          continue;
+        }
+
+        const response = await fetchWithTimeout(url, { method: "GET", redirect: "follow" }, DOWNLOAD_TIMEOUT_MS);
 
         if (!response.ok) {
           errors.push(`${track.title}: HTTP ${response.status}`);
@@ -214,7 +227,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const contentLength = Number(response.headers.get("content-length") || "0");
+        const contentLength = Number(response.headers.get("content-length") || String(remoteFileSize));
         if (Number.isFinite(contentLength) && contentLength > MAX_FILE_BYTES) {
           errors.push(`${track.title}: File too large (${contentLength} bytes)`);
           failed++;
