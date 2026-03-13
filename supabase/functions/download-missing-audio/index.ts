@@ -7,6 +7,57 @@ const corsHeaders = {
 };
 
 const BATCH_SIZE = 1;
+const DOWNLOAD_TIMEOUT_MS = 45000;
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
+
+const URL_FILTER = "description.like.http://%,description.like.https://%";
+
+async function countRemainingDownloadable(supabase: ReturnType<typeof createClient>) {
+  const { count } = await supabase
+    .from("audio_files")
+    .select("id", { count: "exact", head: true })
+    .like("file_path", "missing/%")
+    .or(URL_FILTER);
+
+  return count || 0;
+}
+
+async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Uint8Array> {
+  if (!response.body) {
+    const buffer = new Uint8Array(await response.arrayBuffer());
+    if (buffer.byteLength > maxBytes) {
+      throw new Error(`File too large (${buffer.byteLength} bytes)`);
+    }
+    return buffer;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      throw new Error(`File too large (${total} bytes)`);
+    }
+
+    chunks.push(value);
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return merged;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -22,23 +73,32 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
     const authClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: userData, error: userErr } = await authClient.auth.getUser(token);
-    if (userErr || !userData?.user) {
+    const { data: claimsData, error: claimsErr } = await authClient.auth.getClaims(token);
+    const userId = claimsData?.claims?.sub;
+
+    if (claimsErr || !userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "admin" });
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -47,30 +107,24 @@ Deno.serve(async (req) => {
       .from("audio_files")
       .select("id, file_path, title, description, program_id")
       .like("file_path", "missing/%")
-      .not("description", "is", null)
+      .or(URL_FILTER)
       .limit(BATCH_SIZE);
 
     if (fetchError) throw fetchError;
 
     if (!tracks || tracks.length === 0) {
-      // Count total remaining missing
-      const { count } = await supabase
-        .from("audio_files")
-        .select("id", { count: "exact", head: true })
-        .like("file_path", "missing/%");
-
+      const remaining = await countRemainingDownloadable(supabase);
       return new Response(
-        JSON.stringify({ done: true, downloaded: 0, failed: 0, remaining: count || 0, message: "Inga fler filer med URL att ladda ner" }),
+        JSON.stringify({
+          done: true,
+          downloaded: 0,
+          failed: 0,
+          remaining,
+          message: "Inga fler filer med URL att ladda ner",
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Count total remaining
-    const { count: totalRemaining } = await supabase
-      .from("audio_files")
-      .select("id", { count: "exact", head: true })
-      .like("file_path", "missing/%")
-      .not("description", "is", null);
 
     let downloaded = 0;
     let failed = 0;
@@ -79,7 +133,6 @@ Deno.serve(async (req) => {
     for (const track of tracks) {
       const url = track.description;
       if (!url || !url.startsWith("http")) {
-        // Not a URL, skip and clear description
         await supabase.from("audio_files").update({ description: null }).eq("id", track.id);
         failed++;
         continue;
@@ -87,11 +140,35 @@ Deno.serve(async (req) => {
 
       try {
         console.log(`Downloading: ${track.title} from ${url}`);
-        const response = await fetch(url);
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort("download_timeout"), DOWNLOAD_TIMEOUT_MS);
+
+        let response: Response;
+        try {
+          response = await fetch(url, { signal: controller.signal, redirect: "follow" });
+        } finally {
+          clearTimeout(timeout);
+        }
+
         if (!response.ok) {
           errors.push(`${track.title}: HTTP ${response.status}`);
           failed++;
-          await supabase.from("audio_files").update({ description: `download_failed_${response.status}` }).eq("id", track.id);
+          await supabase
+            .from("audio_files")
+            .update({ description: `download_failed_${response.status}` })
+            .eq("id", track.id);
+          continue;
+        }
+
+        const contentLength = Number(response.headers.get("content-length") || "0");
+        if (Number.isFinite(contentLength) && contentLength > MAX_FILE_BYTES) {
+          errors.push(`${track.title}: File too large (${contentLength} bytes)`);
+          failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_too_large" })
+            .eq("id", track.id);
           continue;
         }
 
@@ -116,18 +193,20 @@ Deno.serve(async (req) => {
           storagePath = `audio/unassigned/${filename}`;
         }
 
-        // Buffer the file and upload via Supabase client
-        const fileData = await response.arrayBuffer();
-        const { error: uploadErr } = await supabase.storage
-          .from("audio-files")
-          .upload(storagePath, fileData, {
-            contentType,
-            upsert: true,
-          });
+        const fileData = await readResponseWithLimit(response, MAX_FILE_BYTES);
+
+        const { error: uploadErr } = await supabase.storage.from("audio-files").upload(storagePath, fileData, {
+          contentType,
+          upsert: true,
+        });
 
         if (uploadErr) {
           errors.push(`${track.title}: Upload: ${uploadErr.message}`);
           failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_upload" })
+            .eq("id", track.id);
           continue;
         }
 
@@ -140,31 +219,40 @@ Deno.serve(async (req) => {
         if (updateErr) {
           errors.push(`${track.title}: DB update: ${updateErr.message}`);
           failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_db_update" })
+            .eq("id", track.id);
         } else {
           downloaded++;
         }
       } catch (err) {
-        errors.push(`${track.title}: ${String(err)}`);
+        const reason = err instanceof Error ? err.message : String(err);
+        errors.push(`${track.title}: ${reason}`);
         failed++;
+        await supabase
+          .from("audio_files")
+          .update({ description: reason.includes("too large") ? "download_failed_too_large" : "download_failed_exception" })
+          .eq("id", track.id);
       }
     }
 
-    const remaining = (totalRemaining || 0) - downloaded;
+    const remaining = await countRemainingDownloadable(supabase);
 
     return new Response(
       JSON.stringify({
         downloaded,
         failed,
-        remaining: Math.max(0, remaining),
-        done: remaining <= 0,
+        remaining,
+        done: remaining === 0,
         errors: errors.slice(0, 10),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
