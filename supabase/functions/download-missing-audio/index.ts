@@ -22,13 +22,15 @@ async function countRemainingDownloadable(supabase: ReturnType<typeof createClie
   return count || 0;
 }
 
-async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Uint8Array> {
+async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Blob> {
+  const contentType = response.headers.get("content-type") || "application/octet-stream";
+
   if (!response.body) {
-    const buffer = new Uint8Array(await response.arrayBuffer());
+    const buffer = await response.arrayBuffer();
     if (buffer.byteLength > maxBytes) {
       throw new Error(`File too large (${buffer.byteLength} bytes)`);
     }
-    return buffer;
+    return new Blob([buffer], { type: contentType });
   }
 
   const reader = response.body.getReader();
@@ -49,14 +51,7 @@ async function readResponseWithLimit(response: Response, maxBytes: number): Prom
     chunks.push(value);
   }
 
-  const merged = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  return merged;
+  return new Blob(chunks, { type: contentType });
 }
 
 Deno.serve(async (req) => {
