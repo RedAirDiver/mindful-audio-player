@@ -929,10 +929,10 @@ const AdminAudio = () => {
             </div>
           ) : (
             <Table>
-              <TableHeader>
+               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>Titel</TableHead>
-                  <TableHead>Beskrivning</TableHead>
                   <TableHead>Längd</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
@@ -940,10 +940,23 @@ const AdminAudio = () => {
               <TableBody>
                 {filteredAudioFiles?.map((audio: any) => (
                   <TableRow key={audio.id}>
-                    <TableCell className="font-medium">{audio.title}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
-                      {audio.description || "-"}
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handlePlayTrack(audio)}
+                        disabled={audio.file_path?.startsWith("missing/")}
+                        title={audio.file_path?.startsWith("missing/") ? "Fil saknas i storage" : "Spela upp"}
+                      >
+                        {playingTrackId === audio.id && isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
                     </TableCell>
+                    <TableCell className="font-medium">{audio.title}</TableCell>
                     <TableCell>{formatDuration(audio.duration_seconds)}</TableCell>
                     <TableCell className="text-right">
                       <Button
