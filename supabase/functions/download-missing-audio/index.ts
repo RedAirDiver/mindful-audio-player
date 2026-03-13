@@ -78,36 +78,57 @@ async function probeRemoteFileSize(url: string): Promise<number | null> {
   return null;
 }
 
-async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Blob> {
-  const contentType = response.headers.get("content-type") || "application/octet-stream";
+function encodeStoragePath(path: string): string {
+  return path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
 
-  if (!response.body) {
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength > maxBytes) {
-      throw new Error(`File too large (${buffer.byteLength} bytes)`);
-    }
-    return new Blob([buffer], { type: contentType });
+async function uploadStreamToStorage(params: {
+  supabaseUrl: string;
+  serviceKey: string;
+  bucket: string;
+  storagePath: string;
+  stream: ReadableStream<Uint8Array> | null;
+  contentType: string;
+  contentLength: number | null;
+}): Promise<{ error: string | null }> {
+  const { supabaseUrl, serviceKey, bucket, storagePath, stream, contentType, contentLength } = params;
+
+  if (!stream) {
+    return { error: "No response body to upload" };
   }
 
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${serviceKey}`,
+    apikey: serviceKey,
+    "Content-Type": contentType,
+    "x-upsert": "true",
+  };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    if (!value) continue;
-
-    total += value.byteLength;
-    if (total > maxBytes) {
-      await reader.cancel();
-      throw new Error(`File too large (${total} bytes)`);
-    }
-
-    chunks.push(value);
+  if (contentLength && Number.isFinite(contentLength) && contentLength > 0) {
+    headers["Content-Length"] = String(contentLength);
   }
 
-  return new Blob(chunks, { type: contentType });
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${bucket}/${encodeStoragePath(storagePath)}`;
+  const uploadResponse = await fetchWithTimeout(
+    uploadUrl,
+    {
+      method: "POST",
+      headers,
+      body: stream,
+    },
+    DOWNLOAD_TIMEOUT_MS,
+  );
+
+  if (!uploadResponse.ok) {
+    const bodyText = await uploadResponse.text();
+    return { error: `Storage upload failed (${uploadResponse.status}): ${bodyText || "Unknown error"}` };
+  }
+
+  await uploadResponse.body?.cancel();
+  return { error: null };
 }
 
 Deno.serve(async (req) => {
@@ -257,15 +278,18 @@ Deno.serve(async (req) => {
           storagePath = `audio/unassigned/${filename}`;
         }
 
-        const fileBlob = await readResponseWithLimit(response, MAX_FILE_BYTES);
-
-        const { error: uploadErr } = await supabase.storage.from("audio-files").upload(storagePath, fileBlob, {
+        const { error: streamedUploadError } = await uploadStreamToStorage({
+          supabaseUrl,
+          serviceKey,
+          bucket: "audio-files",
+          storagePath,
+          stream: response.body,
           contentType,
-          upsert: true,
+          contentLength: Number.isFinite(contentLength) ? contentLength : remoteFileSize,
         });
 
-        if (uploadErr) {
-          errors.push(`${track.title}: Upload: ${uploadErr.message}`);
+        if (streamedUploadError) {
+          errors.push(`${track.title}: Upload: ${streamedUploadError}`);
           failed++;
           await supabase
             .from("audio_files")
