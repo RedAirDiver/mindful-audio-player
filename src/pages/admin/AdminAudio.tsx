@@ -514,6 +514,72 @@ const AdminAudio = () => {
     }
   };
 
+  const handleRebuildFromStorage = async () => {
+    setIsImporting(true);
+    setImportProgress("Återskapar ljudfiler från storage...");
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
+
+      // Dry run first
+      const dryResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rebuild-audio-from-storage`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ dryRun: true }),
+        }
+      );
+
+      const dryResult = await dryResponse.json();
+      if (!dryResponse.ok) throw new Error(dryResult.error || "Dry run misslyckades");
+
+      const confirmed = window.confirm(
+        `Hittade ${dryResult.totalFiles} ljudfiler i storage.\n\nVill du skapa databasposter för dessa?`
+      );
+
+      if (!confirmed) {
+        toast.info("Avbrutet.");
+        return;
+      }
+
+      setImportProgress(`Skapar ${dryResult.totalFiles} databasposter...`);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/rebuild-audio-from-storage`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ dryRun: false }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Rebuild misslyckades");
+
+      toast.success(
+        `Klart! ${result.created} ljudfiler skapade, ${result.linked} länkade till program, ${result.failed} misslyckade.`
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      toast.error("Rebuild misslyckades: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
@@ -524,7 +590,15 @@ const AdminAudio = () => {
             Hantera ljudfiler för alla produkter
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={handleRebuildFromStorage}
+            disabled={isImporting}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            {isImporting ? "Importerar..." : "Återskapa från storage"}
+          </Button>
           <input
             ref={xmlInputRef}
             type="file"
