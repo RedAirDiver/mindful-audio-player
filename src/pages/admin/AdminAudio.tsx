@@ -608,8 +608,12 @@ const AdminAudio = () => {
       const dryResult = await dryResponse.json();
       if (!dryResponse.ok) throw new Error(dryResult.error || "Dry run misslyckades");
 
+      const unmatchedInfo = dryResult.unmatchedPrograms?.length > 0
+        ? `\n\n⚠️ Omatchade program (${dryResult.unmatchedPrograms.length}):\n${dryResult.unmatchedPrograms.slice(0, 10).join(", ")}`
+        : "";
+
       const confirmed = window.confirm(
-        `Strict import:\n• ${dryResult.csvRows} rader i CSV\n• ${dryResult.matched} matchade mot storage\n• ${dryResult.notFoundInStorage} saknas i storage (skapas ändå)\n\nDetta RADERAR alla befintliga ljudposter och skapar exakt ${dryResult.totalToCreate} nya.\n\nFortsätt?`
+        `Strict import:\n• ${dryResult.csvRows} rader i CSV\n• ${dryResult.programsMatched || 0} program matchade\n• ${dryResult.matched} filer matchade mot storage\n• ${dryResult.notFoundInStorage} saknas i storage (skapas ändå)${unmatchedInfo}\n\nDetta RADERAR alla befintliga ljudposter och skapar exakt ${dryResult.totalToCreate} nya.\n\nFortsätt?`
       );
 
       if (!confirmed) {
