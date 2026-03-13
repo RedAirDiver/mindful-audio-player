@@ -299,6 +299,9 @@ const AdminAudio = () => {
   };
 
   const handleAudioEnded = () => {
+    if (audioRef.current?.src?.startsWith("blob:")) {
+      URL.revokeObjectURL(audioRef.current.src);
+    }
     setIsPlaying(false);
     setPlayingTrackId(null);
   };
