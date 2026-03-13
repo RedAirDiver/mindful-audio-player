@@ -689,6 +689,7 @@ const AdminAudio = () => {
     }
   };
 
+  return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
       <div className="flex items-center justify-between mb-8">
