@@ -828,6 +828,14 @@ const AdminAudio = () => {
           </Button>
           <Button
             variant="outline"
+            onClick={handleDownloadMissing}
+            disabled={isImporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isImporting ? "Laddar ner..." : "Ladda ner saknade filer"}
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleUpdateDurations}
             disabled={isImporting}
           >
