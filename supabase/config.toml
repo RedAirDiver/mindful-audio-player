@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.import-csv-tracks]
 verify_jwt = false
+
+[functions.update-audio-durations]
+verify_jwt = false
+
+[functions.download-missing-audio]
+verify_jwt = false
