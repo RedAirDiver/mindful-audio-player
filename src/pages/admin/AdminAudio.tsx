@@ -708,34 +708,67 @@ const AdminAudio = () => {
     }
   };
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const invokeDownloadMissingWithRetry = async (accessToken: string, maxAttempts = 3) => {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-missing-audio`;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok || ![502, 503, 504].includes(response.status) || attempt === maxAttempts) {
+        return response;
+      }
+
+      await sleep(500 * attempt);
+    }
+
+    throw new Error("Misslyckades att anropa nedladdningsfunktionen");
+  };
+
   const handleDownloadMissing = async () => {
+    if (isDownloadMissingRunningRef.current) return;
+    isDownloadMissingRunningRef.current = true;
+
     setIsImporting(true);
     let totalDownloaded = 0;
     let totalFailed = 0;
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast.error("Du måste vara inloggad"); return; }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error("Du måste vara inloggad");
+        return;
+      }
 
       let done = false;
       while (!done) {
         setImportProgress(`Laddar ner ljudfiler... (${totalDownloaded} klara)`);
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-missing-audio`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+
+        const response = await invokeDownloadMissingWithRetry(session.access_token);
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "Misslyckades");
 
         totalDownloaded += result.downloaded || 0;
         totalFailed += result.failed || 0;
-        done = result.done || (result.remaining === 0);
-        if (result.errors?.length > 0) console.log("Download errors:", result.errors);
+        done = result.done || result.remaining === 0;
+
+        if (result.errors?.length > 0) {
+          console.log("Download errors:", result.errors);
+        }
+
+        if (!done) {
+          await sleep(250);
+        }
       }
 
       toast.success(`${totalDownloaded} filer nedladdade. ${totalFailed} misslyckades.`);
@@ -743,6 +776,7 @@ const AdminAudio = () => {
     } catch (error: any) {
       toast.error("Nedladdning misslyckades: " + error.message);
     } finally {
+      isDownloadMissingRunningRef.current = false;
       setIsImporting(false);
       setImportProgress("");
     }
