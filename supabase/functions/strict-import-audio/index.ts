@@ -351,12 +351,12 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         csvRows: csvEntries.length,
-        matched: matched.length,
-        created,
+        totalCreated: created,
         linked,
         failed,
-        notFound: notFound.length,
-        notFoundFiles: notFound.slice(0, 30),
+        foundInStorage: matched.filter(m => m.foundInStorage).length,
+        notFoundInStorage: notFoundFiles.length,
+        notFoundFiles: notFoundFiles.slice(0, 50),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
