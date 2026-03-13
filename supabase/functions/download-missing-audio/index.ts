@@ -68,11 +68,9 @@ async function probeRemoteFileSize(url: string): Promise<number | null> {
       }
     }
 
-    const contentLength = Number(rangeResponse.headers.get("content-length") || "0");
     await rangeResponse.body?.cancel();
-    if (Number.isFinite(contentLength) && contentLength > 0) {
-      return contentLength;
-    }
+    // Do not trust content-length on range responses (can be partial bytes only)
+    return null;
   } catch {
     // no-op
   }
