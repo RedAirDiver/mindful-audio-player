@@ -733,13 +733,21 @@ const AdminAudio = () => {
             className="hidden"
             onChange={handleStrictCsvImport}
           />
-          <Button
+           <Button
             variant="destructive"
             onClick={() => strictCsvInputRef.current?.click()}
             disabled={isImporting}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             {isImporting ? "Importerar..." : "Strict import (CSV)"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleUpdateDurations}
+            disabled={isImporting}
+          >
+            <Music className="h-4 w-4 mr-2" />
+            {isImporting ? "Uppdaterar..." : "Hämta längd"}
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
