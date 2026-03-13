@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const BATCH_SIZE = 1;
 const DOWNLOAD_TIMEOUT_MS = 45000;
+const DOWNLOAD_PROBE_TIMEOUT_MS = 15000;
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 const URL_FILTER = "description.like.http://%,description.like.https://%";
@@ -20,6 +21,63 @@ async function countRemainingDownloadable(supabase: ReturnType<typeof createClie
     .or(URL_FILTER);
 
   return count || 0;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort("download_timeout"), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function probeRemoteFileSize(url: string): Promise<number | null> {
+  try {
+    const headResponse = await fetchWithTimeout(url, { method: "HEAD", redirect: "follow" }, DOWNLOAD_PROBE_TIMEOUT_MS);
+    if (headResponse.ok) {
+      const contentLength = Number(headResponse.headers.get("content-length") || "0");
+      if (Number.isFinite(contentLength) && contentLength > 0) {
+        return contentLength;
+      }
+    }
+  } catch {
+    // ignore and try range probe instead
+  }
+
+  try {
+    const rangeResponse = await fetchWithTimeout(
+      url,
+      {
+        method: "GET",
+        redirect: "follow",
+        headers: { Range: "bytes=0-0" },
+      },
+      DOWNLOAD_PROBE_TIMEOUT_MS,
+    );
+
+    const contentRange = rangeResponse.headers.get("content-range") || "";
+    const sizeMatch = contentRange.match(/\/(\d+)$/);
+    if (sizeMatch) {
+      const size = Number(sizeMatch[1]);
+      if (Number.isFinite(size) && size > 0) {
+        await rangeResponse.arrayBuffer(); // consume body
+        return size;
+      }
+    }
+
+    const contentLength = Number(rangeResponse.headers.get("content-length") || "0");
+    await rangeResponse.arrayBuffer(); // consume body
+    if (Number.isFinite(contentLength) && contentLength > 0) {
+      return contentLength;
+    }
+  } catch {
+    // no-op
+  }
+
+  return null;
 }
 
 async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Blob> {
