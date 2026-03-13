@@ -662,6 +662,34 @@ const AdminAudio = () => {
     }
   };
 
+  const handleUpdateDurations = async () => {
+    setIsImporting(true);
+    setImportProgress("Hämtar längd för ljudfiler...");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Du måste vara inloggad"); return; }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-audio-durations`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Misslyckades");
+
+      toast.success(`Längd uppdaterad för ${result.updated} spår. ${result.failed} misslyckades. ${result.skipped_missing || 0} saknar fil.`);
+      if (result.errors?.length > 0) console.log("Duration errors:", result.errors);
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      toast.error("Kunde inte hämta längd: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
@@ -733,13 +761,21 @@ const AdminAudio = () => {
             className="hidden"
             onChange={handleStrictCsvImport}
           />
-          <Button
+           <Button
             variant="destructive"
             onClick={() => strictCsvInputRef.current?.click()}
             disabled={isImporting}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             {isImporting ? "Importerar..." : "Strict import (CSV)"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleUpdateDurations}
+            disabled={isImporting}
+          >
+            <Music className="h-4 w-4 mr-2" />
+            {isImporting ? "Uppdaterar..." : "Hämta längd"}
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
