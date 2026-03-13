@@ -902,25 +902,12 @@ const AdminAudio = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Sök program..."
+                placeholder="Sök ljudfiler..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
             </div>
-            <Select value={filterProgramId} onValueChange={setFilterProgramId}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrera program" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alla program</SelectItem>
-                {programs?.map((program) => (
-                  <SelectItem key={program.id} value={program.id}>
-                    {program.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <p className="text-sm text-muted-foreground">
               {filteredAudioFiles?.length || 0} ljudfiler
             </p>
