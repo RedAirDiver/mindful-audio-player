@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X, Play, Pause, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Music, Upload, FileAudio, X, Play, Pause, Download, RefreshCw } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type AudioFile = Tables<"audio_files">;
