@@ -707,6 +707,46 @@ const AdminAudio = () => {
     }
   };
 
+  const handleDownloadMissing = async () => {
+    setIsImporting(true);
+    let totalDownloaded = 0;
+    let totalFailed = 0;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error("Du måste vara inloggad"); return; }
+
+      let done = false;
+      while (!done) {
+        setImportProgress(`Laddar ner ljudfiler... (${totalDownloaded} klara)`);
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/download-missing-audio`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Misslyckades");
+
+        totalDownloaded += result.downloaded || 0;
+        totalFailed += result.failed || 0;
+        done = result.done || (result.remaining === 0);
+        if (result.errors?.length > 0) console.log("Download errors:", result.errors);
+      }
+
+      toast.success(`${totalDownloaded} filer nedladdade. ${totalFailed} misslyckades.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
+    } catch (error: any) {
+      toast.error("Nedladdning misslyckades: " + error.message);
+    } finally {
+      setIsImporting(false);
+      setImportProgress("");
+    }
+  };
+
   return (
     <div className="p-8">
       <audio ref={audioRef} onEnded={handleAudioEnded} className="hidden" />
