@@ -42,6 +42,7 @@ const AdminAudio = () => {
   const mediaCsvInputRef = useRef<HTMLInputElement>(null);
   const strictCsvInputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const isDownloadMissingRunningRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterProgramId, setFilterProgramId] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
