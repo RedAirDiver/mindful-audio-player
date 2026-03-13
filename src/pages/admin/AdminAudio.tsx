@@ -272,12 +272,8 @@ const AdminAudio = () => {
   };
 
   const filteredAudioFiles = audioFiles?.filter((a: any) => {
-    const matchesSearch =
-      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.linkedPrograms?.some((lp: any) => lp.programTitle.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesProgram =
-      filterProgramId === "all" || a.linkedPrograms?.some((lp: any) => lp.programId === filterProgramId);
-    return matchesSearch && matchesProgram;
+    return a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (a.description || "").toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const handlePlayTrack = async (audio: AudioFile) => {
