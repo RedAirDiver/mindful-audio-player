@@ -8,7 +8,8 @@ const corsHeaders = {
 
 const BATCH_SIZE = 1;
 const DOWNLOAD_TIMEOUT_MS = 45000;
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+const DOWNLOAD_PROBE_TIMEOUT_MS = 15000;
+const MAX_FILE_BYTES = 16 * 1024 * 1024;
 
 const URL_FILTER = "description.like.http://%,description.like.https://%";
 
@@ -22,13 +23,70 @@ async function countRemainingDownloadable(supabase: ReturnType<typeof createClie
   return count || 0;
 }
 
-async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Uint8Array> {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort("download_timeout"), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function probeRemoteFileSize(url: string): Promise<number | null> {
+  try {
+    const headResponse = await fetchWithTimeout(url, { method: "HEAD", redirect: "follow" }, DOWNLOAD_PROBE_TIMEOUT_MS);
+    if (headResponse.ok) {
+      const contentLength = Number(headResponse.headers.get("content-length") || "0");
+      if (Number.isFinite(contentLength) && contentLength > 0) {
+        return contentLength;
+      }
+    }
+  } catch {
+    // ignore and try range probe instead
+  }
+
+  try {
+    const rangeResponse = await fetchWithTimeout(
+      url,
+      {
+        method: "GET",
+        redirect: "follow",
+        headers: { Range: "bytes=0-0" },
+      },
+      DOWNLOAD_PROBE_TIMEOUT_MS,
+    );
+
+    const contentRange = rangeResponse.headers.get("content-range") || "";
+    const sizeMatch = contentRange.match(/\/(\d+)$/);
+    if (sizeMatch) {
+      const size = Number(sizeMatch[1]);
+      await rangeResponse.body?.cancel();
+      if (Number.isFinite(size) && size > 0) {
+        return size;
+      }
+    }
+
+    await rangeResponse.body?.cancel();
+    // Do not trust content-length on range responses (can be partial bytes only)
+    return null;
+  } catch {
+    // no-op
+  }
+
+  return null;
+}
+
+async function readResponseWithLimit(response: Response, maxBytes: number): Promise<Blob> {
+  const contentType = response.headers.get("content-type") || "application/octet-stream";
+
   if (!response.body) {
-    const buffer = new Uint8Array(await response.arrayBuffer());
+    const buffer = await response.arrayBuffer();
     if (buffer.byteLength > maxBytes) {
       throw new Error(`File too large (${buffer.byteLength} bytes)`);
     }
-    return buffer;
+    return new Blob([buffer], { type: contentType });
   }
 
   const reader = response.body.getReader();
@@ -49,14 +107,7 @@ async function readResponseWithLimit(response: Response, maxBytes: number): Prom
     chunks.push(value);
   }
 
-  const merged = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    merged.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-
-  return merged;
+  return new Blob(chunks, { type: contentType });
 }
 
 Deno.serve(async (req) => {
@@ -141,15 +192,28 @@ Deno.serve(async (req) => {
       try {
         console.log(`Downloading: ${track.title} from ${url}`);
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort("download_timeout"), DOWNLOAD_TIMEOUT_MS);
-
-        let response: Response;
-        try {
-          response = await fetch(url, { signal: controller.signal, redirect: "follow" });
-        } finally {
-          clearTimeout(timeout);
+        const remoteFileSize = await probeRemoteFileSize(url);
+        if (!remoteFileSize) {
+          errors.push(`${track.title}: Could not determine file size`);
+          failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_unknown_size" })
+            .eq("id", track.id);
+          continue;
         }
+
+        if (remoteFileSize > MAX_FILE_BYTES) {
+          errors.push(`${track.title}: File too large (${remoteFileSize} bytes)`);
+          failed++;
+          await supabase
+            .from("audio_files")
+            .update({ description: "download_failed_too_large" })
+            .eq("id", track.id);
+          continue;
+        }
+
+        const response = await fetchWithTimeout(url, { method: "GET", redirect: "follow" }, DOWNLOAD_TIMEOUT_MS);
 
         if (!response.ok) {
           errors.push(`${track.title}: HTTP ${response.status}`);
@@ -161,7 +225,7 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const contentLength = Number(response.headers.get("content-length") || "0");
+        const contentLength = Number(response.headers.get("content-length") || String(remoteFileSize));
         if (Number.isFinite(contentLength) && contentLength > MAX_FILE_BYTES) {
           errors.push(`${track.title}: File too large (${contentLength} bytes)`);
           failed++;
@@ -193,9 +257,9 @@ Deno.serve(async (req) => {
           storagePath = `audio/unassigned/${filename}`;
         }
 
-        const fileData = await readResponseWithLimit(response, MAX_FILE_BYTES);
+        const fileBlob = await readResponseWithLimit(response, MAX_FILE_BYTES);
 
-        const { error: uploadErr } = await supabase.storage.from("audio-files").upload(storagePath, fileData, {
+        const { error: uploadErr } = await supabase.storage.from("audio-files").upload(storagePath, fileBlob, {
           contentType,
           upsert: true,
         });
