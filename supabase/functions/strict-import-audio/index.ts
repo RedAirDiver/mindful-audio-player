@@ -323,6 +323,8 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const m of matched) {
+      // Store source URL in description for later download
+      const sourceUrl = !m.foundInStorage && m.fileUrl ? m.fileUrl : null;
       const { data: newAudio, error: insertErr } = await supabase
         .from("audio_files")
         .insert({
@@ -330,6 +332,7 @@ Deno.serve(async (req) => {
           file_path: m.filePath,
           program_id: m.programId,
           track_order: m.trackOrder,
+          description: sourceUrl,
         })
         .select("id")
         .single();
