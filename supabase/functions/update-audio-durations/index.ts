@@ -6,29 +6,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Parse MP3 frame header to estimate duration
-function estimateMp3Duration(buffer: ArrayBuffer): number | null {
+const BATCH_SIZE = 5;
+
+function estimateMp3Duration(buffer: ArrayBuffer, totalFileSize: number): number | null {
   const view = new DataView(buffer);
-  const fileSize = buffer.byteLength;
+  const bufSize = buffer.byteLength;
 
   let offset = 0;
-  if (
-    fileSize > 10 &&
-    view.getUint8(0) === 0x49 &&
-    view.getUint8(1) === 0x44 &&
-    view.getUint8(2) === 0x33
-  ) {
-    const size =
-      ((view.getUint8(6) & 0x7f) << 21) |
-      ((view.getUint8(7) & 0x7f) << 14) |
-      ((view.getUint8(8) & 0x7f) << 7) |
-      (view.getUint8(9) & 0x7f);
+  if (bufSize > 10 && view.getUint8(0) === 0x49 && view.getUint8(1) === 0x44 && view.getUint8(2) === 0x33) {
+    const size = ((view.getUint8(6) & 0x7f) << 21) | ((view.getUint8(7) & 0x7f) << 14) |
+      ((view.getUint8(8) & 0x7f) << 7) | (view.getUint8(9) & 0x7f);
     offset = 10 + size;
   }
 
   const bitrateTable = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0];
 
-  for (let i = offset; i < Math.min(offset + 4096, fileSize - 4); i++) {
+  for (let i = offset; i < Math.min(offset + 4096, bufSize - 4); i++) {
     if (view.getUint8(i) === 0xff && (view.getUint8(i + 1) & 0xe0) === 0xe0) {
       const header = view.getUint8(i + 1);
       const byte2 = view.getUint8(i + 2);
@@ -39,62 +32,34 @@ function estimateMp3Duration(buffer: ArrayBuffer): number | null {
 
       if (version === 3 && layer === 1 && bitrateIdx > 0 && bitrateIdx < 15 && sampleRateIdx < 3) {
         const bitrate = bitrateTable[bitrateIdx] * 1000;
-        const audioDataSize = fileSize - i;
-        const durationSec = (audioDataSize * 8) / bitrate;
-        return Math.round(durationSec);
+        const audioDataSize = totalFileSize - i;
+        return Math.round((audioDataSize * 8) / bitrate);
       }
     }
   }
-
   return null;
 }
 
-// Parse M4A/MP4 to find duration from moov/mvhd atom
 function estimateM4aDuration(buffer: ArrayBuffer): number | null {
   const view = new DataView(buffer);
-  const fileSize = buffer.byteLength;
+  const bufSize = buffer.byteLength;
 
-  // Search for 'mvhd' atom which contains duration info
-  for (let i = 0; i < fileSize - 8; i++) {
-    if (
-      view.getUint8(i) === 0x6d && // m
-      view.getUint8(i + 1) === 0x76 && // v
-      view.getUint8(i + 2) === 0x68 && // h
-      view.getUint8(i + 3) === 0x64    // d
-    ) {
-      // Found mvhd atom
+  for (let i = 0; i < bufSize - 36; i++) {
+    if (view.getUint8(i) === 0x6d && view.getUint8(i + 1) === 0x76 &&
+        view.getUint8(i + 2) === 0x68 && view.getUint8(i + 3) === 0x64) {
       const version = view.getUint8(i + 4);
-      let timescale: number;
-      let duration: number;
-
+      let timescale: number, duration: number;
       if (version === 0) {
-        // Version 0: 4-byte fields
         timescale = view.getUint32(i + 16);
         duration = view.getUint32(i + 20);
       } else {
-        // Version 1: 8-byte fields (use lower 32 bits)
         timescale = view.getUint32(i + 24);
-        // Duration is 8 bytes, read upper and lower
-        const durHigh = view.getUint32(i + 28);
-        const durLow = view.getUint32(i + 32);
-        duration = durHigh * 0x100000000 + durLow;
+        duration = view.getUint32(i + 28) * 0x100000000 + view.getUint32(i + 32);
       }
-
-      if (timescale > 0 && duration > 0) {
-        return Math.round(duration / timescale);
-      }
+      if (timescale > 0 && duration > 0) return Math.round(duration / timescale);
     }
   }
-
   return null;
-}
-
-function getDurationEstimator(filePath: string): (buf: ArrayBuffer) => number | null {
-  const lower = filePath.toLowerCase();
-  if (lower.endsWith(".m4a") || lower.endsWith(".mp4") || lower.endsWith(".aac")) {
-    return estimateM4aDuration;
-  }
-  return estimateMp3Duration;
 }
 
 Deno.serve(async (req) => {
@@ -103,76 +68,101 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const authClient = createClient(Deno.env.get("SUPABASE_URL")!, anonKey);
+    const authClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: userData, error: userErr } = await authClient.auth.getUser(token);
     if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: isAdmin } = await supabase.rpc("has_role", {
-      _user_id: userData.user.id,
-      _role: "admin",
-    });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userData.user.id, _role: "admin" });
     if (!isAdmin) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get all audio files without duration that have real files (not missing/)
+    // Get offset from request body for pagination
+    let batchOffset = 0;
+    try {
+      const body = await req.json();
+      batchOffset = body.offset || 0;
+    } catch { /* no body = start from 0 */ }
+
     const { data: tracks, error: fetchError } = await supabase
       .from("audio_files")
       .select("id, file_path, title")
       .is("duration_seconds", null)
-      .not("file_path", "like", "missing/%");
+      .not("file_path", "like", "missing/%")
+      .range(batchOffset, batchOffset + BATCH_SIZE - 1);
 
     if (fetchError) throw fetchError;
 
     if (!tracks || tracks.length === 0) {
       return new Response(
-        JSON.stringify({ message: "Inga spår att uppdatera", updated: 0, failed: 0, skipped_missing: 0 }),
+        JSON.stringify({ message: "Klart", updated: 0, failed: 0, remaining: 0, done: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Count total remaining
+    const { count: totalRemaining } = await supabase
+      .from("audio_files")
+      .select("id", { count: "exact", head: true })
+      .is("duration_seconds", null)
+      .not("file_path", "like", "missing/%");
+
     let updated = 0;
     let failed = 0;
     const errors: string[] = [];
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     for (const track of tracks) {
       try {
-        const { data, error } = await supabase.storage
-          .from("audio-files")
-          .download(track.file_path);
+        // Use Range header to fetch only first 64KB instead of full file
+        const isM4a = /\.(m4a|mp4|aac)$/i.test(track.file_path);
+        // For M4A, moov atom can be at start or end; fetch first 128KB
+        const rangeBytes = isM4a ? 131072 : 65536;
 
-        if (error || !data) {
-          errors.push(`${track.title}: ${error?.message || "No data"}`);
+        const storageUrl = `${SUPABASE_URL}/storage/v1/object/audio-files/${encodeURIComponent(track.file_path)}`;
+        const response = await fetch(storageUrl, {
+          headers: {
+            "Authorization": `Bearer ${SERVICE_KEY}`,
+            "Range": `bytes=0-${rangeBytes - 1}`,
+          },
+        });
+
+        if (!response.ok && response.status !== 206) {
+          errors.push(`${track.title}: HTTP ${response.status}`);
+          await response.text(); // consume body
           failed++;
           continue;
         }
 
-        const buffer = await data.arrayBuffer();
-        const estimator = getDurationEstimator(track.file_path);
-        const duration = estimator(buffer);
+        // Get total file size from Content-Range header
+        const contentRange = response.headers.get("Content-Range");
+        const totalSize = contentRange ? parseInt(contentRange.split("/")[1]) : rangeBytes;
+
+        const buffer = await response.arrayBuffer();
+        let duration: number | null;
+
+        if (isM4a) {
+          duration = estimateM4aDuration(buffer);
+        } else {
+          duration = estimateMp3Duration(buffer, totalSize);
+        }
 
         if (duration && duration > 0) {
           const { error: updateError } = await supabase
@@ -196,15 +186,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Count missing files
-    const { count: missingCount } = await supabase
-      .from("audio_files")
-      .select("id", { count: "exact", head: true })
-      .is("duration_seconds", null)
-      .like("file_path", "missing/%");
+    const remaining = (totalRemaining || 0) - updated;
 
     return new Response(
-      JSON.stringify({ updated, failed, total: tracks.length, skipped_missing: missingCount || 0, errors: errors.slice(0, 30) }),
+      JSON.stringify({
+        updated, failed, batch_size: tracks.length,
+        remaining: Math.max(0, remaining),
+        done: remaining <= 0,
+        errors: errors.slice(0, 10),
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
