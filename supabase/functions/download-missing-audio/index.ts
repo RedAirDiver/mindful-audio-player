@@ -116,25 +116,20 @@ Deno.serve(async (req) => {
           storagePath = `audio/unassigned/${filename}`;
         }
 
-        // Stream upload directly via REST API to avoid buffering in memory
-        const uploadUrl = `${supabaseUrl}/storage/v1/object/audio-files/${storagePath}`;
-        const uploadRes = await fetch(uploadUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${serviceKey}`,
-            "Content-Type": contentType,
-            "x-upsert": "true",
-          },
-          body: response.body,
-        });
+        // Buffer the file and upload via Supabase client
+        const fileData = await response.arrayBuffer();
+        const { error: uploadErr } = await supabase.storage
+          .from("audio-files")
+          .upload(storagePath, fileData, {
+            contentType,
+            upsert: true,
+          });
 
-        if (!uploadRes.ok) {
-          const errText = await uploadRes.text();
-          errors.push(`${track.title}: Upload: ${errText}`);
+        if (uploadErr) {
+          errors.push(`${track.title}: Upload: ${uploadErr.message}`);
           failed++;
           continue;
         }
-        await uploadRes.text(); // consume response
 
         // Update DB: set real path, clear description (URL)
         const { error: updateErr } = await supabase
