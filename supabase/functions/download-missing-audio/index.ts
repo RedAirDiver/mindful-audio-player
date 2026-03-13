@@ -9,7 +9,7 @@ const corsHeaders = {
 const BATCH_SIZE = 1;
 const DOWNLOAD_TIMEOUT_MS = 45000;
 const DOWNLOAD_PROBE_TIMEOUT_MS = 15000;
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_FILE_BYTES = 16 * 1024 * 1024;
 
 const URL_FILTER = "description.like.http://%,description.like.https://%";
 
