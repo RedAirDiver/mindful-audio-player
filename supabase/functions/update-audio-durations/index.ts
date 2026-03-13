@@ -62,6 +62,10 @@ function estimateM4aDuration(buffer: ArrayBuffer): number | null {
   return null;
 }
 
+function encodeStoragePath(path: string): string {
+  return path.split("/").map((s) => encodeURIComponent(s)).join("/");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -93,19 +97,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get offset from request body for pagination
-    let batchOffset = 0;
-    try {
-      const body = await req.json();
-      batchOffset = body.offset || 0;
-    } catch { /* no body = start from 0 */ }
-
     const { data: tracks, error: fetchError } = await supabase
       .from("audio_files")
       .select("id, file_path, title")
       .is("duration_seconds", null)
       .not("file_path", "like", "missing/%")
-      .range(batchOffset, batchOffset + BATCH_SIZE - 1);
+      .limit(BATCH_SIZE);
 
     if (fetchError) throw fetchError;
 
@@ -116,7 +113,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Count total remaining
     const { count: totalRemaining } = await supabase
       .from("audio_files")
       .select("id", { count: "exact", head: true })
@@ -131,12 +127,10 @@ Deno.serve(async (req) => {
 
     for (const track of tracks) {
       try {
-        // Use Range header to fetch only first 64KB instead of full file
         const isM4a = /\.(m4a|mp4|aac)$/i.test(track.file_path);
-        // For M4A, moov atom can be at start or end; fetch first 128KB
         const rangeBytes = isM4a ? 131072 : 65536;
 
-        const storageUrl = `${SUPABASE_URL}/storage/v1/object/audio-files/${encodeURIComponent(track.file_path)}`;
+        const storageUrl = `${SUPABASE_URL}/storage/v1/object/audio-files/${encodeStoragePath(track.file_path)}`;
         const response = await fetch(storageUrl, {
           headers: {
             "Authorization": `Bearer ${SERVICE_KEY}`,
@@ -146,12 +140,13 @@ Deno.serve(async (req) => {
 
         if (!response.ok && response.status !== 206) {
           errors.push(`${track.title}: HTTP ${response.status}`);
-          await response.text(); // consume body
+          await response.text();
           failed++;
+          // Mark as 0 so we don't loop on this file forever
+          await supabase.from("audio_files").update({ duration_seconds: 0 }).eq("id", track.id);
           continue;
         }
 
-        // Get total file size from Content-Range header
         const contentRange = response.headers.get("Content-Range");
         const totalSize = contentRange ? parseInt(contentRange.split("/")[1]) : rangeBytes;
 
@@ -179,14 +174,17 @@ Deno.serve(async (req) => {
         } else {
           errors.push(`${track.title}: Kunde inte beräkna längd`);
           failed++;
+          // Mark as 0 to prevent infinite loop
+          await supabase.from("audio_files").update({ duration_seconds: 0 }).eq("id", track.id);
         }
       } catch (err) {
         errors.push(`${track.title}: ${String(err)}`);
         failed++;
+        await supabase.from("audio_files").update({ duration_seconds: 0 }).eq("id", track.id);
       }
     }
 
-    const remaining = (totalRemaining || 0) - updated;
+    const remaining = (totalRemaining || 0) - updated - failed;
 
     return new Response(
       JSON.stringify({
