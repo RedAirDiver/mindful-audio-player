@@ -47,16 +47,6 @@ function parseCSV(text: string): string[][] {
   return rows;
 }
 
-function cleanDescription(desc: string): string {
-  let d = desc.trim();
-  if (d.startsWith('"') && d.endsWith('"')) d = d.slice(1, -1);
-  if (d.startsWith('\u201C')) d = d.slice(1);
-  if (d.endsWith('\u201D')) d = d.slice(0, -1);
-  d = d.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-  d = d.replace(/\.\s*$/, "").trim();
-  return d;
-}
-
 // Strip WP hash suffix like "-lrezn5" from filename
 function stripWpSuffix(filename: string): string {
   return filename.replace(/-[a-z0-9]{4,8}(\.\w+)$/, "$1");
@@ -136,51 +126,55 @@ Deno.serve(async (req) => {
     }
 
     const headers = rows[0].map((h) => h.replace(/^\uFEFF/, "").trim());
-    const fileIdx = headers.indexOf("File");
-    const titleIdx = headers.indexOf("Title");
-    const descIdx = headers.indexOf("Description");
 
-    if (fileIdx === -1 || titleIdx === -1) {
-      return new Response(JSON.stringify({ error: "CSV must have 'File' and 'Title' columns" }), {
+    // Support new format: Product Title, File Name, File URL
+    const productTitleIdx = headers.indexOf("Product Title");
+    const fileNameIdx = headers.indexOf("File Name");
+    const fileUrlIdx = headers.indexOf("File URL");
+
+    if (productTitleIdx === -1 || fileNameIdx === -1) {
+      return new Response(JSON.stringify({ error: "CSV must have 'Product Title' and 'File Name' columns" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Parse all CSV entries
-    const csvEntries: Array<{ csvFilename: string; title: string; description: string }> = [];
+    // Parse CSV entries
+    const csvEntries: Array<{
+      productTitle: string;
+      fileName: string;
+      fileUrl: string;
+    }> = [];
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
-      const filename = (row[fileIdx] || "").trim();
-      const title = (row[titleIdx] || "").trim();
-      const description = descIdx >= 0 ? cleanDescription(row[descIdx] || "") : "";
-      if (filename) {
-        csvEntries.push({ csvFilename: filename, title, description });
+      const productTitle = (row[productTitleIdx] || "").trim();
+      const fileName = (row[fileNameIdx] || "").trim();
+      const fileUrl = fileUrlIdx >= 0 ? (row[fileUrlIdx] || "").trim() : "";
+      if (productTitle && fileName) {
+        csvEntries.push({ productTitle, fileName, fileUrl });
       }
     }
 
-    // Get all programs for wc_id mapping
+    // Get all programs and match by title
     const { data: programs } = await supabase
       .from("programs")
       .select("id, wc_id, title");
 
-    const programsByWcId = new Map<number, any>();
-    const programsById = new Map<string, any>();
+    const programsByTitle = new Map<string, any>();
     for (const p of programs || []) {
-      if (p.wc_id) programsByWcId.set(p.wc_id, p);
-      programsById.set(p.id, p);
+      programsByTitle.set(p.title.toLowerCase().trim(), p);
     }
 
     // List ALL files from storage to build a lookup
-    const storageFiles: { path: string; normalizedName: string; folder: string }[] = [];
-    
+    const storageFiles: { path: string; normalizedName: string; folder: string; originalName: string }[] = [];
+
     const { data: topFolders } = await supabase.storage
       .from("audio-files")
       .list("", { limit: 1000 });
 
     for (const item of topFolders || []) {
       if (!item.id) {
-        // folder
+        // It's a folder
         if (item.name === "audio") {
           const { data: wcFolders } = await supabase.storage
             .from("audio-files")
@@ -197,6 +191,7 @@ Deno.serve(async (req) => {
                     path,
                     normalizedName: normalizeForMatch(stripWpSuffix(f.name)),
                     folder: wcFolder.name,
+                    originalName: f.name,
                   });
                 }
               }
@@ -213,6 +208,7 @@ Deno.serve(async (req) => {
                 path,
                 normalizedName: normalizeForMatch(stripWpSuffix(f.name)),
                 folder: item.name,
+                originalName: f.name,
               });
             }
           }
@@ -220,14 +216,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build normalized lookup: normalized name -> best storage file (prefer non-hash)
+    // Build normalized lookup
     const storageByNorm = new Map<string, typeof storageFiles[0]>();
     for (const sf of storageFiles) {
       const existing = storageByNorm.get(sf.normalizedName);
       if (!existing) {
         storageByNorm.set(sf.normalizedName, sf);
       } else {
-        // Prefer path without hash suffix (shorter = cleaner)
         const existingFilename = existing.path.split("/").pop() || "";
         const newFilename = sf.path.split("/").pop() || "";
         if (newFilename.length < existingFilename.length) {
@@ -236,68 +231,79 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Match each CSV entry to a storage file, but create ALL entries regardless
+    // Track order per program
+    const programTrackCounters = new Map<string, number>();
+
+    // Match each CSV entry
     const matched: Array<{
       title: string;
-      description: string;
       filePath: string;
       programId: string | null;
+      programTitle: string;
       trackOrder: number;
-      csvFilename: string;
       foundInStorage: boolean;
+      csvFileName: string;
     }> = [];
 
+    const unmatchedPrograms = new Set<string>();
+
     for (const entry of csvEntries) {
-      const csvNorm = normalizeForMatch(stripWpSuffix(entry.csvFilename));
+      // Match program by title
+      const program = programsByTitle.get(entry.productTitle.toLowerCase().trim());
+      const programId = program?.id || null;
+
+      if (!programId) {
+        unmatchedPrograms.add(entry.productTitle);
+      }
+
+      // Track order: increment per program
+      const counterKey = programId || entry.productTitle;
+      const currentOrder = (programTrackCounters.get(counterKey) || 0) + 1;
+      programTrackCounters.set(counterKey, currentOrder);
+
+      // Try to find the file in storage by normalizing the File Name
+      const csvNorm = normalizeForMatch(stripWpSuffix(entry.fileName));
       const storageFile = storageByNorm.get(csvNorm);
 
-      // Determine program from folder (if storage match exists)
-      let programId: string | null = null;
-      let filePath = `missing/${entry.csvFilename}`;
+      let filePath = `missing/${entry.fileName}`;
+      let foundInStorage = false;
 
       if (storageFile) {
         filePath = storageFile.path;
-        const wcId = parseInt(storageFile.folder);
-        if (wcId && programsByWcId.has(wcId)) {
-          programId = programsByWcId.get(wcId)!.id;
-        } else if (programsById.has(storageFile.folder)) {
-          programId = storageFile.folder;
-        }
+        foundInStorage = true;
       }
 
-      // Extract track order from filename
-      const trackMatch = entry.csvFilename.match(/^(\d+)[\.\-_\s]/);
-      const trackOrder = trackMatch ? parseInt(trackMatch[1]) : 1;
-
-      // Use CSV title, skip if it's a hash
-      const isHashTitle = /^[a-f0-9]{20,}$/i.test(entry.title);
-      const finalTitle = isHashTitle ? entry.csvFilename.replace(/\.[^/.]+$/, "") : entry.title;
+      // Use File Name without extension as title
+      const title = entry.fileName.replace(/\.[^/.]+$/, "");
 
       matched.push({
-        title: finalTitle,
-        description: entry.description,
+        title,
         filePath,
         programId,
-        trackOrder,
-        csvFilename: entry.csvFilename,
-        foundInStorage: !!storageFile,
+        programTitle: entry.productTitle,
+        trackOrder: currentOrder,
+        foundInStorage,
+        csvFileName: entry.fileName,
       });
     }
 
-    const notFoundFiles = matched.filter(m => !m.foundInStorage).map(m => m.csvFilename);
+    const notFoundFiles = matched.filter((m) => !m.foundInStorage).map((m) => m.csvFileName);
 
     if (dryRun) {
       return new Response(
         JSON.stringify({
           dryRun: true,
           csvRows: csvEntries.length,
-          matched: matched.filter(m => m.foundInStorage).length,
+          matched: matched.filter((m) => m.foundInStorage).length,
           notFoundInStorage: notFoundFiles.length,
           totalToCreate: matched.length,
+          unmatchedPrograms: Array.from(unmatchedPrograms),
+          programsMatched: new Set(matched.filter((m) => m.programId).map((m) => m.programTitle)).size,
           notFoundFiles: notFoundFiles.slice(0, 50),
-          preview: matched.slice(0, 20).map(m => ({
+          preview: matched.slice(0, 30).map((m) => ({
             title: m.title,
             filePath: m.filePath,
+            programTitle: m.programTitle,
             programId: m.programId,
             trackOrder: m.trackOrder,
             foundInStorage: m.foundInStorage,
@@ -321,7 +327,6 @@ Deno.serve(async (req) => {
         .from("audio_files")
         .insert({
           title: m.title,
-          description: m.description || null,
           file_path: m.filePath,
           program_id: m.programId,
           track_order: m.trackOrder,
@@ -354,8 +359,9 @@ Deno.serve(async (req) => {
         totalCreated: created,
         linked,
         failed,
-        foundInStorage: matched.filter(m => m.foundInStorage).length,
+        foundInStorage: matched.filter((m) => m.foundInStorage).length,
         notFoundInStorage: notFoundFiles.length,
+        unmatchedPrograms: Array.from(unmatchedPrograms),
         notFoundFiles: notFoundFiles.slice(0, 50),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
