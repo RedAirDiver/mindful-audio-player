@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Match each CSV entry to a storage file
+    // Match each CSV entry to a storage file, but create ALL entries regardless
     const matched: Array<{
       title: string;
       description: string;
@@ -244,25 +244,25 @@ Deno.serve(async (req) => {
       programId: string | null;
       trackOrder: number;
       csvFilename: string;
+      foundInStorage: boolean;
     }> = [];
-    const notFound: string[] = [];
 
     for (const entry of csvEntries) {
       const csvNorm = normalizeForMatch(stripWpSuffix(entry.csvFilename));
       const storageFile = storageByNorm.get(csvNorm);
 
-      if (!storageFile) {
-        notFound.push(entry.csvFilename);
-        continue;
-      }
-
-      // Determine program from folder
+      // Determine program from folder (if storage match exists)
       let programId: string | null = null;
-      const wcId = parseInt(storageFile.folder);
-      if (wcId && programsByWcId.has(wcId)) {
-        programId = programsByWcId.get(wcId)!.id;
-      } else if (programsById.has(storageFile.folder)) {
-        programId = storageFile.folder;
+      let filePath = `missing/${entry.csvFilename}`;
+
+      if (storageFile) {
+        filePath = storageFile.path;
+        const wcId = parseInt(storageFile.folder);
+        if (wcId && programsByWcId.has(wcId)) {
+          programId = programsByWcId.get(wcId)!.id;
+        } else if (programsById.has(storageFile.folder)) {
+          programId = storageFile.folder;
+        }
       }
 
       // Extract track order from filename
@@ -276,26 +276,31 @@ Deno.serve(async (req) => {
       matched.push({
         title: finalTitle,
         description: entry.description,
-        filePath: storageFile.path,
+        filePath,
         programId,
         trackOrder,
         csvFilename: entry.csvFilename,
+        foundInStorage: !!storageFile,
       });
     }
+
+    const notFoundFiles = matched.filter(m => !m.foundInStorage).map(m => m.csvFilename);
 
     if (dryRun) {
       return new Response(
         JSON.stringify({
           dryRun: true,
           csvRows: csvEntries.length,
-          matched: matched.length,
-          notFound: notFound.length,
-          notFoundFiles: notFound.slice(0, 30),
+          matched: matched.filter(m => m.foundInStorage).length,
+          notFoundInStorage: notFoundFiles.length,
+          totalToCreate: matched.length,
+          notFoundFiles: notFoundFiles.slice(0, 50),
           preview: matched.slice(0, 20).map(m => ({
             title: m.title,
             filePath: m.filePath,
             programId: m.programId,
             trackOrder: m.trackOrder,
+            foundInStorage: m.foundInStorage,
           })),
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -346,12 +351,12 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         csvRows: csvEntries.length,
-        matched: matched.length,
-        created,
+        totalCreated: created,
         linked,
         failed,
-        notFound: notFound.length,
-        notFoundFiles: notFound.slice(0, 30),
+        foundInStorage: matched.filter(m => m.foundInStorage).length,
+        notFoundInStorage: notFoundFiles.length,
+        notFoundFiles: notFoundFiles.slice(0, 50),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

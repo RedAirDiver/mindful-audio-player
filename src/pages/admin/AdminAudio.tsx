@@ -609,7 +609,7 @@ const AdminAudio = () => {
       if (!dryResponse.ok) throw new Error(dryResult.error || "Dry run misslyckades");
 
       const confirmed = window.confirm(
-        `Strict import:\n• ${dryResult.csvRows} rader i CSV\n• ${dryResult.matched} matchade mot storage\n• ${dryResult.notFound} hittades inte\n\nDetta RADERAR alla befintliga ljudposter och skapar exakt ${dryResult.matched} nya.\n\nFortsätt?`
+        `Strict import:\n• ${dryResult.csvRows} rader i CSV\n• ${dryResult.matched} matchade mot storage\n• ${dryResult.notFoundInStorage} saknas i storage (skapas ändå)\n\nDetta RADERAR alla befintliga ljudposter och skapar exakt ${dryResult.totalToCreate} nya.\n\nFortsätt?`
       );
 
       if (!confirmed) {
@@ -617,7 +617,7 @@ const AdminAudio = () => {
         return;
       }
 
-      setImportProgress(`Skapar ${dryResult.matched} ljudposter...`);
+      setImportProgress(`Skapar ${dryResult.totalToCreate} ljudposter...`);
 
       const realFormData = new FormData();
       realFormData.append("file", file);
@@ -635,9 +635,15 @@ const AdminAudio = () => {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Import misslyckades");
 
-      toast.success(
-        `Strict import klar! ${result.created} poster skapade, ${result.linked} länkade, ${result.notFound} ej hittade i storage.`
-      );
+      let msg = `Strict import klar! ${result.totalCreated} poster skapade, ${result.linked} länkade.`;
+      if (result.notFoundInStorage > 0) {
+        msg += ` ${result.notFoundInStorage} saknade fil i storage.`;
+      }
+      toast.success(msg);
+
+      if (result.notFoundFiles?.length > 0) {
+        console.log("Filer som saknas i storage:", result.notFoundFiles);
+      }
 
       if (result.notFoundFiles?.length > 0) {
         console.log("Filer som inte hittades i storage:", result.notFoundFiles);
