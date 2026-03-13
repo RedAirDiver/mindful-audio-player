@@ -1041,6 +1041,74 @@ const AdminAudio = () => {
         </div>
       )}
 
+      {/* Missing files without URL section */}
+      {(() => {
+        const missingNoUrl = audioFiles?.filter(
+          (a: any) => a.file_path?.startsWith("missing/") && (!a.description || !a.description.startsWith("http"))
+        ) || [];
+        if (missingNoUrl.length === 0) return null;
+
+        const handleExportMissingCsv = () => {
+          const header = "Title,File Path,Program,Track Order";
+          const rows = missingNoUrl.map((a: any) => {
+            const prog = a.linkedPrograms?.[0]?.programTitle || "";
+            const escaped = (s: string) => `"${s.replace(/"/g, '""')}"`;
+            return `${escaped(a.title)},${escaped(a.file_path)},${escaped(prog)},${a.track_order}`;
+          });
+          const csv = [header, ...rows].join("\n");
+          const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "missing-files-no-url.csv";
+          link.click();
+          URL.revokeObjectURL(url);
+        };
+
+        return (
+          <Card className="mb-6 border-orange-300 dark:border-orange-700">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg text-orange-600 dark:text-orange-400">
+                  ⚠ {missingNoUrl.length} saknade filer utan käll-URL
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={handleExportMissingCsv}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportera CSV
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Dessa spår saknas i storage och har ingen URL att ladda ner från. Exportera listan och lägg till filerna manuellt.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-64 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Titel</TableHead>
+                      <TableHead>Program</TableHead>
+                      <TableHead>Spår</TableHead>
+                      <TableHead>Sökväg</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {missingNoUrl.map((a: any) => (
+                      <TableRow key={a.id}>
+                        <TableCell className="font-medium">{a.title}</TableCell>
+                        <TableCell>{a.linkedPrograms?.[0]?.programTitle || "—"}</TableCell>
+                        <TableCell>{a.track_order}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{a.file_path}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
