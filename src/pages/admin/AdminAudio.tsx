@@ -660,6 +660,7 @@ const AdminAudio = () => {
       setImportProgress("");
       if (strictCsvInputRef.current) strictCsvInputRef.current.value = "";
     }
+  };
 
   const handleUpdateDurations = async () => {
     setIsImporting(true);
