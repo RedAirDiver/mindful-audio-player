@@ -668,23 +668,36 @@ const AdminAudio = () => {
 
   const handleUpdateDurations = async () => {
     setIsImporting(true);
-    setImportProgress("Hämtar längd för ljudfiler...");
+    let totalUpdated = 0;
+    let totalFailed = 0;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast.error("Du måste vara inloggad"); return; }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-audio-durations`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }
-      );
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Misslyckades");
+      let done = false;
+      while (!done) {
+        setImportProgress(`Hämtar längd... (${totalUpdated} uppdaterade)`);
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-audio-durations`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ offset: 0 }),
+          }
+        );
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Misslyckades");
 
-      toast.success(`Längd uppdaterad för ${result.updated} spår. ${result.failed} misslyckades. ${result.skipped_missing || 0} saknar fil.`);
-      if (result.errors?.length > 0) console.log("Duration errors:", result.errors);
+        totalUpdated += result.updated || 0;
+        totalFailed += result.failed || 0;
+        done = result.done || (result.remaining === 0);
+        if (result.errors?.length > 0) console.log("Duration errors:", result.errors);
+      }
+
+      toast.success(`Längd uppdaterad för ${totalUpdated} spår. ${totalFailed} misslyckades.`);
       queryClient.invalidateQueries({ queryKey: ["admin-audio-files"] });
     } catch (error: any) {
       toast.error("Kunde inte hämta längd: " + error.message);
