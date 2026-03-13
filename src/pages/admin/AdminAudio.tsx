@@ -922,9 +922,8 @@ const AdminAudio = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead>Spår</TableHead>
                   <TableHead>Titel</TableHead>
+                  <TableHead>Beskrivning</TableHead>
                   <TableHead>Längd</TableHead>
                   <TableHead className="text-right">Åtgärder</TableHead>
                 </TableRow>
@@ -932,39 +931,9 @@ const AdminAudio = () => {
               <TableBody>
                 {filteredAudioFiles?.map((audio: any) => (
                   <TableRow key={audio.id}>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={playingTrackId === audio.id && isPlaying ? "text-primary" : ""}
-                        onClick={() => handlePlayTrack(audio)}
-                      >
-                        {playingTrackId === audio.id && isPlaying ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Music className="h-4 w-4 text-muted-foreground" />
-                        {audio.linkedPrograms?.length > 0
-                          ? audio.linkedPrograms.map((lp: any) => lp.trackOrder).join(", ")
-                          : "-"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {audio.title}
-                      {audio.linkedPrograms?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {audio.linkedPrograms.map((lp: any) => (
-                            <span key={lp.programId} className="text-xs bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-                              {lp.programTitle}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                    <TableCell className="font-medium">{audio.title}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
+                      {audio.description || "-"}
                     </TableCell>
                     <TableCell>{formatDuration(audio.duration_seconds)}</TableCell>
                     <TableCell className="text-right">
