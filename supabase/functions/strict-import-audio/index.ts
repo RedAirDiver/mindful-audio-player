@@ -285,6 +285,7 @@ Deno.serve(async (req) => {
         trackOrder: currentOrder,
         foundInStorage,
         csvFileName: entry.fileName,
+        fileUrl: entry.fileUrl,
       });
     }
 
