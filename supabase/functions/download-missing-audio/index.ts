@@ -91,13 +91,13 @@ Deno.serve(async (req) => {
         if (!response.ok) {
           errors.push(`${track.title}: HTTP ${response.status}`);
           failed++;
-          // Clear URL so we don't retry forever
           await supabase.from("audio_files").update({ description: `download_failed_${response.status}` }).eq("id", track.id);
           continue;
         }
 
-        const blob = await response.blob();
-        const filename = track.file_path.replace("missing/", "");
+        // Sanitize filename: replace spaces/special chars with underscores
+        const rawFilename = track.file_path.replace("missing/", "");
+        const filename = rawFilename.replace(/[^a-zA-Z0-9._-]/g, "_");
         const ext = filename.split(".").pop()?.toLowerCase() || "mp3";
         const contentType = ext === "mp3" ? "audio/mpeg" : ext === "m4a" || ext === "mp4" ? "audio/mp4" : `audio/${ext}`;
 
@@ -116,16 +116,25 @@ Deno.serve(async (req) => {
           storagePath = `audio/unassigned/${filename}`;
         }
 
-        // Upload to storage
-        const { error: uploadErr } = await supabase.storage
-          .from("audio-files")
-          .upload(storagePath, blob, { contentType, upsert: true });
+        // Stream upload directly via REST API to avoid buffering in memory
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/audio-files/${storagePath}`;
+        const uploadRes = await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${serviceKey}`,
+            "Content-Type": contentType,
+            "x-upsert": "true",
+          },
+          body: response.body,
+        });
 
-        if (uploadErr) {
-          errors.push(`${track.title}: Upload: ${uploadErr.message}`);
+        if (!uploadRes.ok) {
+          const errText = await uploadRes.text();
+          errors.push(`${track.title}: Upload: ${errText}`);
           failed++;
           continue;
         }
+        await uploadRes.text(); // consume response
 
         // Update DB: set real path, clear description (URL)
         const { error: updateErr } = await supabase
