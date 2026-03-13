@@ -284,10 +284,11 @@ const AdminAudio = () => {
     try {
       const { data, error } = await supabase.storage
         .from("audio-files")
-        .createSignedUrl(audio.file_path, 3600);
+        .download(audio.file_path);
       if (error) throw error;
-      if (data?.signedUrl && audioRef.current) {
-        audioRef.current.src = data.signedUrl;
+      if (data && audioRef.current) {
+        const blobUrl = URL.createObjectURL(data);
+        audioRef.current.src = blobUrl;
         audioRef.current.play();
         setPlayingTrackId(audio.id);
         setIsPlaying(true);
