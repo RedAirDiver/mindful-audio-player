@@ -212,138 +212,152 @@ const AdminCategories = () => {
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Kategorier</h1>
-          <p className="text-muted-foreground mt-1">
-            Hantera produktkategorier
-          </p>
-        </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Lägg till kategori
-        </Button>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">Kategorier</h1>
+        <p className="text-muted-foreground mt-1">
+          Hantera produktkategorier och se deltagare per kategori
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Antal kategorier
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{categories?.length || 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Produkter med kategorier
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              {Object.values(programCounts || {}).reduce((a, b) => a + b, 0)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="categories" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="categories">Kategorier</TabsTrigger>
+          <TabsTrigger value="users">Kategorier & Användare</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Alla kategorier</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : categories && categories.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Ordning</TableHead>
-                  <TableHead>Namn</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Beskrivning</TableHead>
-                  <TableHead>Program</TableHead>
-                  <TableHead>Synlighet</TableHead>
-                  <TableHead className="text-right">Åtgärder</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <GripVertical className="h-4 w-4" />
-                        {category.sort_order}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{category.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {category.slug}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {category.description || "-"}
-                    </TableCell>
-                    <TableCell>
-                      {programCounts?.[category.name] || 0} st
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleHiddenMutation.mutate({ id: category.id, is_hidden: !category.is_hidden })}
-                        title={category.is_hidden ? "Dold – klicka för att visa" : "Synlig – klicka för att dölja"}
-                      >
-                        {category.is_hidden ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-primary" />
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(category)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm("Vill du ta bort denna kategori?")) {
-                              deleteMutation.mutate(category.id);
-                            }
-                          }}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FolderOpen className="h-12 w-12 mb-4 opacity-50" />
-              <p>Inga kategorier ännu</p>
-              <Button variant="link" onClick={openCreateDialog}>
-                Skapa din första kategori
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="categories">
+          <div className="flex justify-end mb-6">
+            <Button onClick={openCreateDialog}>
+              <Plus className="h-4 w-4 mr-2" />
+              Lägg till kategori
+            </Button>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Antal kategorier
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{categories?.length || 0}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Produkter med kategorier
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {Object.values(programCounts || {}).reduce((a, b) => a + b, 0)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Alla kategorier</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : categories && categories.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Ordning</TableHead>
+                      <TableHead>Namn</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Beskrivning</TableHead>
+                      <TableHead>Program</TableHead>
+                      <TableHead>Synlighet</TableHead>
+                      <TableHead className="text-right">Åtgärder</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((category) => (
+                      <TableRow key={category.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <GripVertical className="h-4 w-4" />
+                            {category.sort_order}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{category.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {category.slug}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          {category.description || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {programCounts?.[category.name] || 0} st
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleHiddenMutation.mutate({ id: category.id, is_hidden: !category.is_hidden })}
+                            title={category.is_hidden ? "Dold – klicka för att visa" : "Synlig – klicka för att dölja"}
+                          >
+                            {category.is_hidden ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-primary" />
+                            )}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(category)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm("Vill du ta bort denna kategori?")) {
+                                  deleteMutation.mutate(category.id);
+                                }
+                              }}
+                              disabled={deleteMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <FolderOpen className="h-12 w-12 mb-4 opacity-50" />
+                  <p>Inga kategorier ännu</p>
+                  <Button variant="link" onClick={openCreateDialog}>
+                    Skapa din första kategori
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <AdminCategoryPurchases embedded />
+        </TabsContent>
+      </Tabs>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
