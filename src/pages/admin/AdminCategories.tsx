@@ -20,9 +20,11 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye } from "lucide-react";
+import AdminCategoryPurchases from "./AdminCategoryPurchases";
 
 interface Category {
   id: string;
