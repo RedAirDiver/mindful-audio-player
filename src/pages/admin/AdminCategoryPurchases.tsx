@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Users, Package } from "lucide-react";
 
-const AdminCategoryPurchases = () => {
+const AdminCategoryPurchases = ({ embedded = false }: { embedded?: boolean }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const { data: categories } = useQuery({
