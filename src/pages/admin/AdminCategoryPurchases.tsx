@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Users, Package } from "lucide-react";
 
-const AdminCategoryPurchases = () => {
+const AdminCategoryPurchases = ({ embedded = false }: { embedded?: boolean }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const { data: categories } = useQuery({
@@ -116,13 +116,15 @@ const AdminCategoryPurchases = () => {
   const totalPurchases = filteredData.reduce((sum, u) => sum + u.programs.length, 0);
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Köp per kategori</h1>
-        <p className="text-muted-foreground mt-1">
-          Se vilka användare som köpt program inom en vald kategori
-        </p>
-      </div>
+    <div className={embedded ? "" : "p-8"}>
+      {!embedded && (
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">Köp per kategori</h1>
+          <p className="text-muted-foreground mt-1">
+            Se vilka användare som köpt program inom en vald kategori
+          </p>
+        </div>
+      )}
 
       {/* Category selector */}
       <div className="mb-6 max-w-sm">
