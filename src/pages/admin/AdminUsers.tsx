@@ -55,6 +55,7 @@ import {
   LinkIcon,
   Save,
   Eye,
+  Trash2,
 } from "lucide-react";
 
 const PAGE_SIZE = 25;
