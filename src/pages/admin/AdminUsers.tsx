@@ -801,6 +801,27 @@ const AdminUsers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete purchase confirmation */}
+      <AlertDialog open={!!deletingPurchaseId} onOpenChange={(open) => !open && setDeletingPurchaseId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Radera köp</AlertDialogTitle>
+            <AlertDialogDescription>
+              Är du säker på att du vill radera detta köp? Användaren kommer att förlora åtkomsten till programmet. Denna åtgärd kan inte ångras.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingPurchaseId && deletePurchaseMutation.mutate(deletingPurchaseId)}
+            >
+              Radera
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
