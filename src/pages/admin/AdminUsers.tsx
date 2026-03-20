@@ -93,8 +93,29 @@ const AdminUsers = () => {
     payout_details: string;
   } | null>(null);
   const [affSaving, setAffSaving] = useState(false);
+  const [deletingPurchaseId, setDeletingPurchaseId] = useState<string | null>(null);
 
-  // Debounce search
+  const deletePurchaseMutation = useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const { error } = await supabase
+        .from("purchases")
+        .delete()
+        .eq("id", purchaseId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-purchases", expandedUserId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-purchase-counts"] });
+      toast.success("Köpet har raderats");
+      setDeletingPurchaseId(null);
+    },
+    onError: (error) => {
+      toast.error("Kunde inte radera köpet: " + error.message);
+      setDeletingPurchaseId(null);
+    },
+  });
+
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
