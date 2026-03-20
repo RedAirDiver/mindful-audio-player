@@ -595,6 +595,7 @@ const AdminUsers = () => {
                                           <TableHead>Datum</TableHead>
                                           <TableHead>Produkt</TableHead>
                                           <TableHead className="text-right">Belopp</TableHead>
+                                          <TableHead className="w-10"></TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -606,6 +607,17 @@ const AdminUsers = () => {
                                             <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
                                             <TableCell className="text-right font-medium">
                                               {Number(p.amount_paid).toLocaleString("sv-SE")} kr
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={() => setDeletingPurchaseId(p.id)}
+                                                disabled={deletePurchaseMutation.isPending}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
                                             </TableCell>
                                           </TableRow>
                                         ))}
