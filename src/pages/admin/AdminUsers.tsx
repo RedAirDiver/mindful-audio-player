@@ -1,14 +1,4 @@
 import { useState, useEffect, Fragment } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useImpersonation } from "@/hooks/useImpersonation";
@@ -55,7 +45,6 @@ import {
   LinkIcon,
   Save,
   Eye,
-  Trash2,
 } from "lucide-react";
 
 const PAGE_SIZE = 25;
@@ -93,29 +82,8 @@ const AdminUsers = () => {
     payout_details: string;
   } | null>(null);
   const [affSaving, setAffSaving] = useState(false);
-  const [deletingPurchaseId, setDeletingPurchaseId] = useState<string | null>(null);
 
-  const deletePurchaseMutation = useMutation({
-    mutationFn: async (purchaseId: string) => {
-      const { error } = await supabase
-        .from("purchases")
-        .delete()
-        .eq("id", purchaseId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-user-purchases", expandedUserId] });
-      queryClient.invalidateQueries({ queryKey: ["admin-user-purchase-counts"] });
-      toast.success("Köpet har raderats");
-      setDeletingPurchaseId(null);
-    },
-    onError: (error) => {
-      toast.error("Kunde inte radera köpet: " + error.message);
-      setDeletingPurchaseId(null);
-    },
-  });
-
-
+  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -595,7 +563,6 @@ const AdminUsers = () => {
                                           <TableHead>Datum</TableHead>
                                           <TableHead>Produkt</TableHead>
                                           <TableHead className="text-right">Belopp</TableHead>
-                                          <TableHead className="w-10"></TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -607,17 +574,6 @@ const AdminUsers = () => {
                                             <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
                                             <TableCell className="text-right font-medium">
                                               {Number(p.amount_paid).toLocaleString("sv-SE")} kr
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                onClick={() => setDeletingPurchaseId(p.id)}
-                                                disabled={deletePurchaseMutation.isPending}
-                                              >
-                                                <Trash2 className="h-4 w-4" />
-                                              </Button>
                                             </TableCell>
                                           </TableRow>
                                         ))}
@@ -801,27 +757,6 @@ const AdminUsers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete purchase confirmation */}
-      <AlertDialog open={!!deletingPurchaseId} onOpenChange={(open) => !open && setDeletingPurchaseId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Radera köp</AlertDialogTitle>
-            <AlertDialogDescription>
-              Är du säker på att du vill radera detta köp? Användaren kommer att förlora åtkomsten till programmet. Denna åtgärd kan inte ångras.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Avbryt</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deletingPurchaseId && deletePurchaseMutation.mutate(deletingPurchaseId)}
-            >
-              Radera
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
