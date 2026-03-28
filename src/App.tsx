@@ -43,7 +43,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={isMobile ? <MobileHome /> : <Index />} />
       <Route path="/about" element={<About />} />
-      <Route path="/produkter" element={<Products />} />
+      <Route path="/produkter" element={isMobile ? <MobileShop /> : <Products />} />
       <Route path="/login" element={<Login />} />
       <Route path="/kategori/:slug" element={<MobileCategory />} />
       <Route path="/program/:slug" element={<ProgramDetail />} />
