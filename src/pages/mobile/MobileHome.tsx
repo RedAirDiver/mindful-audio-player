@@ -130,7 +130,7 @@ const MobileHome = () => {
         </section>
       </main>
 
-      <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <MobileBottomNav />
     </div>
   );
 };

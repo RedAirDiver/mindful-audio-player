@@ -203,7 +203,7 @@ const MobileAccount = () => {
         </motion.section>
       </main>
 
-      <MobileBottomNav activeTab="account" onTabChange={() => {}} />
+      <MobileBottomNav />
     </div>
   );
 };
