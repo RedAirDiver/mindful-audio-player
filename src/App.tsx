@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import MobileLogin from "./pages/mobile/MobileLogin";
 import Dashboard from "./pages/Dashboard";
 import ProgramDetail from "./pages/ProgramDetail";
+import MobileProgramDetail from "./pages/mobile/MobileProgramDetail";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import AffiliateApply from "./pages/AffiliateApply";
 import NotFound from "./pages/NotFound";
