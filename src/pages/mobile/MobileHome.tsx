@@ -16,6 +16,7 @@ const PLACEHOLDER_IMAGES: Record<string, string> = {
 };
 
 const MobileHome = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: categories } = useQuery({
