@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Quote } from "lucide-react";
@@ -16,6 +17,7 @@ const PLACEHOLDER_IMAGES: Record<string, string> = {
 };
 
 const MobileHome = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: categories } = useQuery({
@@ -76,6 +78,7 @@ const MobileHome = () => {
             {categories?.map((cat, index) => (
               <motion.div
                 key={cat.id}
+                onClick={() => navigate(`/kategori/${cat.slug}`)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className={`relative rounded-2xl overflow-hidden cursor-pointer group ${
