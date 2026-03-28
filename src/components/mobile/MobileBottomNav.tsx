@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Compass, Brain, ShoppingBag, User } from "lucide-react";
 
 interface NavItemProps {
