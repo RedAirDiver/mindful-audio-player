@@ -27,14 +27,14 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
 
 const TAB_ROUTES: Record<string, string> = {
   explore: "/",
-  programs: "/dashboard",
+  programs: "/mina-program",
   shop: "/produkter",
   account: "/mitt-konto",
 };
 
 const ROUTE_TABS: Record<string, string> = {
   "/": "explore",
-  "/dashboard": "programs",
+  "/mina-program": "programs",
   "/produkter": "shop",
   "/mitt-konto": "account",
 };
