@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import MobileHeader from "@/components/mobile/MobileHeader";
+import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import logo from "@/assets/logo.svg";
 
 const MobileLogin = () => {
@@ -39,34 +41,34 @@ const MobileLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Hero area */}
-      <div className="bg-primary pt-16 pb-12 px-6 rounded-b-[2rem]">
+    <div className="min-h-screen pb-32 bg-background">
+      <MobileHeader />
+
+      <main className="max-w-2xl mx-auto px-6 pt-4">
+        {/* Logo + Title */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center"
+          className="flex flex-col items-center py-8"
         >
-          <img src={logo} alt="Unestål Education" className="h-20 w-auto mb-6 brightness-0 invert" />
-          <h1 className="font-display text-2xl font-bold text-primary-foreground text-center">
+          <img src={logo} alt="Unestål Education" className="h-20 w-auto mb-6" />
+          <h1 className="font-display text-2xl font-bold text-foreground text-center">
             {isLogin ? "Välkommen tillbaka" : "Skapa ditt konto"}
           </h1>
-          <p className="text-primary-foreground/70 text-sm mt-2 text-center">
+          <p className="text-muted-foreground text-sm mt-2 text-center">
             {isLogin
               ? "Logga in för att komma åt dina program"
               : "Registrera dig för att komma igång"}
           </p>
         </motion.div>
-      </div>
 
-      {/* Form */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex-1 px-6 -mt-6"
-      >
-        <div className="bg-card rounded-2xl shadow-sm p-6 space-y-5">
+        {/* Form card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-2xl shadow-sm p-6 space-y-5"
+        >
           {/* Tabs */}
           <div className="flex bg-muted rounded-xl p-1">
             <button
@@ -136,10 +138,7 @@ const MobileLogin = () => {
 
             {isLogin && (
               <div className="text-right">
-                <button
-                  type="button"
-                  className="text-sm text-primary hover:underline"
-                >
+                <button type="button" className="text-sm text-primary hover:underline">
                   Glömt lösenord?
                 </button>
               </div>
@@ -162,13 +161,14 @@ const MobileLogin = () => {
               )}
             </Button>
           </form>
-        </div>
+        </motion.div>
 
-        {/* Footer text */}
         <p className="text-center text-xs text-muted-foreground mt-6 px-4">
           Genom att logga in godkänner du våra villkor och integritetspolicy.
         </p>
-      </motion.div>
+      </main>
+
+      <MobileBottomNav />
     </div>
   );
 };
