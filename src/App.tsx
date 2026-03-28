@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import MobileLogin from "./pages/mobile/MobileLogin";
 import Dashboard from "./pages/Dashboard";
 import ProgramDetail from "./pages/ProgramDetail";
+import MobileProgramDetail from "./pages/mobile/MobileProgramDetail";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import AffiliateApply from "./pages/AffiliateApply";
 import NotFound from "./pages/NotFound";
@@ -48,7 +49,7 @@ const AppRoutes = () => {
       <Route path="/produkter" element={isMobile ? <MobileShop /> : <Products />} />
       <Route path="/login" element={isMobile ? <MobileLogin /> : <Login />} />
       <Route path="/kategori/:slug" element={<MobileCategory />} />
-      <Route path="/program/:slug" element={<ProgramDetail />} />
+      <Route path="/program/:slug" element={isMobile ? <MobileProgramDetail /> : <ProgramDetail />} />
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
