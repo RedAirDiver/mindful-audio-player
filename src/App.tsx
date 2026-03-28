@@ -15,6 +15,7 @@ import MobilePrograms from "./pages/mobile/MobilePrograms";
 import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
+import MobileShop from "./pages/mobile/MobileShop";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProgramDetail from "./pages/ProgramDetail";
