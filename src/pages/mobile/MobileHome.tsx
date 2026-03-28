@@ -16,7 +16,6 @@ const PLACEHOLDER_IMAGES: Record<string, string> = {
 };
 
 const MobileHome = () => {
-  const [activeTab, setActiveTab] = useState("explore");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: categories } = useQuery({
@@ -130,7 +129,7 @@ const MobileHome = () => {
         </section>
       </main>
 
-      <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <MobileBottomNav />
     </div>
   );
 };

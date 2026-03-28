@@ -9,6 +9,7 @@ import { ImpersonationProvider } from "@/hooks/useImpersonation";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Index from "./pages/Index";
 import MobileHome from "./pages/mobile/MobileHome";
+import MobileAccount from "./pages/mobile/MobileAccount";
 import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
@@ -44,6 +45,7 @@ const AppRoutes = () => {
       <Route path="/program/:slug" element={<ProgramDetail />} />
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
+      <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminDashboard />} />
