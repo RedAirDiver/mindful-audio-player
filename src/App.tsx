@@ -8,7 +8,9 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ImpersonationProvider } from "@/hooks/useImpersonation";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Index from "./pages/Index";
+import MobileHome from "./pages/mobile/MobileHome";
 import About from "./pages/About";
+import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -30,8 +32,37 @@ import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
 
+const AppRoutes = () => {
+  const isMobile = useIsMobileLayout();
+
+  return (
+    <Routes>
+      <Route path="/" element={isMobile ? <MobileHome /> : <Index />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/produkter" element={<Products />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/program/:slug" element={<ProgramDetail />} />
+      <Route path="/bli-affiliate" element={<AffiliateApply />} />
+      <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="programs" element={<AdminPrograms />} />
+        <Route path="categories" element={<AdminCategories />} />
+        <Route path="audio" element={<AdminAudio />} />
+        <Route path="purchases" element={<AdminPurchases />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="import" element={<AdminImportUsers />} />
+        <Route path="affiliates" element={<AdminAffiliates />} />
+        <Route path="rabattkoder" element={<AdminDiscountCodes />} />
+        <Route path="kategori-kop" element={<AdminCategoryPurchases />} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => {
-  // Create queryClient inside component with useState to survive HMR
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -49,57 +80,12 @@ const App = () => {
       <BrowserRouter>
         <AuthProvider>
           <ImpersonationProvider>
-          <TooltipProvider>
-            <ImpersonationBanner />
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/produkter" element={<Products />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/program/:slug" element={<ProgramDetail />} />
-              <Route path="/bli-affiliate" element={<AffiliateApply />} />
-              <Route
-                path="/affiliate"
-                element={
-                  <ProtectedRoute>
-                    <AffiliateDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Admin routes */}
-              <Route
-                path="/admin"
-                element={
-                  <AdminRoute>
-                    <AdminLayout />
-                  </AdminRoute>
-                }
-              >
-                <Route index element={<AdminDashboard />} />
-                <Route path="programs" element={<AdminPrograms />} />
-                <Route path="categories" element={<AdminCategories />} />
-                <Route path="audio" element={<AdminAudio />} />
-                <Route path="purchases" element={<AdminPurchases />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="import" element={<AdminImportUsers />} />
-                <Route path="affiliates" element={<AdminAffiliates />} />
-                <Route path="rabattkoder" element={<AdminDiscountCodes />} />
-                <Route path="kategori-kop" element={<AdminCategoryPurchases />} />
-              </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
+            <TooltipProvider>
+              <ImpersonationBanner />
+              <Toaster />
+              <Sonner />
+              <AppRoutes />
+            </TooltipProvider>
           </ImpersonationProvider>
         </AuthProvider>
       </BrowserRouter>
