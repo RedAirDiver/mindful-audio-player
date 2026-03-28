@@ -32,31 +32,12 @@ import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
 
-const App = () => {
-  // Create queryClient inside component with useState to survive HMR
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 5 * 60 * 1000,
-            retry: 1,
-          },
-        },
-      })
-  );
+const AppRoutes = () => {
+  const isMobile = useIsMobileLayout();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <ImpersonationProvider>
-          <TooltipProvider>
-            <ImpersonationBanner />
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Index />} />
+    <Routes>
+      <Route path="/" element={isMobile ? <MobileHome /> : <Index />} />
               <Route path="/about" element={<About />} />
               <Route path="/produkter" element={<Products />} />
               <Route path="/login" element={<Login />} />
