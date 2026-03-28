@@ -136,7 +136,7 @@ const MobileAccount = () => {
 
           <div className="space-y-1">
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/mitt-konto/profil")}
               className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center gap-3">
