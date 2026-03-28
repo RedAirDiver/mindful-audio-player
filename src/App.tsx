@@ -10,6 +10,7 @@ import ImpersonationBanner from "@/components/ImpersonationBanner";
 import Index from "./pages/Index";
 import MobileHome from "./pages/mobile/MobileHome";
 import MobileAccount from "./pages/mobile/MobileAccount";
+import MobileCategory from "./pages/mobile/MobileCategory";
 import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
