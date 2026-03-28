@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import MobileHome from "./pages/mobile/MobileHome";
 import MobileAccount from "./pages/mobile/MobileAccount";
 import MobileCategory from "./pages/mobile/MobileCategory";
+import MobilePrograms from "./pages/mobile/MobilePrograms";
 import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
