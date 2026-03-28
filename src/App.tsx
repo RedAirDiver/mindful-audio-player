@@ -12,6 +12,7 @@ import MobileHome from "./pages/mobile/MobileHome";
 import MobileAccount from "./pages/mobile/MobileAccount";
 import MobileCategory from "./pages/mobile/MobileCategory";
 import MobilePrograms from "./pages/mobile/MobilePrograms";
+import MobileProfile from "./pages/mobile/MobileProfile";
 import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
@@ -50,6 +51,7 @@ const AppRoutes = () => {
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
+      <Route path="/mitt-konto/profil" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
       <Route path="/mina-program" element={<ProtectedRoute>{isMobile ? <MobilePrograms /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
