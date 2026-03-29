@@ -507,7 +507,7 @@ const AdminCategories = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={createMutation.isPending || updateMutation.isPending || uploading}
               >
                 {editingCategory ? "Spara" : "Skapa"}
               </Button>
