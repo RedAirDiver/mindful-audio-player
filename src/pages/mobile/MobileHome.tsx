@@ -8,12 +8,15 @@ import MobileHeader from "@/components/mobile/MobileHeader";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import logoSvg from "@/assets/logo.svg";
 
-const PLACEHOLDER_IMAGES: Record<string, string> = {
+const FALLBACK_IMAGES: Record<string, string> = {
   "personlig-utveckling": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=600&h=400&fit=crop",
   "battre-halsa": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=600&h=400&fit=crop",
   "barn-ungdom": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=600&h=400&fit=crop",
-  "sport": "https://images.unsplash.com/photo-1461896836934-bd45ba48ba0e?w=600&h=400&fit=crop",
+  "sport": "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&h=400&fit=crop",
   "foretag-ledarskap": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+  "gratis": "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=600&h=400&fit=crop",
+  "utlandska-program": "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=600&h=400&fit=crop",
+  "populara-produkter": "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=600&h=400&fit=crop",
 };
 
 const MobileHome = () => {
