@@ -23,7 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye, Upload, X, Image as ImageIcon } from "lucide-react";
 import AdminCategoryPurchases from "./AdminCategoryPurchases";
 
 interface Category {
@@ -31,6 +31,7 @@ interface Category {
   name: string;
   slug: string;
   description: string | null;
+  image_url: string | null;
   sort_order: number;
   is_hidden: boolean;
   created_at: string;
@@ -46,6 +47,9 @@ const AdminCategories = () => {
     description: "",
     sort_order: 0,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["admin-categories"],
@@ -81,13 +85,28 @@ const AdminCategories = () => {
     },
   });
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const filePath = `categories/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(filePath, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      setUploading(true);
+      let image_url: string | null = null;
+      if (imageFile) {
+        image_url = await uploadImage(imageFile);
+      }
       const { error } = await supabase.from("categories").insert([{
         name: data.name,
         slug: data.slug || generateSlug(data.name),
         description: data.description || null,
         sort_order: data.sort_order,
+        image_url,
       }]);
       if (error) throw error;
     },
@@ -99,18 +118,28 @@ const AdminCategories = () => {
     onError: (error) => {
       toast.error("Kunde inte skapa kategori: " + error.message);
     },
+    onSettled: () => setUploading(false),
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      setUploading(true);
+      let image_url: string | null | undefined = undefined;
+      if (imageFile) {
+        image_url = await uploadImage(imageFile);
+      }
+      const updateData: Record<string, unknown> = {
+        name: data.name,
+        slug: data.slug,
+        description: data.description || null,
+        sort_order: data.sort_order,
+      };
+      if (image_url !== undefined) {
+        updateData.image_url = image_url;
+      }
       const { error } = await supabase
         .from("categories")
-        .update({
-          name: data.name,
-          slug: data.slug,
-          description: data.description || null,
-          sort_order: data.sort_order,
-        })
+        .update(updateData)
         .eq("id", id);
       if (error) throw error;
     },
@@ -122,6 +151,7 @@ const AdminCategories = () => {
     onError: (error) => {
       toast.error("Kunde inte uppdatera kategori: " + error.message);
     },
+    onSettled: () => setUploading(false),
   });
 
   const deleteMutation = useMutation({
@@ -173,6 +203,8 @@ const AdminCategories = () => {
       description: "",
       sort_order: (categories?.length || 0) + 1,
     });
+    setImageFile(null);
+    setImagePreview(null);
     setIsDialogOpen(true);
   };
 
@@ -184,6 +216,8 @@ const AdminCategories = () => {
       description: category.description || "",
       sort_order: category.sort_order,
     });
+    setImageFile(null);
+    setImagePreview(category.image_url || null);
     setIsDialogOpen(true);
   };
 
@@ -191,6 +225,21 @@ const AdminCategories = () => {
     setIsDialogOpen(false);
     setEditingCategory(null);
     setFormData({ name: "", slug: "", description: "", sort_order: 0 });
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -273,6 +322,7 @@ const AdminCategories = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">Ordning</TableHead>
+                      <TableHead className="w-16">Bild</TableHead>
                       <TableHead>Namn</TableHead>
                       <TableHead>Slug</TableHead>
                       <TableHead>Beskrivning</TableHead>
@@ -289,6 +339,15 @@ const AdminCategories = () => {
                             <GripVertical className="h-4 w-4" />
                             {category.sort_order}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {category.image_url ? (
+                            <img src={category.image_url} alt={category.name} className="w-10 h-10 rounded object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="font-medium">{category.name}</TableCell>
                         <TableCell className="text-muted-foreground">
@@ -404,6 +463,29 @@ const AdminCategories = () => {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Kategoribild</Label>
+                {imagePreview ? (
+                  <div className="relative w-32 h-32">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-md border" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-muted-foreground/30 rounded-md cursor-pointer hover:border-primary/50 transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground">Ladda upp</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                  </label>
+                )}
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="sort_order">Sorteringsordning</Label>
                 <Input
                   id="sort_order"
@@ -425,7 +507,7 @@ const AdminCategories = () => {
               </Button>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={createMutation.isPending || updateMutation.isPending || uploading}
               >
                 {editingCategory ? "Spara" : "Skapa"}
               </Button>
