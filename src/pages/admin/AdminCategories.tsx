@@ -85,13 +85,28 @@ const AdminCategories = () => {
     },
   });
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const ext = file.name.split(".").pop();
+    const filePath = `categories/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("product-images").upload(filePath, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      setUploading(true);
+      let image_url: string | null = null;
+      if (imageFile) {
+        image_url = await uploadImage(imageFile);
+      }
       const { error } = await supabase.from("categories").insert([{
         name: data.name,
         slug: data.slug || generateSlug(data.name),
         description: data.description || null,
         sort_order: data.sort_order,
+        image_url,
       }]);
       if (error) throw error;
     },
@@ -103,18 +118,28 @@ const AdminCategories = () => {
     onError: (error) => {
       toast.error("Kunde inte skapa kategori: " + error.message);
     },
+    onSettled: () => setUploading(false),
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      setUploading(true);
+      let image_url: string | null | undefined = undefined;
+      if (imageFile) {
+        image_url = await uploadImage(imageFile);
+      }
+      const updateData: Record<string, unknown> = {
+        name: data.name,
+        slug: data.slug,
+        description: data.description || null,
+        sort_order: data.sort_order,
+      };
+      if (image_url !== undefined) {
+        updateData.image_url = image_url;
+      }
       const { error } = await supabase
         .from("categories")
-        .update({
-          name: data.name,
-          slug: data.slug,
-          description: data.description || null,
-          sort_order: data.sort_order,
-        })
+        .update(updateData)
         .eq("id", id);
       if (error) throw error;
     },
@@ -126,6 +151,7 @@ const AdminCategories = () => {
     onError: (error) => {
       toast.error("Kunde inte uppdatera kategori: " + error.message);
     },
+    onSettled: () => setUploading(false),
   });
 
   const deleteMutation = useMutation({
