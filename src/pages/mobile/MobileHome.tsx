@@ -89,7 +89,7 @@ const MobileHome = () => {
                 }`}
               >
                 <img
-                  src={PLACEHOLDER_IMAGES[cat.slug] || `https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600&h=400&fit=crop`}
+                  src={cat.image_url || FALLBACK_IMAGES[cat.slug] || `https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=600&h=400&fit=crop`}
                   alt={cat.name}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
