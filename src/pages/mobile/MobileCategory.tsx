@@ -10,6 +10,21 @@ const MobileCategory = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<"popular" | "newest">("popular");
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (deltaX > 100 && deltaY < 80) {
+      navigate(-1);
+    }
+  };
 
   const { data: category } = useQuery({
     queryKey: ["category", slug],
