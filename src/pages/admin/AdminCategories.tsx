@@ -322,6 +322,7 @@ const AdminCategories = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-12">Ordning</TableHead>
+                      <TableHead className="w-16">Bild</TableHead>
                       <TableHead>Namn</TableHead>
                       <TableHead>Slug</TableHead>
                       <TableHead>Beskrivning</TableHead>
@@ -338,6 +339,15 @@ const AdminCategories = () => {
                             <GripVertical className="h-4 w-4" />
                             {category.sort_order}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {category.image_url ? (
+                            <img src={category.image_url} alt={category.name} className="w-10 h-10 rounded object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="font-medium">{category.name}</TableCell>
                         <TableCell className="text-muted-foreground">
