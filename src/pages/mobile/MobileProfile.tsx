@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Save } from "lucide-react";
 import { motion } from "motion/react";
@@ -24,6 +24,18 @@ interface ProfileData {
 const MobileProfile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (deltaX > 100 && deltaY < 80) navigate(-1);
+  };
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,7 +105,7 @@ const MobileProfile = () => {
   };
 
   return (
-    <div className="min-h-screen pb-32 bg-background">
+    <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center gap-3 px-4 py-4">
