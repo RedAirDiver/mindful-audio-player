@@ -361,8 +361,8 @@ const MobileProgramDetail = () => {
   }
 
   if (!program) {
-    return (
-      <div className="min-h-screen pb-32 bg-background">
+  return (
+    <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center gap-3 px-4 py-4">
             <button onClick={() => navigate(-1)} className="p-1">
