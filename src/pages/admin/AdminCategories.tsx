@@ -203,6 +203,8 @@ const AdminCategories = () => {
       description: "",
       sort_order: (categories?.length || 0) + 1,
     });
+    setImageFile(null);
+    setImagePreview(null);
     setIsDialogOpen(true);
   };
 
@@ -214,6 +216,8 @@ const AdminCategories = () => {
       description: category.description || "",
       sort_order: category.sort_order,
     });
+    setImageFile(null);
+    setImagePreview(category.image_url || null);
     setIsDialogOpen(true);
   };
 
@@ -221,6 +225,21 @@ const AdminCategories = () => {
     setIsDialogOpen(false);
     setEditingCategory(null);
     setFormData({ name: "", slug: "", description: "", sort_order: 0 });
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
