@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,21 @@ const MobileCategory = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<"popular" | "newest">("popular");
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (deltaX > 100 && deltaY < 80) {
+      navigate(-1);
+    }
+  };
 
   const { data: category } = useQuery({
     queryKey: ["category", slug],
@@ -47,7 +62,7 @@ const MobileCategory = () => {
   });
 
   return (
-    <div className="min-h-screen pb-32 bg-background">
+    <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md px-6 py-4 flex items-center gap-4">
         <button
