@@ -47,6 +47,9 @@ const AdminCategories = () => {
     description: "",
     sort_order: 0,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["admin-categories"],
