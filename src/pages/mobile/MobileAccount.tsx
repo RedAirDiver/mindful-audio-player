@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, ChevronRight, LogOut, Bell, Shield, ShoppingBag } from "lucide-react";
 import { motion } from "motion/react";
