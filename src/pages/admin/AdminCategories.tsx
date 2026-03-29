@@ -23,7 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye } from "lucide-react";
+import { Plus, Pencil, Trash2, FolderOpen, GripVertical, EyeOff, Eye, Upload, X, Image as ImageIcon } from "lucide-react";
 import AdminCategoryPurchases from "./AdminCategoryPurchases";
 
 interface Category {
@@ -31,6 +31,7 @@ interface Category {
   name: string;
   slug: string;
   description: string | null;
+  image_url: string | null;
   sort_order: number;
   is_hidden: boolean;
   created_at: string;
