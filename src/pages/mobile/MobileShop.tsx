@@ -34,6 +34,19 @@ const MobileShop = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
+  const navigate = useNavigate();
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (deltaX > 100 && deltaY < 80) navigate(-1);
+  };
 
   const selectedCategory = searchParams.get("kategori") || "all";
   const selectedLanguage = searchParams.get("sprak") || "all";
