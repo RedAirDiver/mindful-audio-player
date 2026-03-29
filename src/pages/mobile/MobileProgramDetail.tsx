@@ -75,6 +75,25 @@ const MobileProgramDetail = () => {
   const [guestName, setGuestName] = useState("");
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const previewAudioRef = useRef<HTMLAudioElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    // Swipe right to go back: >100px horizontal, not too much vertical
+    if (deltaX > 100 && deltaY < 80) {
+      navigate(-1);
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
 
   useEffect(() => {
     if (slug) fetchProgram();
@@ -342,8 +361,8 @@ const MobileProgramDetail = () => {
   }
 
   if (!program) {
-    return (
-      <div className="min-h-screen pb-32 bg-background">
+  return (
+    <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center gap-3 px-4 py-4">
             <button onClick={() => navigate(-1)} className="p-1">
