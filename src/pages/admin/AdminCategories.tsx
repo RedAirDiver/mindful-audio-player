@@ -463,6 +463,29 @@ const AdminCategories = () => {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Kategoribild</Label>
+                {imagePreview ? (
+                  <div className="relative w-32 h-32">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover rounded-md border" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-muted-foreground/30 rounded-md cursor-pointer hover:border-primary/50 transition-colors">
+                    <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground">Ladda upp</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                  </label>
+                )}
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="sort_order">Sorteringsordning</Label>
                 <Input
                   id="sort_order"
