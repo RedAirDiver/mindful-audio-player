@@ -144,7 +144,7 @@ const MobileShop = () => {
   };
 
   return (
-    <div className="min-h-screen pb-32 bg-background">
+    <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <MobileHeader />
 
       <main className="max-w-2xl mx-auto px-4 pt-4">
