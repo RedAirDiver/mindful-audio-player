@@ -6,7 +6,7 @@ const Terms = () => {
     <div className="min-h-screen">
       <Header />
       <main className="pt-28 md:pt-32 pb-16">
-        <div className="container mx-auto px-4 max-w-3xl prose prose-neutral dark:prose-invert">
+        <div className="container mx-auto px-4 max-w-3xl prose prose-neutral dark:prose-invert font-body prose-headings:font-display">
           <h1>Användarvillkor</h1>
           <p className="text-muted-foreground">Senast uppdaterad: {new Date().toLocaleDateString("sv-SE")}</p>
 
