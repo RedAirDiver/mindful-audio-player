@@ -66,10 +66,10 @@ const FAQ = () => {
       <Header />
       <main className="pt-28 md:pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2 font-display">
             Vanliga frågor
           </h1>
-          <p className="text-muted-foreground mb-10">
+          <p className="text-muted-foreground mb-10 font-body">
             Här hittar du svar på de vanligaste frågorna om mentalträning och våra program.
           </p>
 
