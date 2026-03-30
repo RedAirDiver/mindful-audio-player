@@ -51,6 +51,12 @@ const Header = () => {
               Om oss
             </Link>
             <Link 
+              to="/faq" 
+              className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/faq') ? 'text-primary' : 'text-muted-foreground'}`}
+            >
+              FAQ
+            </Link>
+            <Link 
               to="/bli-affiliate" 
               className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/bli-affiliate') ? 'text-primary' : 'text-muted-foreground'}`}
             >
