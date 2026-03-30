@@ -54,6 +54,7 @@ const AppRoutes = () => {
       <Route path="/program/:slug" element={isMobile ? <MobileProgramDetail /> : <ProgramDetail />} />
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/villkor" element={<Terms />} />
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/mitt-konto/profil" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
