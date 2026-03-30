@@ -25,6 +25,7 @@ import MobileProgramDetail from "./pages/mobile/MobileProgramDetail";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import AffiliateApply from "./pages/AffiliateApply";
 import NotFound from "./pages/NotFound";
+import FAQ from "./pages/FAQ";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
