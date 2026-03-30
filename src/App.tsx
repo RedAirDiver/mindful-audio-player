@@ -26,6 +26,7 @@ import AffiliateDashboard from "./pages/AffiliateDashboard";
 import AffiliateApply from "./pages/AffiliateApply";
 import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
+import Terms from "./pages/Terms";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
