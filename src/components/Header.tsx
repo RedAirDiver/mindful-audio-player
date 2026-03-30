@@ -141,6 +141,13 @@ const Header = () => {
               Om oss
             </Link>
             <Link 
+              to="/faq" 
+              className="py-2 text-foreground font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              FAQ
+            </Link>
+            <Link 
               to="/bli-affiliate" 
               className="py-2 text-foreground font-medium"
               onClick={() => setIsMenuOpen(false)}
