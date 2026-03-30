@@ -73,7 +73,7 @@ const FAQ = () => {
             Här hittar du svar på de vanligaste frågorna om mentalträning och våra program.
           </p>
 
-          <Accordion type="single" collapsible className="w-full font-body">
+          <Accordion type="single" collapsible className="w-full font-serif">
             {faqItems.map((item, index) => (
               <AccordionItem key={index} value={`item-${index}`}>
                 <AccordionTrigger className="text-left text-base font-medium">
