@@ -42,6 +42,7 @@ import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePl
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
+import { ProgramUserAccess } from "@/components/admin/ProgramUserAccess";
 
 type Program = Tables<"programs">;
 
@@ -654,6 +655,16 @@ const AdminPrograms = () => {
                   <ProgramAudioManager 
                     programId={editingProgram.id} 
                     programTitle={editingProgram.title} 
+                  />
+                </div>
+              )}
+
+              {/* Grant user access section - only show when editing */}
+              {editingProgram && (
+                <div className="border-t pt-4 mt-4">
+                  <ProgramUserAccess
+                    programId={editingProgram.id}
+                    programTitle={editingProgram.title}
                   />
                 </div>
               )}
