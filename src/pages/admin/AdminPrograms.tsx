@@ -659,6 +659,16 @@ const AdminPrograms = () => {
                 </div>
               )}
 
+              {/* Grant user access section - only show when editing */}
+              {editingProgram && (
+                <div className="border-t pt-4 mt-4">
+                  <ProgramUserAccess
+                    programId={editingProgram.id}
+                    programTitle={editingProgram.title}
+                  />
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   type="button"
