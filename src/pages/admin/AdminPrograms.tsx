@@ -42,6 +42,7 @@ import { Plus, Pencil, Trash2, Search, ChevronsUpDown, X, Music, Upload, ImagePl
 import type { Tables } from "@/integrations/supabase/types";
 import { cn } from "@/lib/utils";
 import { ProgramAudioManager } from "@/components/admin/ProgramAudioManager";
+import { ProgramUserAccess } from "@/components/admin/ProgramUserAccess";
 
 type Program = Tables<"programs">;
 
