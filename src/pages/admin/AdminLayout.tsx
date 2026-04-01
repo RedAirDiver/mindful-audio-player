@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   DatabaseBackup,
   LinkIcon,
-  Ticket
+  Ticket,
+  FolderPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.svg";
@@ -31,7 +32,7 @@ const AdminLayout = () => {
     { href: "/admin/import", label: "WP Import", icon: DatabaseBackup },
     { href: "/admin/affiliates", label: "Affiliates", icon: LinkIcon },
     { href: "/admin/rabattkoder", label: "Rabattkoder", icon: Ticket },
-    
+    { href: "/admin/kategori-tilldelning", label: "Kategoritilldelning", icon: FolderPlus },
   ];
 
   const isActive = (href: string, exact?: boolean) => {

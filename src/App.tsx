@@ -40,6 +40,7 @@ import AdminImportUsers from "./pages/admin/AdminImportUsers";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
+import AdminCategoryAccess from "./pages/admin/AdminCategoryAccess";
 
 const AppRoutes = () => {
   const isMobile = useIsMobileLayout();
@@ -71,6 +72,7 @@ const AppRoutes = () => {
         <Route path="affiliates" element={<AdminAffiliates />} />
         <Route path="rabattkoder" element={<AdminDiscountCodes />} />
         <Route path="kategori-kop" element={<AdminCategoryPurchases />} />
+        <Route path="kategori-tilldelning" element={<AdminCategoryAccess />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
