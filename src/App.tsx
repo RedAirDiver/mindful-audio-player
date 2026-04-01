@@ -72,6 +72,7 @@ const AppRoutes = () => {
         <Route path="affiliates" element={<AdminAffiliates />} />
         <Route path="rabattkoder" element={<AdminDiscountCodes />} />
         <Route path="kategori-kop" element={<AdminCategoryPurchases />} />
+        <Route path="kategori-tilldelning" element={<AdminCategoryAccess />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
