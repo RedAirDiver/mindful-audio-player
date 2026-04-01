@@ -196,6 +196,24 @@ const AdminUsers = () => {
     enabled: !!expandedUserId,
   });
 
+  const deletePurchaseMutation = useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const { error } = await supabase
+        .from("purchases")
+        .delete()
+        .eq("id", purchaseId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-purchases", expandedUserId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-purchase-counts"] });
+      toast.success("Köpet har raderats");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte radera köpet: " + error.message);
+    },
+  });
+
   const toggleAdminMutation = useMutation({
     mutationFn: async ({
       userId,
