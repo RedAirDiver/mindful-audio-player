@@ -69,7 +69,8 @@ const AdminCategoryAccess = () => {
         .from("profiles")
         .select("user_id, name, email")
         .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
-        .limit(10);
+        .order("name")
+        .limit(20);
       if (error) throw error;
       return data as ProfileResult[];
     },
