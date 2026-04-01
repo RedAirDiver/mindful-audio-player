@@ -45,7 +45,19 @@ import {
   LinkIcon,
   Save,
   Eye,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const PAGE_SIZE = 25;
 
@@ -182,6 +194,24 @@ const AdminUsers = () => {
       return data;
     },
     enabled: !!expandedUserId,
+  });
+
+  const deletePurchaseMutation = useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const { error } = await supabase
+        .from("purchases")
+        .delete()
+        .eq("id", purchaseId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-user-purchases", expandedUserId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-purchase-counts"] });
+      toast.success("Köpet har raderats");
+    },
+    onError: (error) => {
+      toast.error("Kunde inte radera köpet: " + error.message);
+    },
   });
 
   const toggleAdminMutation = useMutation({
@@ -563,6 +593,7 @@ const AdminUsers = () => {
                                           <TableHead>Datum</TableHead>
                                           <TableHead>Produkt</TableHead>
                                           <TableHead className="text-right">Belopp</TableHead>
+                                          <TableHead className="w-10"></TableHead>
                                         </TableRow>
                                       </TableHeader>
                                       <TableBody>
@@ -574,6 +605,32 @@ const AdminUsers = () => {
                                             <TableCell>{(p.programs as any)?.title || "-"}</TableCell>
                                             <TableCell className="text-right font-medium">
                                               {Number(p.amount_paid).toLocaleString("sv-SE")} kr
+                                            </TableCell>
+                                            <TableCell>
+                                              <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                  </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                    <AlertDialogTitle>Radera köp</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                      Är du säker på att du vill radera detta köp? Användaren förlorar åtkomst till programmet. Denna åtgärd kan inte ångras.
+                                                    </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                      onClick={() => deletePurchaseMutation.mutate(p.id)}
+                                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
+                                                      Radera
+                                                    </AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                              </AlertDialog>
                                             </TableCell>
                                           </TableRow>
                                         ))}
