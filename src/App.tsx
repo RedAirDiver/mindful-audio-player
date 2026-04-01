@@ -40,6 +40,7 @@ import AdminImportUsers from "./pages/admin/AdminImportUsers";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
+import AdminCategoryAccess from "./pages/admin/AdminCategoryAccess";
 
 const AppRoutes = () => {
   const isMobile = useIsMobileLayout();
