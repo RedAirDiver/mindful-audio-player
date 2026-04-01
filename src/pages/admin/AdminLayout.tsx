@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   DatabaseBackup,
   LinkIcon,
-  Ticket
+  Ticket,
+  FolderPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.svg";
