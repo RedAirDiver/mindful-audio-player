@@ -224,8 +224,8 @@ const AdminCategoryAccess = () => {
                 className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer text-sm"
               >
                 <Checkbox
-                  checked={selectedCategories.includes(cat.slug)}
-                  onCheckedChange={() => toggleCategory(cat.slug)}
+                  checked={selectedCategories.includes(cat.id)}
+                  onCheckedChange={() => toggleCategory(cat.id)}
                 />
                 {cat.name}
               </label>
