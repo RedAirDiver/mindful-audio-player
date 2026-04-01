@@ -91,10 +91,14 @@ const AdminCategoryAccess = () => {
     enabled: !!selectedUser,
   });
 
-  // Programs matching selected categories
+  // Programs matching selected categories (programs store category NAMES, not slugs)
+  const selectedCategoryNames = categories
+    ?.filter((c) => selectedCategories.includes(c.id))
+    .map((c) => c.name) ?? [];
+
   const matchingPrograms = allPrograms?.filter((p) => {
-    if (!p.categories || selectedCategories.length === 0) return false;
-    return selectedCategories.some((catSlug) => p.categories?.includes(catSlug));
+    if (!p.categories || selectedCategoryNames.length === 0) return false;
+    return selectedCategoryNames.some((catName) => p.categories?.includes(catName));
   }) ?? [];
 
   // Programs that user doesn't already have
