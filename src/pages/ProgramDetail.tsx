@@ -506,9 +506,9 @@ const ProgramDetail = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 max-w-6xl mx-auto">
             {/* Left: Description */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-3 space-y-8">
               <div 
                 className="text-lg text-muted-foreground leading-relaxed prose prose-lg max-w-none"
                 dangerouslySetInnerHTML={{ __html: program.description || program.short_description || "" }}
@@ -662,7 +662,7 @@ const ProgramDetail = () => {
             </div>
 
             {/* Right Sidebar: Price & Features */}
-            <div className="space-y-6 lg:sticky lg:top-32 lg:self-start">
+            <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-32 lg:self-start">
               {/* Price & Purchase */}
               <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4 overflow-hidden min-w-0">
                 {isPurchased ? (
