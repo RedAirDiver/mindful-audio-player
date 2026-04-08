@@ -670,7 +670,7 @@ const ProgramDetail = () => {
                     <Check className="w-6 h-6" />
                     <span className="font-semibold text-lg">Du äger denna produkt</span>
                   </div>
-                ) : (
+                ) : user ? (
                   <>
                     <div className="flex items-center justify-between">
                       <div>
@@ -682,50 +682,31 @@ const ProgramDetail = () => {
                         Engångsköp • Livstidsåtkomst
                       </div>
                     </div>
-
-                    {/* Guest checkout fields */}
-                    {!user && (
-                      <div className="space-y-3 pt-2">
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input
-                            type="email"
-                            placeholder="Din e-postadress"
-                            value={guestEmail}
-                            onChange={(e) => setGuestEmail(e.target.value)}
-                            className="pl-10"
-                            required
-                          />
-                        </div>
-                        <Input
-                          type="text"
-                          placeholder="Ditt namn (valfritt)"
-                          value={guestName}
-                          onChange={(e) => setGuestName(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Ett konto skapas automatiskt. Du får ett e-postmeddelande för att välja lösenord.
-                        </p>
-                      </div>
-                    )}
-
-                    <Button 
-                      size="lg" 
-                      className="w-full"
-                      onClick={handlePurchase}
-                      disabled={purchaseLoading}
-                    >
-                      {purchaseLoading ? (
-                        <span className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          Bearbetar...
-                        </span>
-                      ) : (
-                        <>
-                          <ShoppingCart className="w-5 h-5 mr-2" />
-                          Köp nu
-                        </>
-                      )}
+                    <StripeCheckout
+                      programId={program.id}
+                      programTitle={program.title}
+                      price={program.price}
+                      onPurchaseComplete={() => {
+                        setIsPurchased(true);
+                        fetchProgram();
+                      }}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <span className="text-3xl font-semibold text-foreground">{program.price}</span>
+                      <span className="text-lg text-muted-foreground ml-1">kr</span>
+                      <p className="text-xs text-muted-foreground mt-1">Inkl. 6% moms</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Logga in eller skapa ett konto för att köpa detta program.
+                    </p>
+                    <Button size="lg" className="w-full" asChild>
+                      <Link to="/login">
+                        <ShoppingCart className="w-5 h-5 mr-2" />
+                        Logga in för att köpa
+                      </Link>
                     </Button>
                   </>
                 )}
