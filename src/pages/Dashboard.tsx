@@ -605,7 +605,7 @@ const Dashboard = () => {
                             onClick={() => openReceiptWindow(record)}
                             className="text-muted-foreground hover:text-foreground"
                           >
-                            <Printer className="w-4 h-4 mr-1" />
+                            <FileDown className="w-4 h-4 mr-1" />
                             Visa
                           </Button>
                         </div>
