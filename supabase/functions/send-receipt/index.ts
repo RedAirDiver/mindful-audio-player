@@ -212,7 +212,7 @@ serve(async (req) => {
         Accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Unestal Academy", email: "noreply@xn--mentaltrning-ncb.nu" },
+        sender: { name: "Mental Träning by Unestål", email: "noreply@xn--mentaltrning-ncb.nu" },
         to: [{ email: profile.email, name: customerName }],
         subject: `Kvitto – ${program.title}`,
         htmlContent: receiptHtml,
