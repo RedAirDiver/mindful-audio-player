@@ -327,10 +327,11 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl font-semibold text-foreground">
-                {activeView === 'profile' ? 'Min profil' : 'Mina mentala träningsprogram'}
+                {activeView === 'profile' ? 'Min profil' : activeView === 'purchases' ? 'Köphistorik' : 'Mina mentala träningsprogram'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {activeView === 'profile' ? 'Hantera din kontoinformation.' : 'Välkommen tillbaka! Här är dina köpta mentala träningsprogram.'}
+                {activeView === 'profile' ? 'Hantera din kontoinformation.' : activeView === 'purchases' ? 'Här ser du alla dina genomförda köp.' : 'Välkommen tillbaka! Här är dina köpta mentala träningsprogram.'}
+              </p>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -338,6 +339,18 @@ const Dashboard = () => {
                 <Link to="/#programs">
                   Utforska fler mentala träningsprogram
                 </Link>
+              </Button>
+              <Button
+                variant={activeView === 'purchases' ? 'default' : 'ghost'}
+                size="sm"
+                className={activeView === 'purchases' ? '' : 'text-muted-foreground'}
+                onClick={() => setActiveView(activeView === 'purchases' ? 'programs' : 'purchases')}
+              >
+                {activeView === 'purchases' ? (
+                  <><ArrowLeft className="w-4 h-4 mr-2" />Tillbaka</>
+                ) : (
+                  <><Receipt className="w-4 h-4 mr-2" />Köphistorik</>
+                )}
               </Button>
               <Button 
                 variant={activeView === 'profile' ? 'default' : 'ghost'} 
