@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let initialSessionFingerprint: string | null = null;
+    let authBootstrapComplete = false;
     const isAuthCallback =
       window.location.search.includes("code=") ||
       window.location.hash.includes("access_token=") ||
@@ -70,6 +71,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.localStorage.removeItem(LOGIN_HISTORY_FINGERPRINT_KEY);
     };
 
+    const seedInitialSessionFingerprint = (fingerprint: string | null) => {
+      initialSessionFingerprint = fingerprint;
+
+      if (isAuthCallback) return;
+
+      if (fingerprint) {
+        rememberLoginFingerprint(fingerprint);
+        return;
+      }
+
+      clearLoginFingerprint();
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
@@ -79,17 +93,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const loginFingerprint = getLoginFingerprint(currentSession);
 
         if (event === "INITIAL_SESSION") {
-          initialSessionFingerprint = loginFingerprint;
+          seedInitialSessionFingerprint(loginFingerprint);
+          authBootstrapComplete = true;
           return;
         }
 
         if (event === "SIGNED_OUT") {
           initialSessionFingerprint = null;
+          authBootstrapComplete = true;
           clearLoginFingerprint();
           return;
         }
 
         if (event !== "SIGNED_IN" || !currentSession?.user || !loginFingerprint) {
+          return;
+        }
+
+        if (!authBootstrapComplete && !isAuthCallback) {
           return;
         }
 
@@ -125,6 +145,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+
+      if (!authBootstrapComplete) {
+        seedInitialSessionFingerprint(getLoginFingerprint(currentSession));
+        authBootstrapComplete = true;
+      }
+
       setLoading(false);
     });
 
