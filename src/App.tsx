@@ -41,6 +41,8 @@ import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
 import AdminCategoryAccess from "./pages/admin/AdminCategoryAccess";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const AppRoutes = () => {
   const isMobile = useIsMobileLayout();
@@ -56,6 +58,8 @@ const AppRoutes = () => {
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/villkor" element={<Terms />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/mitt-konto/profil" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
