@@ -73,7 +73,7 @@ export const StripeCheckout = ({
     }
   };
 
-  const fetchClientSecret = useCallback(() => {
+  const fetchClientSecret = useCallback(async () => {
     return clientSecret || "";
   }, [clientSecret]);
 
