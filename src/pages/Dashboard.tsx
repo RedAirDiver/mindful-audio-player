@@ -332,7 +332,6 @@ const Dashboard = () => {
               <p className="text-muted-foreground mt-1">
                 {activeView === 'profile' ? 'Hantera din kontoinformation.' : activeView === 'purchases' ? 'Här ser du alla dina genomförda köp.' : 'Välkommen tillbaka! Här är dina köpta mentala träningsprogram.'}
               </p>
-              </p>
             </div>
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" asChild>
