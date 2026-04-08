@@ -149,6 +149,25 @@ serve(async (req) => {
       }
     }
 
+    // Send receipt email (fire-and-forget)
+    try {
+      const receiptUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-receipt`;
+      await fetch(receiptUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          program_id: programId,
+          amount_paid: amountPaid,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to send receipt:", e);
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: "Köp genomfört!" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
