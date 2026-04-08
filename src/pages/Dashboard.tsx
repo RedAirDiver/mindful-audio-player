@@ -6,7 +6,7 @@ import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save } from "lucide-react";
+import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save, Receipt } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
@@ -44,12 +44,21 @@ interface PurchasedProgram extends Program {
   tracks: AudioFile[];
 }
 
+interface PurchaseRecord {
+  id: string;
+  program_id: string;
+  purchase_date: string;
+  amount_paid: number;
+  program_title: string;
+  program_image: string | null;
+}
+
 const Dashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { savedTracks, savingTrack, saveTrackOffline, removeTrackOffline, getDecryptedAudioUrl, isOnline } = useOfflineAudio();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [activeView, setActiveView] = useState<'programs' | 'profile'>('programs');
+  const [activeView, setActiveView] = useState<'programs' | 'profile' | 'purchases'>('programs');
   const [purchasedPrograms, setPurchasedPrograms] = useState<PurchasedProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<PurchasedProgram | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<AudioFile | null>(null);
@@ -58,6 +67,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile>({ name: '', email: '', phone: '', company: '', address_line1: '', address_postcode: '', address_city: '', address_country: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [purchaseRecords, setPurchaseRecords] = useState<PurchaseRecord[]>([]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -164,6 +174,7 @@ const Dashboard = () => {
           id,
           program_id,
           purchase_date,
+          amount_paid,
           programs (
             id,
             title,
@@ -177,9 +188,21 @@ const Dashboard = () => {
 
       if (!purchases || purchases.length === 0) {
         setPurchasedPrograms([]);
+        setPurchaseRecords([]);
         setLoading(false);
         return;
       }
+
+      // Build purchase records for history view
+      const records: PurchaseRecord[] = purchases.map((p: any) => ({
+        id: p.id,
+        program_id: p.program_id,
+        purchase_date: p.purchase_date,
+        amount_paid: p.amount_paid,
+        program_title: p.programs?.title || 'Okänt program',
+        program_image: p.programs?.image_url || null,
+      }));
+      setPurchaseRecords(records);
 
       const programIds = purchases.map(p => p.program_id);
       // Fetch audio files via junction table
@@ -304,10 +327,10 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="font-display text-3xl font-semibold text-foreground">
-                {activeView === 'profile' ? 'Min profil' : 'Mina mentala träningsprogram'}
+                {activeView === 'profile' ? 'Min profil' : activeView === 'purchases' ? 'Köphistorik' : 'Mina mentala träningsprogram'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {activeView === 'profile' ? 'Hantera din kontoinformation.' : 'Välkommen tillbaka! Här är dina köpta mentala träningsprogram.'}
+                {activeView === 'profile' ? 'Hantera din kontoinformation.' : activeView === 'purchases' ? 'Här ser du alla dina genomförda köp.' : 'Välkommen tillbaka! Här är dina köpta mentala träningsprogram.'}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -315,6 +338,18 @@ const Dashboard = () => {
                 <Link to="/#programs">
                   Utforska fler mentala träningsprogram
                 </Link>
+              </Button>
+              <Button
+                variant={activeView === 'purchases' ? 'default' : 'ghost'}
+                size="sm"
+                className={activeView === 'purchases' ? '' : 'text-muted-foreground'}
+                onClick={() => setActiveView(activeView === 'purchases' ? 'programs' : 'purchases')}
+              >
+                {activeView === 'purchases' ? (
+                  <><ArrowLeft className="w-4 h-4 mr-2" />Tillbaka</>
+                ) : (
+                  <><Receipt className="w-4 h-4 mr-2" />Köphistorik</>
+                )}
               </Button>
               <Button 
                 variant={activeView === 'profile' ? 'default' : 'ghost'} 
@@ -393,6 +428,58 @@ const Dashboard = () => {
                   </Button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Purchases History View */}
+          {activeView === 'purchases' && (
+            <div className="max-w-3xl">
+              <div className="bg-card rounded-2xl shadow-elegant overflow-hidden">
+                {purchaseRecords.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <ShoppingBag className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">Inga köp registrerade ännu.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {/* Header */}
+                    <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50">
+                      <div className="col-span-5">Program</div>
+                      <div className="col-span-3">Datum</div>
+                      <div className="col-span-2 text-right">Belopp</div>
+                      <div className="col-span-2 text-right">Status</div>
+                    </div>
+                    {purchaseRecords.map((record) => (
+                      <div key={record.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-muted/30 transition-colors">
+                        <div className="col-span-5 flex items-center gap-3 min-w-0">
+                          {record.program_image ? (
+                            <img src={record.program_image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <Headphones className="w-5 h-5 text-primary" />
+                            </div>
+                          )}
+                          <span className="font-medium text-foreground text-sm truncate">{record.program_title}</span>
+                        </div>
+                        <div className="col-span-3 text-sm text-muted-foreground">
+                          {new Date(record.purchase_date).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </div>
+                        <div className="col-span-2 text-sm font-medium text-foreground text-right">
+                          {record.amount_paid === 0 ? 'Gratis' : `${record.amount_paid} kr`}
+                        </div>
+                        <div className="col-span-2 flex justify-end">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            Betald
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4 text-center">
+                Visar {purchaseRecords.length} köp totalt
+              </p>
             </div>
           )}
 
