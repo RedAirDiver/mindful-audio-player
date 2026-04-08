@@ -44,6 +44,15 @@ interface PurchasedProgram extends Program {
   tracks: AudioFile[];
 }
 
+interface PurchaseRecord {
+  id: string;
+  program_id: string;
+  purchase_date: string;
+  amount_paid: number;
+  program_title: string;
+  program_image: string | null;
+}
+
 const Dashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
   const { savedTracks, savingTrack, saveTrackOffline, removeTrackOffline, getDecryptedAudioUrl, isOnline } = useOfflineAudio();
@@ -58,6 +67,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<Profile>({ name: '', email: '', phone: '', company: '', address_line1: '', address_postcode: '', address_city: '', address_country: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [purchaseRecords, setPurchaseRecords] = useState<PurchaseRecord[]>([]);
 
   useEffect(() => {
     if (!authLoading && user) {
