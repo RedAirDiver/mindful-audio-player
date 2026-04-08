@@ -14,40 +14,91 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const LOGIN_HISTORY_FINGERPRINT_KEY = "mentaltraning:last-login-fingerprint";
+
+const getLoginFingerprint = (session: Session | null) => {
+  const user = session?.user;
+  if (!user?.id) return null;
+
+  return `${user.id}:${user.last_sign_in_at ?? session?.expires_at ?? "unknown"}`;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let hasSession = false;
+    let initialSessionFingerprint: string | null = null;
+    const isAuthCallback =
+      window.location.search.includes("code=") ||
+      window.location.hash.includes("access_token=") ||
+      window.location.hash.includes("refresh_token=");
 
-    // Set up auth state listener BEFORE checking session
+    const readStoredLoginFingerprint = () =>
+      window.localStorage.getItem(LOGIN_HISTORY_FINGERPRINT_KEY);
+
+    const rememberLoginFingerprint = (fingerprint: string | null) => {
+      if (!fingerprint) return;
+      window.localStorage.setItem(LOGIN_HISTORY_FINGERPRINT_KEY, fingerprint);
+    };
+
+    const clearLoginFingerprint = () => {
+      window.localStorage.removeItem(LOGIN_HISTORY_FINGERPRINT_KEY);
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
 
-        // Only log on actual sign-in, not session restore (INITIAL_SESSION)
-        if (event === 'SIGNED_IN' && currentSession?.user && hasSession) {
-          const u = currentSession.user;
-          const method = u.app_metadata?.provider || 'unknown';
-          supabase.from("login_history").insert({
+        const loginFingerprint = getLoginFingerprint(currentSession);
+
+        if (event === "INITIAL_SESSION") {
+          initialSessionFingerprint = loginFingerprint;
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
+          initialSessionFingerprint = null;
+          clearLoginFingerprint();
+          return;
+        }
+
+        if (event !== "SIGNED_IN" || !currentSession?.user || !loginFingerprint) {
+          return;
+        }
+
+        const isSessionRestore =
+          !isAuthCallback && loginFingerprint === initialSessionFingerprint;
+
+        if (readStoredLoginFingerprint() === loginFingerprint || isSessionRestore) {
+          rememberLoginFingerprint(loginFingerprint);
+          return;
+        }
+
+        rememberLoginFingerprint(loginFingerprint);
+
+        const u = currentSession.user;
+        const method = u.app_metadata?.provider || "unknown";
+
+        supabase
+          .from("login_history")
+          .insert({
             user_id: u.id,
             email: u.email,
             login_method: method,
             user_agent: navigator.userAgent,
-          }).then(() => {});
-        }
-
-        if (event === 'INITIAL_SESSION') {
-          hasSession = true;
-        }
+          })
+          .then(({ error }) => {
+            if (error && readStoredLoginFingerprint() === loginFingerprint) {
+              clearLoginFingerprint();
+            }
+          });
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
