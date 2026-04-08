@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock, User } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -138,9 +138,9 @@ const MobileLogin = () => {
 
             {isLogin && (
               <div className="text-right">
-                <button type="button" className="text-sm text-primary hover:underline">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                   Glömt lösenord?
-                </button>
+                </Link>
               </div>
             )}
 
