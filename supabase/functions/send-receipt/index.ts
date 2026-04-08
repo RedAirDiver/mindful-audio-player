@@ -82,7 +82,7 @@ serve(async (req) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kvitto - Unestal Academy</title>
+  <title>Kvitto - Mental Träning by Unestål</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f5f7fa;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f7fa;padding:40px 20px;">
@@ -90,11 +90,11 @@ serve(async (req) => {
       <td align="center">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
           
-          <!-- Header -->
+          <!-- Header with logo -->
           <tr>
-            <td style="background-color:#2b5a8c;padding:32px 40px;text-align:center;">
-              <h1 style="color:#ffffff;font-size:24px;margin:0;font-weight:600;">Unestal Academy</h1>
-              <p style="color:#c0d4e8;font-size:14px;margin:8px 0 0;">Kvitto / Faktura</p>
+            <td style="background-color:#2b5a8c;padding:28px 40px;text-align:center;">
+              <img src="https://jjllqcgywodfnaotnkxe.supabase.co/storage/v1/object/public/product-images/logo%2Flogo.png" alt="Unestål Education" width="200" style="display:block;margin:0 auto 12px;" />
+              <p style="color:#c0d4e8;font-size:14px;margin:0;">Kvitto / Faktura</p>
             </td>
           </tr>
 
@@ -187,10 +187,16 @@ serve(async (req) => {
           <!-- Footer -->
           <tr>
             <td style="background-color:#f7fafc;padding:24px 40px;text-align:center;border-top:1px solid #e2e8f0;">
-              <p style="font-size:12px;color:#a0aec0;margin:0 0 4px;">
-                Unestal Academy AB
+              <p style="font-size:12px;color:#718096;margin:0 0 4px;font-weight:600;">
+                Unestål Education
               </p>
-              <p style="font-size:12px;color:#a0aec0;margin:0;">
+              <p style="font-size:12px;color:#a0aec0;margin:0 0 2px;">
+                Hagalundsvägen 4, SE-702 30 Örebro
+              </p>
+              <p style="font-size:12px;color:#a0aec0;margin:0 0 8px;">
+                <a href="https://xn--mentaltrning-ncb.nu" style="color:#2b5a8c;text-decoration:none;">mentalträning.nu</a>
+              </p>
+              <p style="font-size:11px;color:#cbd5e0;margin:0;">
                 Detta kvitto skickades automatiskt efter genomfört köp.
               </p>
             </td>
