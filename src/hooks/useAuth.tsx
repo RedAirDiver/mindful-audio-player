@@ -94,16 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
     toast.success("Välkommen tillbaka!");
-    // Log login
-    const { data: { user: loggedUser } } = await supabase.auth.getUser();
-    if (loggedUser) {
-      supabase.from("login_history").insert({
-        user_id: loggedUser.id,
-        email,
-        login_method: "password",
-        user_agent: navigator.userAgent,
-      }).then(() => {});
-    }
   };
 
   const signOut = async () => {
