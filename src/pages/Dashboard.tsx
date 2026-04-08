@@ -444,14 +444,15 @@ const Dashboard = () => {
                   <div className="divide-y divide-border">
                     {/* Header */}
                     <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50">
-                      <div className="col-span-5">Program</div>
-                      <div className="col-span-3">Datum</div>
+                      <div className="col-span-4">Program</div>
+                      <div className="col-span-2">Datum</div>
                       <div className="col-span-2 text-right">Belopp</div>
                       <div className="col-span-2 text-right">Status</div>
+                      <div className="col-span-2 text-right">Kvitto</div>
                     </div>
                     {purchaseRecords.map((record) => (
                       <div key={record.id} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-muted/30 transition-colors">
-                        <div className="col-span-5 flex items-center gap-3 min-w-0">
+                        <div className="col-span-4 flex items-center gap-3 min-w-0">
                           {record.program_image ? (
                             <img src={record.program_image} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           ) : (
@@ -461,7 +462,7 @@ const Dashboard = () => {
                           )}
                           <span className="font-medium text-foreground text-sm truncate">{record.program_title}</span>
                         </div>
-                        <div className="col-span-3 text-sm text-muted-foreground">
+                        <div className="col-span-2 text-sm text-muted-foreground">
                           {new Date(record.purchase_date).toLocaleDateString('sv-SE', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </div>
                         <div className="col-span-2 text-sm font-medium text-foreground text-right">
@@ -471,6 +472,17 @@ const Dashboard = () => {
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                             Betald
                           </span>
+                        </div>
+                        <div className="col-span-2 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openReceiptWindow(record)}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Printer className="w-4 h-4 mr-1" />
+                            Visa
+                          </Button>
                         </div>
                       </div>
                     ))}
