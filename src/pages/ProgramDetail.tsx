@@ -664,7 +664,7 @@ const ProgramDetail = () => {
             {/* Right Sidebar: Price & Features */}
             <div className="space-y-6 lg:sticky lg:top-32 lg:self-start">
               {/* Price & Purchase */}
-              <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4">
+              <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4 overflow-hidden min-w-0">
                 {isPurchased ? (
                   <div className="flex items-center gap-3 text-primary">
                     <Check className="w-6 h-6" />

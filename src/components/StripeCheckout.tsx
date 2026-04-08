@@ -94,7 +94,7 @@ export const StripeCheckout = ({
             Avbryt
           </Button>
         </div>
-        <div id="checkout" className="rounded-xl overflow-hidden border border-border">
+        <div id="checkout" className="rounded-xl overflow-hidden border border-border w-full min-w-0">
           <EmbeddedCheckoutProvider
             stripe={stripePromise}
             options={{ fetchClientSecret }}
