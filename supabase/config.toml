@@ -22,3 +22,6 @@ verify_jwt = false
 
 [functions.verify-payment]
 verify_jwt = false
+
+[functions.send-receipt]
+verify_jwt = false
