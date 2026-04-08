@@ -220,6 +220,7 @@ serve(async (req) => {
       body: JSON.stringify({
         sender: { name: "Mental Träning by Unestål", email: "noreply@xn--mentaltrning-ncb.nu" },
         to: [{ email: profile.email, name: customerName }],
+        bcc: [{ email: "info@unestal.se", name: "Unestål Education" }],
         subject: `Kvitto – ${program.title}`,
         htmlContent: receiptHtml,
       }),
