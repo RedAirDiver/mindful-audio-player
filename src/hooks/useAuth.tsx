@@ -16,11 +16,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOGIN_HISTORY_FINGERPRINT_KEY = "mentaltraning:last-login-fingerprint";
 
+const getSessionId = (session: Session | null) => {
+  const accessToken = session?.access_token;
+  if (!accessToken) return null;
+
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return null;
+
+    const normalizedPayload = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const paddedPayload = normalizedPayload.padEnd(
+      Math.ceil(normalizedPayload.length / 4) * 4,
+      "="
+    );
+    const decodedPayload = JSON.parse(window.atob(paddedPayload)) as Record<string, unknown>;
+
+    return typeof decodedPayload.session_id === "string"
+      ? decodedPayload.session_id
+      : null;
+  } catch {
+    return null;
+  }
+};
+
 const getLoginFingerprint = (session: Session | null) => {
   const user = session?.user;
   if (!user?.id) return null;
 
-  return `${user.id}:${user.last_sign_in_at ?? session?.expires_at ?? "unknown"}`;
+  return `${user.id}:${getSessionId(session) ?? user.last_sign_in_at ?? session?.expires_at ?? "unknown"}`;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
