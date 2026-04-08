@@ -6,7 +6,7 @@ import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save, Receipt } from "lucide-react";
+import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save, Receipt, Printer } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
