@@ -174,6 +174,7 @@ const Dashboard = () => {
           id,
           program_id,
           purchase_date,
+          amount_paid,
           programs (
             id,
             title,
@@ -187,9 +188,21 @@ const Dashboard = () => {
 
       if (!purchases || purchases.length === 0) {
         setPurchasedPrograms([]);
+        setPurchaseRecords([]);
         setLoading(false);
         return;
       }
+
+      // Build purchase records for history view
+      const records: PurchaseRecord[] = purchases.map((p: any) => ({
+        id: p.id,
+        program_id: p.program_id,
+        purchase_date: p.purchase_date,
+        amount_paid: p.amount_paid,
+        program_title: p.programs?.title || 'Okänt program',
+        program_image: p.programs?.image_url || null,
+      }));
+      setPurchaseRecords(records);
 
       const programIds = purchases.map(p => p.program_id);
       // Fetch audio files via junction table
