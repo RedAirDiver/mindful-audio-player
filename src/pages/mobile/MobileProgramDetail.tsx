@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
+import { StripeCheckout } from "@/components/StripeCheckout";
 import { getReferralCode, clearReferralCode } from "@/hooks/useReferral";
 import AudioPlayer from "@/components/AudioPlayer";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
@@ -448,49 +449,32 @@ const MobileProgramDetail = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mt-4 bg-card rounded-2xl shadow-sm p-6 space-y-4"
+            className="mt-4 bg-card rounded-2xl shadow-sm p-6"
           >
-            {!user && (
-              <div className="space-y-3">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder="Din e-postadress"
-                    value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                    className="pl-10 h-12 rounded-xl"
-                  />
-                </div>
-                <Input
-                  type="text"
-                  placeholder="Ditt namn (valfritt)"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="h-12 rounded-xl"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Ett konto skapas automatiskt. Du får e-post för att välja lösenord.
+            {user ? (
+              <StripeCheckout
+                programId={program.id}
+                programTitle={program.title}
+                price={program.price}
+                onPurchaseComplete={() => {
+                  setIsPurchased(true);
+                  fetchProgram();
+                }}
+              />
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Logga in eller skapa ett konto för att köpa detta program.
                 </p>
+                <Button
+                  className="w-full h-12 rounded-xl text-base font-semibold"
+                  onClick={() => navigate("/login")}
+                >
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  Logga in för att köpa
+                </Button>
               </div>
             )}
-            <Button
-              className="w-full h-12 rounded-xl text-base font-semibold"
-              onClick={handlePurchase}
-              disabled={purchaseLoading}
-            >
-              {purchaseLoading ? (
-                <span className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Bearbetar...
-                </span>
-              ) : (
-                <>
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Köp nu
-                </>
-              )}
-            </Button>
           </motion.div>
         )}
 
