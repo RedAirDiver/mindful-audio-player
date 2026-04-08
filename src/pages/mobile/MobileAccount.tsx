@@ -10,6 +10,7 @@ import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 interface Purchase {
   id: string;
   purchase_date: string;
+  amount_paid: number;
   programs: {
     title: string;
     image_url: string | null;
@@ -45,10 +46,10 @@ const MobileAccount = () => {
     const [purchasesRes, profileRes] = await Promise.all([
       supabase
         .from("purchases")
-        .select("id, purchase_date, programs(title, image_url)")
+        .select("id, purchase_date, amount_paid, programs(title, image_url)")
         .eq("user_id", user.id)
         .order("purchase_date", { ascending: false })
-        .limit(3),
+        .limit(5),
       supabase
         .from("profiles")
         .select("name, email")
@@ -117,14 +118,20 @@ const MobileAccount = () => {
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <ShoppingBag className="w-5 h-5 text-primary" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-foreground text-sm truncate">
-                      {purchase.programs?.title || "Okänt program"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Köpt {formatDate(purchase.purchase_date)}
-                    </p>
-                  </div>
+                   <div className="min-w-0 flex-1">
+                     <p className="font-medium text-foreground text-sm truncate">
+                       {purchase.programs?.title || "Okänt program"}
+                     </p>
+                     <p className="text-xs text-muted-foreground">
+                       Köpt {formatDate(purchase.purchase_date)}
+                     </p>
+                   </div>
+                   <div className="text-right flex-shrink-0">
+                     <span className="text-sm font-medium text-foreground">
+                       {purchase.amount_paid === 0 ? 'Gratis' : `${purchase.amount_paid} kr`}
+                     </span>
+                     <p className="text-[10px] text-primary font-medium">Betald</p>
+                   </div>
                 </div>
               ))}
             </div>
