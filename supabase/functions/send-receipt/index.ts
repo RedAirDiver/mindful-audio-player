@@ -174,7 +174,7 @@ serve(async (req) => {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:32px;">
                 <tr>
                   <td align="center">
-                    <a href="https://mentaltraning.lovable.app/mina-program" style="display:inline-block;background-color:#2b5a8c;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="https://xn--mentaltrning-ncb.nu/mina-program" style="display:inline-block;background-color:#2b5a8c;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:14px;font-weight:600;">
                       Gå till mina program
                     </a>
                   </td>
@@ -212,7 +212,7 @@ serve(async (req) => {
         Accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Unestal Academy", email: "noreply@unestalacademy.se" },
+        sender: { name: "Unestal Academy", email: "noreply@xn--mentaltrning-ncb.nu" },
         to: [{ email: profile.email, name: customerName }],
         subject: `Kvitto – ${program.title}`,
         htmlContent: receiptHtml,
