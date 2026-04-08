@@ -26,6 +26,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
+
+        // Log login on SIGNED_IN (covers password, Google, signup, etc.)
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          const u = currentSession.user;
+          const method = u.app_metadata?.provider || 'unknown';
+          supabase.from("login_history").insert({
+            user_id: u.id,
+            email: u.email,
+            login_method: method,
+            user_agent: navigator.userAgent,
+          }).then(() => {});
+        }
       }
     );
 
