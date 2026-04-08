@@ -16,4 +16,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.download-missing-audio]
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.verify-payment]
 verify_jwt = false
