@@ -662,7 +662,7 @@ const ProgramDetail = () => {
             </div>
 
             {/* Right Sidebar: Price & Features */}
-            <div className="space-y-6 lg:sticky lg:top-32 lg:self-start">
+            <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-32 lg:self-start">
               {/* Price & Purchase */}
               <div className="bg-card rounded-2xl p-6 shadow-elegant space-y-4 overflow-hidden min-w-0">
                 {isPurchased ? (
