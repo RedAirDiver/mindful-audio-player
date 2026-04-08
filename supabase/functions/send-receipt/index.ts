@@ -191,6 +191,9 @@ serve(async (req) => {
                 Unestål Education
               </p>
               <p style="font-size:12px;color:#a0aec0;margin:0 0 2px;">
+                Org.nr: 556767-3347
+              </p>
+              <p style="font-size:12px;color:#a0aec0;margin:0 0 2px;">
                 Hagalundsvägen 4, SE-702 30 Örebro
               </p>
               <p style="font-size:12px;color:#a0aec0;margin:0 0 8px;">
