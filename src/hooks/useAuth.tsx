@@ -26,6 +26,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
+
+        // Log login on SIGNED_IN (covers password, Google, signup, etc.)
+        if (event === 'SIGNED_IN' && currentSession?.user) {
+          const u = currentSession.user;
+          const method = u.app_metadata?.provider || 'unknown';
+          supabase.from("login_history").insert({
+            user_id: u.id,
+            email: u.email,
+            login_method: method,
+            user_agent: navigator.userAgent,
+          }).then(() => {});
+        }
       }
     );
 
@@ -50,19 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     if (error) throw error;
     toast.success("Konto skapat! Du är nu inloggad.");
-    // Log signup login
-    try {
-      const { data: { user: newUser } } = await supabase.auth.getUser();
-      if (newUser) {
-        await supabase.from("login_history").insert({
-          user_id: newUser.id,
-          email,
-          login_method: "signup",
-          user_agent: navigator.userAgent,
-        });
-      }
-    } catch {}
-  
   };
 
   const signIn = async (email: string, password: string) => {
@@ -95,16 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
     toast.success("Välkommen tillbaka!");
-    // Log login
-    const { data: { user: loggedUser } } = await supabase.auth.getUser();
-    if (loggedUser) {
-      supabase.from("login_history").insert({
-        user_id: loggedUser.id,
-        email,
-        login_method: "password",
-        user_agent: navigator.userAgent,
-      }).then(() => {});
-    }
   };
 
   const signOut = async () => {
