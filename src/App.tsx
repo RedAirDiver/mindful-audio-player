@@ -43,6 +43,7 @@ import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
 import AdminCategoryAccess from "./pages/admin/AdminCategoryAccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import PaymentReturn from "./pages/PaymentReturn";
 
 const AppRoutes = () => {
   const isMobile = useIsMobileLayout();
@@ -60,6 +61,7 @@ const AppRoutes = () => {
       <Route path="/villkor" element={<Terms />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/kop-bekraftelse" element={<ProtectedRoute><PaymentReturn /></ProtectedRoute>} />
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/mitt-konto/profil" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
