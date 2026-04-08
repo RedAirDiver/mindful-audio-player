@@ -265,84 +265,129 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const openReceiptWindow = (record: PurchaseRecord) => {
+  const openReceiptWindow = async (record: PurchaseRecord) => {
+    const { default: jsPDF } = await import('jspdf');
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const w = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const contentW = w - margin * 2;
+    let y = 20;
+
     const date = new Date(record.purchase_date);
     const formattedDate = date.toLocaleDateString('sv-SE', { year: 'numeric', month: 'long', day: 'numeric' });
     const paid = record.amount_paid;
     const vatRate = 25;
     const vatAmount = Math.round((paid * vatRate / (100 + vatRate)) * 100) / 100;
     const exclVat = Math.round((paid - vatAmount) * 100) / 100;
+    const customerName = profile.name || 'Kund';
 
-    const html = `<!DOCTYPE html>
-<html lang="sv">
-<head>
-  <meta charset="UTF-8">
-  <title>Kvitto – ${record.program_title}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, 'Helvetica Neue', sans-serif; background: #fff; color: #1f3550; padding: 40px; max-width: 700px; margin: 0 auto; }
-    .header { background: #2b5a8c; color: #fff; padding: 28px 40px; text-align: center; border-radius: 12px 12px 0 0; }
-    .header img { max-width: 200px; margin-bottom: 8px; }
-    .header p { color: #c0d4e8; font-size: 14px; }
-    .body { padding: 40px; border: 1px solid #e2e8f0; border-top: none; }
-    .info-table { width: 100%; margin-bottom: 24px; }
-    .info-table td { padding: 4px 0; font-size: 14px; }
-    .info-table .label { color: #718096; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
-    .info-table .value { text-align: right; }
-    hr { border: none; border-top: 1px solid #e2e8f0; margin: 16px 0; }
-    .items-table { width: 100%; border-collapse: collapse; }
-    .items-header td { background: #f7fafc; padding: 12px 16px; font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; }
-    .items-row td { padding: 16px; font-size: 14px; }
-    .totals td { padding: 6px 16px; font-size: 13px; color: #718096; }
-    .totals .total-row td { font-size: 16px; font-weight: 700; color: #1f3550; padding: 12px 16px; border-top: 2px solid #2b5a8c; }
-    .footer { background: #f7fafc; padding: 24px 40px; text-align: center; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; }
-    .footer p { font-size: 12px; color: #718096; margin: 2px 0; }
-    .footer .company { font-weight: 600; }
-    .print-btn { display: block; margin: 20px auto; padding: 12px 32px; background: #2b5a8c; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .print-btn:hover { background: #1e4a73; }
-    @media print { .print-btn { display: none !important; } }
-  </style>
-</head>
-<body>
-  <button class="print-btn" onclick="window.print()">Skriv ut kvitto</button>
-  <div class="header">
-    <img src="https://jjllqcgywodfnaotnkxe.supabase.co/storage/v1/object/public/product-images/logo%2Flogo.png" alt="Unestål Education" />
-    <p>Kvitto / Faktura</p>
-  </div>
-  <div class="body">
-    <table class="info-table">
-      <tr><td class="label">Datum</td><td class="value">${formattedDate}</td></tr>
-      ${profile.company ? `<tr><td class="label">Företag</td><td class="value">${profile.company}</td></tr>` : ''}
-      <tr><td class="label">Kund</td><td class="value">${profile.name || 'Kund'}</td></tr>
-      ${profile.address_line1 ? `<tr><td class="label">Adress</td><td class="value">${profile.address_line1}${profile.address_postcode ? `, ${profile.address_postcode}` : ''} ${profile.address_city || ''}</td></tr>` : ''}
-    </table>
-    <hr />
-    <table class="items-table">
-      <tr class="items-header"><td>Produkt</td><td style="text-align:right">Belopp</td></tr>
-      <tr class="items-row"><td>${record.program_title}</td><td style="text-align:right">${paid === 0 ? 'Gratis' : `${paid.toFixed(2)} kr`}</td></tr>
-    </table>
-    ${paid > 0 ? `
-    <hr />
-    <table class="items-table totals">
-      <tr><td>Exkl. moms</td><td style="text-align:right">${exclVat.toFixed(2)} kr</td></tr>
-      <tr><td>Moms (${vatRate}%)</td><td style="text-align:right">${vatAmount.toFixed(2)} kr</td></tr>
-      <tr class="total-row"><td>Totalt</td><td style="text-align:right">${paid.toFixed(2)} kr</td></tr>
-    </table>` : ''}
-  </div>
-  <div class="footer">
-    <p class="company">Unestål Education</p>
-    <p>Org.nr: 556767-3347</p>
-    <p>Hagalundsvägen 4, SE-702 30 Örebro</p>
-    <p><a href="https://xn--mentaltrning-ncb.nu" style="color:#2b5a8c;text-decoration:none;">mentalträning.nu</a></p>
-  </div>
-</body>
-</html>`;
+    // Header background
+    doc.setFillColor(43, 90, 140);
+    doc.rect(0, 0, w, 40, 'F');
 
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(html);
-      w.document.close();
+    // Header text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Unestal Education', w / 2, 18, { align: 'center' });
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(192, 212, 232);
+    doc.text('Kvitto / Faktura', w / 2, 28, { align: 'center' });
+
+    y = 55;
+    doc.setTextColor(31, 53, 80);
+
+    // Info rows
+    const addInfoRow = (label: string, value: string) => {
+      doc.setFontSize(9);
+      doc.setTextColor(113, 128, 150);
+      doc.setFont('helvetica', 'normal');
+      doc.text(label.toUpperCase(), margin, y);
+      doc.setFontSize(11);
+      doc.setTextColor(31, 53, 80);
+      doc.text(value, w - margin, y, { align: 'right' });
+      y += 8;
+    };
+
+    addInfoRow('Datum', formattedDate);
+    if (profile.company) addInfoRow('Foretag', profile.company);
+    addInfoRow('Kund', customerName);
+    if (profile.address_line1) {
+      const addr = `${profile.address_line1}${profile.address_postcode ? `, ${profile.address_postcode}` : ''} ${profile.address_city || ''}`.trim();
+      addInfoRow('Adress', addr);
     }
+
+    // Divider
+    y += 4;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, y, w - margin, y);
+    y += 8;
+
+    // Items header
+    doc.setFillColor(247, 250, 252);
+    doc.rect(margin, y - 4, contentW, 10, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(113, 128, 150);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PRODUKT', margin + 4, y + 2);
+    doc.text('BELOPP', w - margin - 4, y + 2, { align: 'right' });
+    y += 12;
+
+    // Item row
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.setTextColor(31, 53, 80);
+    doc.text(record.program_title, margin + 4, y);
+    doc.text(paid === 0 ? 'Gratis' : `${paid.toFixed(2)} kr`, w - margin - 4, y, { align: 'right' });
+    y += 10;
+
+    if (paid > 0) {
+      // Totals divider
+      doc.setDrawColor(226, 232, 240);
+      doc.line(margin, y, w - margin, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      doc.setTextColor(113, 128, 150);
+      doc.text('Exkl. moms', margin + 4, y);
+      doc.text(`${exclVat.toFixed(2)} kr`, w - margin - 4, y, { align: 'right' });
+      y += 7;
+      doc.text(`Moms (${vatRate}%)`, margin + 4, y);
+      doc.text(`${vatAmount.toFixed(2)} kr`, w - margin - 4, y, { align: 'right' });
+      y += 4;
+
+      // Total line
+      doc.setDrawColor(43, 90, 140);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, w - margin, y);
+      y += 8;
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(31, 53, 80);
+      doc.text('Totalt', margin + 4, y);
+      doc.text(`${paid.toFixed(2)} kr`, w - margin - 4, y, { align: 'right' });
+      y += 10;
+    }
+
+    // Footer
+    y = doc.internal.pageSize.getHeight() - 30;
+    doc.setFillColor(247, 250, 252);
+    doc.rect(0, y - 6, w, 36, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(0, y - 6, w, y - 6);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(113, 128, 150);
+    doc.text('Unestal Education', w / 2, y + 2, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Org.nr: 556767-3347', w / 2, y + 8, { align: 'center' });
+    doc.text('Hagalundsvagen 4, SE-702 30 Orebro', w / 2, y + 14, { align: 'center' });
+    doc.text('mentaltraning.nu', w / 2, y + 20, { align: 'center' });
+
+    doc.save(`kvitto-${record.program_title.replace(/[^a-zA-Z0-9åäöÅÄÖ]/g, '-')}.pdf`);
   };
 
   if (loading || authLoading) {
