@@ -20,6 +20,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let hasSession = false;
+
     // Set up auth state listener BEFORE checking session
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
@@ -27,8 +29,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(currentSession?.user ?? null);
         setLoading(false);
 
-        // Log login on SIGNED_IN (covers password, Google, signup, etc.)
-        if (event === 'SIGNED_IN' && currentSession?.user) {
+        // Only log on actual sign-in, not session restore (INITIAL_SESSION)
+        if (event === 'SIGNED_IN' && currentSession?.user && hasSession) {
           const u = currentSession.user;
           const method = u.app_metadata?.provider || 'unknown';
           supabase.from("login_history").insert({
@@ -37,6 +39,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             login_method: method,
             user_agent: navigator.userAgent,
           }).then(() => {});
+        }
+
+        if (event === 'INITIAL_SESSION') {
+          hasSession = true;
         }
       }
     );
