@@ -6,7 +6,7 @@ import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save } from "lucide-react";
+import { Headphones, User, LogOut, ChevronRight, Download, Wifi, WifiOff, ShoppingBag, Trash2, AlertCircle, ArrowLeft, Save, Receipt } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { useOfflineAudio } from "@/hooks/useOfflineAudio";
@@ -49,7 +49,7 @@ const Dashboard = () => {
   const { savedTracks, savingTrack, saveTrackOffline, removeTrackOffline, getDecryptedAudioUrl, isOnline } = useOfflineAudio();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [activeView, setActiveView] = useState<'programs' | 'profile'>('programs');
+  const [activeView, setActiveView] = useState<'programs' | 'profile' | 'purchases'>('programs');
   const [purchasedPrograms, setPurchasedPrograms] = useState<PurchasedProgram[]>([]);
   const [selectedProgram, setSelectedProgram] = useState<PurchasedProgram | null>(null);
   const [selectedTrack, setSelectedTrack] = useState<AudioFile | null>(null);
