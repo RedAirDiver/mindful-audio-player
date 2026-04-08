@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Mail, Lock, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { lovable } from "@/integrations/lovable/index";
 import logo from "@/assets/logo.svg";
@@ -188,8 +189,18 @@ const Login = () => {
                 toast.error("Google-inloggning misslyckades. Försök igen.");
                 return;
               }
-              if (result.redirected) return;
-              navigate("/dashboard");
+                if (result.redirected) return;
+                // Log Google login
+                const { data: { user: gUser } } = await supabase.auth.getUser();
+                if (gUser) {
+                  supabase.from("login_history").insert({
+                    user_id: gUser.id,
+                    email: gUser.email,
+                    login_method: "google",
+                    user_agent: navigator.userAgent,
+                  }).then(() => {});
+                }
+                navigate("/dashboard");
             } catch {
               toast.error("Google-inloggning misslyckades. Försök igen.");
             } finally {

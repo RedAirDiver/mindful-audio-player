@@ -13,7 +13,8 @@ import {
   DatabaseBackup,
   LinkIcon,
   Ticket,
-  FolderPlus
+  FolderPlus,
+  History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.svg";
@@ -33,6 +34,7 @@ const AdminLayout = () => {
     { href: "/admin/affiliates", label: "Affiliates", icon: LinkIcon },
     { href: "/admin/rabattkoder", label: "Rabattkoder", icon: Ticket },
     { href: "/admin/kategori-tilldelning", label: "Kategoritilldelning", icon: FolderPlus },
+    { href: "/admin/login-historik", label: "Inloggningshistorik", icon: History },
   ];
 
   const isActive = (href: string, exact?: boolean) => {

@@ -217,6 +217,36 @@ export type Database = {
         }
         Relationships: []
       }
+      login_history: {
+        Row: {
+          email: string | null
+          id: string
+          ip_address: string | null
+          logged_in_at: string
+          login_method: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          logged_in_at?: string
+          login_method?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          ip_address?: string | null
+          logged_in_at?: string
+          login_method?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address_city: string | null
