@@ -11,9 +11,9 @@ import { ShoppingCart, Tag, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { getReferralCode } from "@/hooks/useReferral";
 
-// Use the publishable key from env
+// Stripe publishable key
 const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
+  "pk_live_51IdVt0DvcaIYapUFBceYidJSFnF8k8KyVGb4yZyDn7sSjUcWKN0KdAAYceCtsdrPFfdr9QjsDqRvOgbUZcrrDho800bW9cpl5n"
 );
 
 interface StripeCheckoutProps {
