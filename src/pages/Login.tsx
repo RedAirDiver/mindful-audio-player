@@ -189,18 +189,8 @@ const Login = () => {
                 toast.error("Google-inloggning misslyckades. Försök igen.");
                 return;
               }
-                if (result.redirected) return;
-                // Log Google login
-                const { data: { user: gUser } } = await supabase.auth.getUser();
-                if (gUser) {
-                  supabase.from("login_history").insert({
-                    user_id: gUser.id,
-                    email: gUser.email,
-                    login_method: "google",
-                    user_agent: navigator.userAgent,
-                  }).then(() => {});
-                }
-                navigate("/dashboard");
+              if (result.redirected) return;
+              navigate("/dashboard");
             } catch {
               toast.error("Google-inloggning misslyckades. Försök igen.");
             } finally {
