@@ -93,7 +93,7 @@ const AdminDashboard = () => {
                   <div>
                     <p className="font-medium">{purchase.programs?.title || "Okänd produkt"}</p>
                     <p className="text-sm text-muted-foreground">
-                      {purchase.profiles?.email || purchase.profiles?.name || "Okänd användare"}
+                      {purchase.profile?.email || purchase.profile?.name || "Okänd användare"}
                     </p>
                   </div>
                   <div className="text-right">
