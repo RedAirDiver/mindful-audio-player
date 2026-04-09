@@ -299,7 +299,7 @@ const AdminUsers = () => {
   const isUserAdmin = (userId: string) =>
     userRoles?.some((r) => r.user_id === userId && r.role === "admin");
 
-  const emptyForm = { name: "", email: "", password: "", phone: "", company: "", address_line1: "", address_city: "", address_postcode: "", address_country: "" };
+  const emptyForm = { name: "", email: "", password: "", confirmPassword: "", phone: "", company: "", address_line1: "", address_city: "", address_postcode: "", address_country: "" };
 
   const openCreate = () => {
     setEditingUser(null);
@@ -317,6 +317,7 @@ const AdminUsers = () => {
       name: profile.name || "",
       email: profile.email || "",
       password: "",
+      confirmPassword: "",
       phone: (profile as any).phone || "",
       company: (profile as any).company || "",
       address_line1: (profile as any).address_line1 || "",
@@ -331,6 +332,7 @@ const AdminUsers = () => {
     setIsDialogOpen(false);
     setEditingUser(null);
     setFormData({ ...emptyForm });
+    setShowPassword(false);
   };
 
   return (
