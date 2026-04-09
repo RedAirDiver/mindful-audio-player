@@ -30,8 +30,7 @@ const AdminDashboard = () => {
         .from("purchases")
         .select(`
           *,
-          programs (title),
-          profiles!purchases_user_id_fkey (email, name)
+          programs (title)
         `)
         .order("purchase_date", { ascending: false })
         .limit(5);
