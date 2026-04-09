@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      const { userId, name, email, phone, company, address_line1, address_city, address_postcode, address_country } = body;
+      const { userId, name, email, password, phone, company, address_line1, address_city, address_postcode, address_country } = body;
       if (!userId) {
         return new Response(
           JSON.stringify({ error: "userId is required" }),
