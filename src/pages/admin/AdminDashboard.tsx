@@ -26,17 +26,23 @@ const AdminDashboard = () => {
   const { data: recentPurchases } = useQuery({
     queryKey: ["admin-recent-purchases"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: purchases, error } = await supabase
         .from("purchases")
-        .select(`
-          *,
-          programs (title)
-        `)
+        .select(`*, programs (title)`)
         .order("purchase_date", { ascending: false })
         .limit(5);
 
       if (error) throw error;
-      return data;
+      if (!purchases || purchases.length === 0) return [];
+
+      const userIds = [...new Set(purchases.map((p: any) => p.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, email, name")
+        .in("user_id", userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      return purchases.map((p: any) => ({ ...p, profile: profileMap.get(p.user_id) }));
     },
   });
 
