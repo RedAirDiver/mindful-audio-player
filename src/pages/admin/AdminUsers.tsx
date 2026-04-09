@@ -253,6 +253,10 @@ const AdminUsers = () => {
 
   const saveUserMutation = useMutation({
     mutationFn: async () => {
+      // Validate password match
+      if (formData.password && formData.password !== formData.confirmPassword) {
+        throw new Error("Lösenorden matchar inte");
+      }
       if (editingUser) {
         // Update existing user
         const { data, error } = await supabase.functions.invoke("manage-user", {
@@ -261,6 +265,7 @@ const AdminUsers = () => {
             userId: editingUser.user_id,
             name: formData.name,
             email: formData.email,
+            password: formData.password || undefined,
             phone: formData.phone,
             company: formData.company,
             address_line1: formData.address_line1,
