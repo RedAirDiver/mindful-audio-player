@@ -45,6 +45,7 @@ import {
   LinkIcon,
   Save,
   Eye,
+  EyeOff,
   Trash2,
 } from "lucide-react";
 import {
@@ -731,23 +732,51 @@ const AdminUsers = () => {
                 placeholder="namn@exempel.se"
               />
             </div>
-            {!editingUser && (
-              <div>
-                <Label htmlFor="user-password">
-                  Lösenord{" "}
-                  <span className="text-muted-foreground font-normal">
-                    (lämna tomt för auto-genererat)
-                  </span>
-                </Label>
+            <div>
+              <Label htmlFor="user-password">
+                {editingUser ? "Nytt lösenord" : "Lösenord"}{" "}
+                <span className="text-muted-foreground font-normal">
+                  {editingUser ? "(lämna tomt för att behålla)" : "(lämna tomt för auto-genererat)"}
+                </span>
+              </Label>
+              <div className="relative">
                 <Input
                   id="user-password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
                   placeholder="••••••••"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-10 w-10"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            {formData.password && (
+              <div>
+                <Label htmlFor="user-confirm-password">Bekräfta lösenord</Label>
+                <div className="relative">
+                  <Input
+                    id="user-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData({ ...formData, confirmPassword: e.target.value })
+                    }
+                    placeholder="••••••••"
+                  />
+                </div>
+                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                  <p className="text-sm text-destructive mt-1">Lösenorden matchar inte</p>
+                )}
               </div>
             )}
             <div>
