@@ -78,6 +78,7 @@ const AdminUsers = () => {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
     company: "",
     address_line1: "",
@@ -85,6 +86,7 @@ const AdminUsers = () => {
     address_postcode: "",
     address_country: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [affEditForm, setAffEditForm] = useState<{
     userId: string;
     referral_code: string;
