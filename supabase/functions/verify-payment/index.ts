@@ -58,7 +58,10 @@ serve(async (req) => {
     const programId = session.metadata?.program_id;
     const discountCode = session.metadata?.discount_code;
     const referralCode = session.metadata?.referral_code;
-    const amountPaid = parseFloat(session.metadata?.amount_paid || "0");
+    // Use Stripe's actual charged amount (in öre), fall back to metadata
+    const amountPaid = session.amount_total
+      ? session.amount_total / 100
+      : parseFloat(session.metadata?.amount_paid || "0");
 
     if (!userId || !programId) {
       return new Response(JSON.stringify({ error: "Metadata saknas i sessionen" }), {
