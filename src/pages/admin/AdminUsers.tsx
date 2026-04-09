@@ -45,6 +45,7 @@ import {
   LinkIcon,
   Save,
   Eye,
+  EyeOff,
   Trash2,
 } from "lucide-react";
 import {
@@ -78,6 +79,7 @@ const AdminUsers = () => {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
     phone: "",
     company: "",
     address_line1: "",
@@ -85,6 +87,7 @@ const AdminUsers = () => {
     address_postcode: "",
     address_country: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [affEditForm, setAffEditForm] = useState<{
     userId: string;
     referral_code: string;
@@ -251,6 +254,10 @@ const AdminUsers = () => {
 
   const saveUserMutation = useMutation({
     mutationFn: async () => {
+      // Validate password match
+      if (formData.password && formData.password !== formData.confirmPassword) {
+        throw new Error("Lösenorden matchar inte");
+      }
       if (editingUser) {
         // Update existing user
         const { data, error } = await supabase.functions.invoke("manage-user", {
@@ -259,6 +266,7 @@ const AdminUsers = () => {
             userId: editingUser.user_id,
             name: formData.name,
             email: formData.email,
+            password: formData.password || undefined,
             phone: formData.phone,
             company: formData.company,
             address_line1: formData.address_line1,
@@ -297,7 +305,7 @@ const AdminUsers = () => {
   const isUserAdmin = (userId: string) =>
     userRoles?.some((r) => r.user_id === userId && r.role === "admin");
 
-  const emptyForm = { name: "", email: "", password: "", phone: "", company: "", address_line1: "", address_city: "", address_postcode: "", address_country: "" };
+  const emptyForm = { name: "", email: "", password: "", confirmPassword: "", phone: "", company: "", address_line1: "", address_city: "", address_postcode: "", address_country: "" };
 
   const openCreate = () => {
     setEditingUser(null);
@@ -315,6 +323,7 @@ const AdminUsers = () => {
       name: profile.name || "",
       email: profile.email || "",
       password: "",
+      confirmPassword: "",
       phone: (profile as any).phone || "",
       company: (profile as any).company || "",
       address_line1: (profile as any).address_line1 || "",
@@ -329,6 +338,7 @@ const AdminUsers = () => {
     setIsDialogOpen(false);
     setEditingUser(null);
     setFormData({ ...emptyForm });
+    setShowPassword(false);
   };
 
   return (
@@ -722,23 +732,51 @@ const AdminUsers = () => {
                 placeholder="namn@exempel.se"
               />
             </div>
-            {!editingUser && (
-              <div>
-                <Label htmlFor="user-password">
-                  Lösenord{" "}
-                  <span className="text-muted-foreground font-normal">
-                    (lämna tomt för auto-genererat)
-                  </span>
-                </Label>
+            <div>
+              <Label htmlFor="user-password">
+                {editingUser ? "Nytt lösenord" : "Lösenord"}{" "}
+                <span className="text-muted-foreground font-normal">
+                  {editingUser ? "(lämna tomt för att behålla)" : "(lämna tomt för auto-genererat)"}
+                </span>
+              </Label>
+              <div className="relative">
                 <Input
                   id="user-password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
                   placeholder="••••••••"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-10 w-10"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            {formData.password && (
+              <div>
+                <Label htmlFor="user-confirm-password">Bekräfta lösenord</Label>
+                <div className="relative">
+                  <Input
+                    id="user-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData({ ...formData, confirmPassword: e.target.value })
+                    }
+                    placeholder="••••••••"
+                  />
+                </div>
+                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                  <p className="text-sm text-destructive mt-1">Lösenorden matchar inte</p>
+                )}
               </div>
             )}
             <div>

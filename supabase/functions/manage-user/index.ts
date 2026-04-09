@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      const { userId, name, email, phone, company, address_line1, address_city, address_postcode, address_country } = body;
+      const { userId, name, email, password, phone, company, address_line1, address_city, address_postcode, address_country } = body;
       if (!userId) {
         return new Response(
           JSON.stringify({ error: "userId is required" }),
@@ -129,9 +129,18 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update auth email if changed
-      if (email) {
-        await adminClient.auth.admin.updateUserById(userId, { email });
+      // Update auth email/password if changed
+      const authUpdates: Record<string, string> = {};
+      if (email) authUpdates.email = email;
+      if (password) authUpdates.password = password;
+      if (Object.keys(authUpdates).length > 0) {
+        const { error: authError } = await adminClient.auth.admin.updateUserById(userId, authUpdates);
+        if (authError) {
+          return new Response(
+            JSON.stringify({ error: authError.message }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
       }
 
       return new Response(
