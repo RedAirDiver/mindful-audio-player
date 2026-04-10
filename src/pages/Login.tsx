@@ -219,9 +219,9 @@ const Login = () => {
         {/* Help Text */}
         <p className="text-center text-sm text-muted-foreground">
           Genom att logga in godkänner du våra{' '}
-          <Link to="/terms" className="text-primary hover:underline">villkor</Link>
+          <Link to="/villkor" className="text-primary hover:underline">villkor</Link>
           {' '}och{' '}
-          <Link to="/privacy" className="text-primary hover:underline">integritetspolicy</Link>.
+          <Link to="/integritetspolicy" className="text-primary hover:underline">integritetspolicy</Link>.
         </p>
       </div>
     </div>
