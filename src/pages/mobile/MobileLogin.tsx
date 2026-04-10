@@ -164,7 +164,10 @@ const MobileLogin = () => {
         </motion.div>
 
         <p className="text-center text-xs text-muted-foreground mt-6 px-4">
-          Genom att logga in godkänner du våra villkor och integritetspolicy.
+          Genom att logga in godkänner du våra{' '}
+          <Link to="/villkor" className="text-primary hover:underline">villkor</Link>
+          {' '}och{' '}
+          <Link to="/integritetspolicy" className="text-primary hover:underline">integritetspolicy</Link>.
         </p>
       </main>
 

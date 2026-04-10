@@ -27,6 +27,7 @@ import AffiliateApply from "./pages/AffiliateApply";
 import NotFound from "./pages/NotFound";
 import FAQ from "./pages/FAQ";
 import Terms from "./pages/Terms";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -60,6 +61,7 @@ const AppRoutes = () => {
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/faq" element={<FAQ />} />
       <Route path="/villkor" element={<Terms />} />
+      <Route path="/integritetspolicy" element={<PrivacyPolicy />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/kop-bekraftelse" element={<ProtectedRoute><PaymentReturn /></ProtectedRoute>} />

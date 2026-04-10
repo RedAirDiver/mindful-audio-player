@@ -67,7 +67,10 @@ const Footer = () => {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-background/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm opacity-60">
           <p>© {new Date().getFullYear()} Mentalträning. Alla rättigheter förbehållna.</p>
-          <Link to="/villkor" className="hover:text-background transition-colors">Användarvillkor &amp; Cookies</Link>
+          <div className="flex gap-4">
+            <Link to="/villkor" className="hover:text-background transition-colors">Användarvillkor &amp; Cookies</Link>
+            <Link to="/integritetspolicy" className="hover:text-background transition-colors">Integritetspolicy</Link>
+          </div>
         </div>
       </div>
     </footer>
