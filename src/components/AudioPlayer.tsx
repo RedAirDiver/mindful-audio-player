@@ -119,6 +119,60 @@ const AudioPlayer = ({
     return () => clearInterval(interval);
   }, [isPlaying, duration, audioUrl]);
 
+  // Register Media Session API for background playback on mobile
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title,
+      artist: subtitle || artist,
+      album: artist,
+      artwork: coverImage ? [
+        { src: coverImage, sizes: '256x256', type: 'image/jpeg' },
+        { src: coverImage, sizes: '512x512', type: 'image/jpeg' },
+      ] : [],
+    });
+
+    navigator.mediaSession.setActionHandler('play', () => {
+      audioRef.current?.play();
+      setIsPlaying(true);
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      audioRef.current?.pause();
+      setIsPlaying(false);
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', canSkipPrev ? () => onSkipPrev?.() : null);
+    navigator.mediaSession.setActionHandler('nexttrack', canSkipNext ? () => onSkipNext?.() : null);
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (audioRef.current && details.seekTime != null) {
+        audioRef.current.currentTime = details.seekTime;
+        setCurrentTime(details.seekTime);
+      }
+    });
+
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null);
+      navigator.mediaSession.setActionHandler('pause', null);
+      navigator.mediaSession.setActionHandler('previoustrack', null);
+      navigator.mediaSession.setActionHandler('nexttrack', null);
+      navigator.mediaSession.setActionHandler('seekto', null);
+    };
+  }, [title, artist, subtitle, coverImage, canSkipPrev, canSkipNext, onSkipPrev, onSkipNext]);
+
+  // Update Media Session position state
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !isPlaying) return;
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: duration || 0,
+        playbackRate: 1,
+        position: Math.min(currentTime, duration || 0),
+      });
+    } catch {
+      // Some browsers don't support setPositionState
+    }
+  }, [currentTime, duration, isPlaying]);
+
   // Sync audio element events to state
   useEffect(() => {
     const audio = audioRef.current;
