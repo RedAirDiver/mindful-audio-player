@@ -43,6 +43,7 @@ const AudioPlayer = ({
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const animFrameRef = useRef<number>(0);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   // Reset state when audioUrl changes (new track)
   useEffect(() => {
@@ -172,6 +173,41 @@ const AudioPlayer = ({
       // Some browsers don't support setPositionState
     }
   }, [currentTime, duration, isPlaying]);
+
+  // Wake Lock: keep screen on while audio is playing
+  useEffect(() => {
+    if (!('wakeLock' in navigator)) return;
+
+    const requestWakeLock = async () => {
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+        wakeLockRef.current.addEventListener('release', () => {
+          wakeLockRef.current = null;
+        });
+      } catch {
+        // Wake Lock request failed (e.g. low battery, tab not visible)
+      }
+    };
+
+    if (isPlaying) {
+      requestWakeLock();
+      // Re-acquire wake lock when tab becomes visible again
+      const handleVisibility = () => {
+        if (document.visibilityState === 'visible' && isPlaying) {
+          requestWakeLock();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibility);
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibility);
+        wakeLockRef.current?.release();
+        wakeLockRef.current = null;
+      };
+    } else {
+      wakeLockRef.current?.release();
+      wakeLockRef.current = null;
+    }
+  }, [isPlaying]);
 
   // Sync audio element events to state
   useEffect(() => {
