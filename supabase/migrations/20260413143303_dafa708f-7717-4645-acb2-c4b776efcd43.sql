@@ -1,0 +1,1 @@
+UPDATE purchases SET amount_paid = programs.price FROM programs WHERE purchases.program_id = programs.id AND purchases.amount_paid = 0 AND programs.price > 0;
