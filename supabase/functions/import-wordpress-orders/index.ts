@@ -10,6 +10,7 @@ interface OrderData {
   orderId: number;
   email: string;
   orderTotal: number;
+  hasOrderTotal: boolean;
   orderDate: string;
   status: string;
   productIds: number[]; // WooCommerce product IDs
@@ -133,7 +134,8 @@ function parseOrdersFromDataPost(xmlText: string): OrderData[] {
     if (!email) continue;
 
     const orderId = parseInt(getVal("OrderID"), 10) || 0;
-    const orderTotal = parseLocalizedNumber(getVal("OrderTotal"));
+    const orderTotalRaw = getVal("OrderTotal");
+    const orderTotal = parseLocalizedNumber(orderTotalRaw);
     const wpUserId = parseInt(getVal("CustomerUserID"), 10) || undefined;
 
     // Date: prefer _paid_date, then _date_paid (unix), then OrderDate
@@ -146,6 +148,7 @@ function parseOrdersFromDataPost(xmlText: string): OrderData[] {
       orderId,
       email,
       orderTotal,
+      hasOrderTotal: orderTotalRaw !== "",
       orderDate: finalDate,
       status,
       productIds: [], // This format doesn't include line items
@@ -183,6 +186,7 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
     let metaMatch;
     let email = "";
     let orderTotal = 0;
+    let hasOrderTotal = false;
     let paidDate = "";
     const productIds: number[] = [];
 
@@ -203,7 +207,10 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
           break;
         case "_order_total":
         case "_order_total_base":
-          if (orderTotal === 0) orderTotal = parseLocalizedNumber(value);
+          if (value !== "" && !hasOrderTotal) {
+            orderTotal = parseLocalizedNumber(value);
+            hasOrderTotal = true;
+          }
           break;
         case "_paid_date":
         case "_date_paid":
@@ -240,6 +247,7 @@ function parseOrdersFromXml(xmlText: string): OrderData[] {
       orderId,
       email,
       orderTotal,
+      hasOrderTotal,
       orderDate: finalDate,
       status,
       productIds,
@@ -299,7 +307,8 @@ function parseOrdersFromCsv(csvText: string): OrderData[] {
     if (!email) continue;
 
     const orderId = iOrder >= 0 ? parseInt(cols[iOrder], 10) || i : i;
-    const orderTotal = iTotal >= 0 ? parseFloat(cols[iTotal]) || 0 : 0;
+    const orderTotalRaw = iTotal >= 0 ? cols[iTotal] || "" : "";
+    const orderTotal = orderTotalRaw ? parseLocalizedNumber(orderTotalRaw) : 0;
     const orderDate = iDate >= 0 ? cols[iDate] || "" : "";
     const status = iStatus >= 0 ? cols[iStatus]?.toLowerCase().trim() || "completed" : "completed";
 
@@ -323,11 +332,16 @@ function parseOrdersFromCsv(csvText: string): OrderData[] {
       for (const pid of productIds) {
         if (!existing.productIds.includes(pid)) existing.productIds.push(pid);
       }
+      if (!existing.hasOrderTotal && orderTotalRaw !== "") {
+        existing.orderTotal = orderTotal;
+        existing.hasOrderTotal = true;
+      }
     } else {
       orderMap.set(key, {
         orderId,
         email,
         orderTotal,
+        hasOrderTotal: orderTotalRaw !== "",
         orderDate,
         status,
         productIds,
@@ -515,32 +529,37 @@ Deno.serve(async (req) => {
       .select("id, wc_id, price, title");
 
     const wcIdToProgram = new Map<number, { id: string; price: number; title: string }>();
+    const programPriceById = new Map<string, number>();
     const priceToPrograms = new Map<number, { id: string; wc_id: number | null; title: string }[]>();
     programs?.forEach((p) => {
-      if (p.wc_id) wcIdToProgram.set(p.wc_id, { id: p.id, price: p.price, title: p.title });
-      const price = Number(p.price);
+      const price = Number(p.price) || 0;
+      programPriceById.set(p.id, price);
+      if (p.wc_id) wcIdToProgram.set(p.wc_id, { id: p.id, price, title: p.title });
       if (!priceToPrograms.has(price)) priceToPrograms.set(price, []);
       priceToPrograms.get(price)!.push({ id: p.id, wc_id: p.wc_id, title: p.title });
     });
 
-    // Load existing purchases to avoid duplicates (paginated)
-    const existingSet = new Set<string>();
+    // Load existing purchases to avoid duplicates and allow correcting earlier zero-value imports
+    const existingPurchases = new Map<string, { id: string; amount_paid: number }>();
     let purchaseOffset = 0;
     while (true) {
       const { data: existingPage } = await supabase
         .from("purchases")
-        .select("user_id, program_id")
+        .select("id, user_id, program_id, amount_paid")
         .range(purchaseOffset, purchaseOffset + PAGE - 1);
       if (!existingPage || existingPage.length === 0) break;
       for (const p of existingPage) {
-        existingSet.add(`${p.user_id}:${p.program_id}`);
+        existingPurchases.set(`${p.user_id}:${p.program_id}`, {
+          id: p.id,
+          amount_paid: Number(p.amount_paid) || 0,
+        });
       }
       if (existingPage.length < PAGE) break;
       purchaseOffset += PAGE;
     }
 
     console.log(
-      `Profiles: ${emailToUserId.size}, Programs: ${wcIdToProgram.size}, Existing purchases: ${existingSet.size}`
+      `Profiles: ${emailToUserId.size}, Programs: ${wcIdToProgram.size}, Existing purchases: ${existingPurchases.size}`
     );
 
     const results = {
@@ -548,6 +567,7 @@ Deno.serve(async (req) => {
       matched_users: 0,
       unmatched_users: 0,
       created: 0,
+      updated_amounts: 0,
       skipped_duplicate: 0,
       skipped_no_product: 0,
       errors: [] as { orderId: number; email: string; error: string }[],
@@ -555,6 +575,7 @@ Deno.serve(async (req) => {
     };
 
     const toInsert: { user_id: string; program_id: string; amount_paid: number; purchase_date: string }[] = [];
+    const toUpdate: { id: string; amount_paid: number }[] = [];
 
     for (const order of orders) {
       // Try email first, then wp_user_id
@@ -597,20 +618,29 @@ Deno.serve(async (req) => {
 
       for (const prog of matchedPrograms) {
         const key = `${userId}:${prog.id}`;
-        if (existingSet.has(key)) {
-          results.skipped_duplicate++;
+        const fallbackAmount = programPriceById.get(prog.id) || 0;
+        const amountPaid =
+          matchedPrograms.length === 1
+            ? order.hasOrderTotal
+              ? order.orderTotal
+              : fallbackAmount
+            : order.hasOrderTotal && order.orderTotal === 0
+              ? 0
+              : fallbackAmount;
+
+        const existingPurchase = existingPurchases.get(key);
+        if (existingPurchase) {
+          if (existingPurchase.amount_paid === 0 && amountPaid > 0) {
+            toUpdate.push({ id: existingPurchase.id, amount_paid: amountPaid });
+            existingPurchases.set(key, { ...existingPurchase, amount_paid: amountPaid });
+            results.updated_amounts++;
+          } else {
+            results.skipped_duplicate++;
+          }
           continue;
         }
 
         const purchaseDate = safeDateToISO(order.orderDate) || new Date().toISOString();
-        const amountPaid =
-          matchedPrograms.length === 1
-            ? order.orderTotal
-            : wcIdToProgram.get(
-                order.productIds.find(
-                  (pid) => wcIdToProgram.get(pid)?.id === prog.id
-                ) || 0
-              )?.price || 0;
 
         toInsert.push({
           user_id: userId,
@@ -619,8 +649,21 @@ Deno.serve(async (req) => {
           purchase_date: purchaseDate,
         });
 
-        existingSet.add(key);
+        existingPurchases.set(key, { id: `pending-${toInsert.length}`, amount_paid: amountPaid });
         results.created++;
+      }
+    }
+
+    if (!dryRun && toUpdate.length > 0) {
+      for (const update of toUpdate) {
+        const { error } = await supabase
+          .from("purchases")
+          .update({ amount_paid: update.amount_paid })
+          .eq("id", update.id);
+
+        if (error) {
+          results.errors.push({ orderId: 0, email: `update ${update.id}`, error: error.message });
+        }
       }
     }
 
