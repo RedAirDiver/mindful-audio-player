@@ -14,7 +14,8 @@ import {
   LinkIcon,
   Ticket,
   FolderPlus,
-  History
+  History,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.svg";
@@ -35,6 +36,7 @@ const AdminLayout = () => {
     { href: "/admin/rabattkoder", label: "Rabattkoder", icon: Ticket },
     { href: "/admin/kategori-tilldelning", label: "Kategoritilldelning", icon: FolderPlus },
     { href: "/admin/login-historik", label: "Inloggningshistorik", icon: History },
+    { href: "/admin/analys", label: "Analys", icon: BarChart3 },
   ];
 
   const isActive = (href: string, exact?: boolean) => {

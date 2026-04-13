@@ -43,6 +43,7 @@ import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
 import AdminCategoryAccess from "./pages/admin/AdminCategoryAccess";
 import AdminLoginHistory from "./pages/admin/AdminLoginHistory";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentReturn from "./pages/PaymentReturn";
@@ -83,6 +84,7 @@ const AppRoutes = () => {
         <Route path="kategori-kop" element={<AdminCategoryPurchases />} />
         <Route path="kategori-tilldelning" element={<AdminCategoryAccess />} />
         <Route path="login-historik" element={<AdminLoginHistory />} />
+        <Route path="analys" element={<AdminAnalytics />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
