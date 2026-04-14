@@ -18,8 +18,10 @@ interface NewsArticle {
   author: string | null;
 }
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | undefined) => {
+  if (!dateStr) return null;
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
   return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 };
 
