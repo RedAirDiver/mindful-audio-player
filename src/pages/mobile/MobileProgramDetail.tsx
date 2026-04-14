@@ -449,7 +449,7 @@ const MobileProgramDetail = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mt-4 bg-card rounded-2xl shadow-sm p-6"
+            className="mt-4 bg-card rounded-2xl shadow-sm p-4 overflow-hidden"
           >
             {user ? (
               <StripeCheckout
