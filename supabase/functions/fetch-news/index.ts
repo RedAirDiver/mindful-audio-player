@@ -6,93 +6,11 @@ const corsHeaders = {
 interface NewsArticle {
   title: string;
   summary: string;
-  url: string | null;
+  url: string;
   imageUrl: string | null;
   categories: string[];
-}
-
-function parseArticles(html: string): NewsArticle[] {
-  const articles: NewsArticle[] = [];
-  
-  // Split by article tags more reliably
-  const parts = html.split(/<article\b/);
-  
-  for (let i = 1; i < parts.length; i++) {
-    const part = parts[i];
-    const closeIdx = part.indexOf('</article>');
-    if (closeIdx === -1) continue;
-    
-    const fullTag = '<article' + part.substring(0, closeIdx);
-    
-    // Extract classes
-    const classMatch = fullTag.match(/class="([^"]*)"/);
-    const classes = classMatch ? classMatch[1] : '';
-    
-    // Extract categories
-    const cats: string[] = [];
-    const catRegex = /category-(\S+)/g;
-    let catMatch;
-    while ((catMatch = catRegex.exec(classes)) !== null) {
-      cats.push(catMatch[1]);
-    }
-
-    // Extract all text from entry-summary - get everything between entry-summary div tags
-    const summaryStart = fullTag.indexOf('entry-summary');
-    if (summaryStart === -1) continue;
-    
-    // Find the content after entry-summary div opening
-    const afterSummary = fullTag.substring(summaryStart);
-    const firstClose = afterSummary.indexOf('>');
-    const contentAfter = afterSummary.substring(firstClose + 1);
-    
-    // Get all paragraph text
-    const paragraphs: string[] = [];
-    const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/g;
-    let pMatch;
-    while ((pMatch = pRegex.exec(contentAfter)) !== null) {
-      const text = pMatch[1]
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&gt;/g, '>')
-        .replace(/&lt;/g, '<')
-        .replace(/&amp;/g, '&')
-        .replace(/&#8211;/g, '–')
-        .replace(/&#8217;/g, "'")
-        .replace(/\s+/g, ' ')
-        .trim();
-      if (text && !text.startsWith('Läs mer')) {
-        paragraphs.push(text);
-      }
-    }
-    
-    const summary = paragraphs.join(' ').trim();
-    if (!summary || summary.length < 10) continue;
-
-    // Extract all links from the article
-    const allLinks: string[] = [];
-    const linkRegex = /href="(https:\/\/www\.unestaleducation\.se\/[^"]+)"/g;
-    let linkMatch;
-    while ((linkMatch = linkRegex.exec(fullTag)) !== null) {
-      allLinks.push(linkMatch[1]);
-    }
-    const url = allLinks[0] || null;
-
-    // Extract image
-    const imgMatch = fullTag.match(/src="(https:\/\/[^"]+\.(jpg|jpeg|png|gif|webp)[^"]*)"/i);
-    const imageUrl = imgMatch ? imgMatch[1] : null;
-
-    // Extract title from <a title="...">
-    const titleMatch = fullTag.match(/title="([^"]+)"/);
-    let title = titleMatch ? titleMatch[1].replace(/&#8211;/g, '–').replace(/&#8217;/g, "'") : '';
-    if (!title) {
-      const firstSentence = summary.match(/^[^.!?]+[.!?]/);
-      title = firstSentence ? firstSentence[0] : summary.substring(0, 80) + '…';
-    }
-
-    articles.push({ title, summary, url, imageUrl, categories: cats });
-  }
-
-  return articles;
+  date: string;
+  author: string | null;
 }
 
 Deno.serve(async (req) => {
@@ -102,34 +20,86 @@ Deno.serve(async (req) => {
 
   try {
     const { page = 1 } = await req.json().catch(() => ({ page: 1 }));
+    const perPage = 10;
 
-    const pageUrl = page > 1
-      ? `https://www.unestaleducation.se/aktuellt/page/${page}/`
-      : 'https://www.unestaleducation.se/aktuellt/';
+    const apiUrl = `https://www.unestaleducation.se/wp-json/wp/v2/posts?per_page=${perPage}&page=${page}&_embed`;
+    console.log('Fetching news from WP API:', apiUrl);
 
-    console.log('Fetching news from:', pageUrl);
-
-    const response = await fetch(pageUrl, {
+    const response = await fetch(apiUrl, {
       headers: { 'User-Agent': 'UnestålApp/1.0' },
     });
 
     if (!response.ok) {
+      const status = response.status;
+      if (status === 400) {
+        // Beyond last page
+        return new Response(
+          JSON.stringify({ success: true, articles: [], page, hasNextPage: false }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       return new Response(
-        JSON.stringify({ success: false, error: `Failed to fetch: ${response.status}` }),
+        JSON.stringify({ success: false, error: `WP API error: ${status}` }),
         { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const html = await response.text();
-    const articles = parseArticles(html);
+    const totalPages = parseInt(response.headers.get('X-WP-TotalPages') || '1', 10);
+    const posts = await response.json();
 
-    // Check if there's a next page
-    const hasNextPage = html.includes(`/aktuellt/page/${page + 1}/`);
+    const articles: NewsArticle[] = posts.map((post: any) => {
+      // Clean excerpt HTML
+      const rawExcerpt = post.excerpt?.rendered || '';
+      const summary = rawExcerpt
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&#8230;/g, '…')
+        .replace(/&#8211;/g, '–')
+        .replace(/&#8217;/g, "'")
+        .replace(/&amp;/g, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
 
-    console.log(`Parsed ${articles.length} articles from page ${page}`);
+      // Clean title
+      const title = (post.title?.rendered || '')
+        .replace(/&#8211;/g, '–')
+        .replace(/&#8217;/g, "'")
+        .replace(/&#8220;/g, '"')
+        .replace(/&#8221;/g, '"')
+        .replace(/&amp;/g, '&');
+
+      // Embedded data
+      const embedded = post._embedded || {};
+
+      // Author
+      const authorData = embedded.author?.[0];
+      const author = authorData?.name || null;
+
+      // Featured image
+      const media = embedded['wp:featuredmedia']?.[0];
+      const imageUrl = media?.source_url || media?.media_details?.sizes?.medium?.source_url || null;
+
+      // Categories
+      const terms = embedded['wp:term']?.[0] || [];
+      const categories = terms
+        .filter((t: any) => typeof t === 'object' && t.name)
+        .map((t: any) => t.name as string);
+
+      return {
+        title,
+        summary,
+        url: post.link,
+        imageUrl,
+        categories,
+        date: post.date,
+        author,
+      };
+    }).filter((a: NewsArticle) => a.summary.length > 5);
+
+    console.log(`Parsed ${articles.length} articles from page ${page}/${totalPages}`);
 
     return new Response(
-      JSON.stringify({ success: true, articles, page, hasNextPage }),
+      JSON.stringify({ success: true, articles, page, hasNextPage: page < totalPages }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
