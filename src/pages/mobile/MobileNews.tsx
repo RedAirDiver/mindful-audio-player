@@ -18,8 +18,10 @@ interface NewsArticle {
   author: string | null;
 }
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string | undefined) => {
+  if (!dateStr) return null;
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
   return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 };
 
@@ -113,10 +115,12 @@ const MobileNews = () => {
                   </h2>
 
                   {/* Date & Author */}
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Publicerat {formatDate(article.date)}
-                    {article.author && <> av <span className="font-medium text-foreground/70">{article.author}</span></>}
-                  </p>
+                  {(formatDate(article.date) || article.author) && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {formatDate(article.date) && <>Publicerat {formatDate(article.date)}</>}
+                      {article.author && <> av <span className="font-medium text-foreground/70">{article.author}</span></>}
+                    </p>
+                  )}
 
                   {/* Summary */}
                   <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
