@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import MobileHeader from "@/components/mobile/MobileHeader";
 
 interface ProfileData {
   name: string;
@@ -106,6 +107,7 @@ const MobileProfile = () => {
 
   return (
     <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <MobileHeader />
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
         <div className="flex items-center gap-3 px-4 py-4">

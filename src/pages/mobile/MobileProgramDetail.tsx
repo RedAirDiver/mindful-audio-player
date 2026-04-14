@@ -8,6 +8,7 @@ import { StripeCheckout } from "@/components/StripeCheckout";
 import { getReferralCode, clearReferralCode } from "@/hooks/useReferral";
 import AudioPlayer from "@/components/AudioPlayer";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import MobileHeader from "@/components/mobile/MobileHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -364,6 +365,7 @@ const MobileProgramDetail = () => {
   if (!program) {
   return (
     <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <MobileHeader />
         <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center gap-3 px-4 py-4">
             <button onClick={() => navigate(-1)} className="p-1">

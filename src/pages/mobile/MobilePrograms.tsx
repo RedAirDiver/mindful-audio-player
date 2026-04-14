@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import AudioPlayer from "@/components/AudioPlayer";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import { toast } from "sonner";
+import MobileHeader from "@/components/mobile/MobileHeader";
 
 interface AudioFile {
   id: string;

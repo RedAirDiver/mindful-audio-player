@@ -4,6 +4,7 @@ import { ArrowLeft, Bell, Mail, Tag, Megaphone } from "lucide-react";
 import { motion } from "motion/react";
 import { Switch } from "@/components/ui/switch";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import MobileHeader from "@/components/mobile/MobileHeader";
 
 interface NotificationPrefs {
   purchases: boolean;
@@ -62,6 +63,7 @@ const MobileNotifications = () => {
 
   return (
     <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <MobileHeader />
       {/* Header */}
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center gap-3 px-6 py-4">
