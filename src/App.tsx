@@ -16,6 +16,7 @@ import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileSecurity from "./pages/mobile/MobileSecurity";
 import About from "./pages/About";
+import MobileAbout from "./pages/mobile/MobileAbout";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
 import MobileShop from "./pages/mobile/MobileShop";
