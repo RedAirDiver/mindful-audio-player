@@ -21,7 +21,7 @@ const MobileHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md px-6 py-4 flex justify-between items-center">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md px-6 py-4 pt-[env(safe-area-inset-top,16px)] flex justify-between items-center">
       <button onClick={handleLogoClick} className="focus:outline-none">
         <img src={logoSvg} alt="Unestål Education" className="h-10 w-auto object-contain" />
       </button>
