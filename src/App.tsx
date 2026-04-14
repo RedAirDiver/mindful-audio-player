@@ -14,6 +14,7 @@ import MobileCategory from "./pages/mobile/MobileCategory";
 import MobilePrograms from "./pages/mobile/MobilePrograms";
 import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
+import MobileSecurity from "./pages/mobile/MobileSecurity";
 import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/mitt-konto/profil" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
       <Route path="/mitt-konto/notiser" element={<ProtectedRoute><MobileNotifications /></ProtectedRoute>} />
+      <Route path="/mitt-konto/sakerhet" element={<ProtectedRoute><MobileSecurity /></ProtectedRoute>} />
       <Route path="/mina-program" element={<ProtectedRoute>{isMobile ? <MobilePrograms /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
