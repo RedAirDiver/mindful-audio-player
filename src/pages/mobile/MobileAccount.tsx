@@ -167,7 +167,10 @@ const MobileAccount = () => {
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
 
-            <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
+            <button
+              onClick={() => navigate("/mitt-konto/notiser")}
+              className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 <Bell className="w-5 h-5 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">
