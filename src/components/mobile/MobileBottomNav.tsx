@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Compass, Brain, Newspaper, ShoppingBag, User } from "lucide-react";
+import { Compass, Brain, Newspaper, ShoppingBag } from "lucide-react";
 
 interface NavItemProps {
   icon: ReactNode;
@@ -30,7 +30,6 @@ const TAB_ROUTES: Record<string, string> = {
   news: "/aktuellt",
   programs: "/mina-program",
   shop: "/produkter",
-  account: "/mitt-konto",
 };
 
 const ROUTE_TABS: Record<string, string> = {
@@ -38,7 +37,6 @@ const ROUTE_TABS: Record<string, string> = {
   "/aktuellt": "news",
   "/mina-program": "programs",
   "/produkter": "shop",
-  "/mitt-konto": "account",
 };
 
 const MobileBottomNav = () => {
@@ -57,7 +55,6 @@ const MobileBottomNav = () => {
       <NavItem icon={<Newspaper className="w-5 h-5" />} label="Aktuellt" active={activeTab === "news"} onClick={() => handleTabChange("news")} />
       <NavItem icon={<Brain className="w-5 h-5" />} label="Program" active={activeTab === "programs"} onClick={() => handleTabChange("programs")} />
       <NavItem icon={<ShoppingBag className="w-5 h-5" />} label="Butik" active={activeTab === "shop"} onClick={() => handleTabChange("shop")} />
-      <NavItem icon={<User className="w-5 h-5" />} label="Konto" active={activeTab === "account"} onClick={() => handleTabChange("account")} />
     </nav>
   );
 };
