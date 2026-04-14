@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Headphones, Clock, Gift } from "lucide-react";
 
 /** Strip HTML tags and decode common entities for plain-text display */
