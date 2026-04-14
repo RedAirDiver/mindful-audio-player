@@ -16,6 +16,7 @@ import MobileProfile from "./pages/mobile/MobileProfile";
 import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileSecurity from "./pages/mobile/MobileSecurity";
 import About from "./pages/About";
+import MobileAbout from "./pages/mobile/MobileAbout";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
 import MobileShop from "./pages/mobile/MobileShop";
@@ -57,7 +58,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={isMobile ? <MobileHome /> : <Index />} />
-      <Route path="/about" element={<About />} />
+      <Route path="/about" element={isMobile ? <MobileAbout /> : <About />} />
+      <Route path="/om-oss" element={isMobile ? <MobileAbout /> : <About />} />
       <Route path="/produkter" element={isMobile ? <MobileShop /> : <Products />} />
       <Route path="/login" element={isMobile ? <MobileLogin /> : <Login />} />
       <Route path="/kategori/:slug" element={<MobileCategory />} />
