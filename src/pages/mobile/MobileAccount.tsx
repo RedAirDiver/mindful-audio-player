@@ -218,10 +218,16 @@ const MobileAccount = () => {
             betalningar eller teknisk support.
           </p>
           <div className="flex gap-3">
-            <button className="px-5 py-2.5 bg-card text-foreground rounded-xl text-sm font-semibold hover:bg-card/90 transition-colors">
+            <button
+              onClick={() => navigate("/mitt-konto/kontakt")}
+              className="px-5 py-2.5 bg-card text-foreground rounded-xl text-sm font-semibold hover:bg-card/90 transition-colors"
+            >
               Kontakta Support
             </button>
-            <button className="px-5 py-2.5 border-2 border-primary-foreground/30 text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary-foreground/10 transition-colors">
+            <button
+              onClick={() => navigate("/faq?layout=mobile")}
+              className="px-5 py-2.5 border-2 border-primary-foreground/30 text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary-foreground/10 transition-colors"
+            >
               Vanliga Frågor
             </button>
           </div>

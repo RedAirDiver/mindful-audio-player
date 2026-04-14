@@ -17,6 +17,8 @@ import MobileNotifications from "./pages/mobile/MobileNotifications";
 import MobileSecurity from "./pages/mobile/MobileSecurity";
 import About from "./pages/About";
 import MobileAbout from "./pages/mobile/MobileAbout";
+import MobileFAQ from "./pages/mobile/MobileFAQ";
+import MobileContact from "./pages/mobile/MobileContact";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
 import MobileShop from "./pages/mobile/MobileShop";
@@ -66,7 +68,8 @@ const AppRoutes = () => {
       <Route path="/aktuellt" element={<MobileNews />} />
       <Route path="/program/:slug" element={isMobile ? <MobileProgramDetail /> : <ProgramDetail />} />
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
-      <Route path="/faq" element={<FAQ />} />
+      <Route path="/faq" element={isMobile ? <MobileFAQ /> : <FAQ />} />
+      <Route path="/mitt-konto/kontakt" element={<ProtectedRoute><MobileContact /></ProtectedRoute>} />
       <Route path="/villkor" element={<Terms />} />
       <Route path="/integritetspolicy" element={<PrivacyPolicy />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
