@@ -8,8 +8,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import { toast } from "sonner";
-import {
 import MobileHeader from "@/components/mobile/MobileHeader";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
