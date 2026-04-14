@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { lovable } from "@/integrations/lovable/index";
 import MobileHeader from "@/components/mobile/MobileHeader";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import logo from "@/assets/logo.svg";
