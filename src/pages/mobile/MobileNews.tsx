@@ -14,12 +14,13 @@ interface NewsArticle {
   url: string | null;
   imageUrl: string | null;
   categories: string[];
+  date: string;
+  author: string | null;
 }
 
-const categoryLabels: Record<string, string> = {
-  nyheter: "Nyheter",
-  artiklar: "Artiklar",
-  podd: "Podd",
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 };
 
 const MobileNews = () => {
