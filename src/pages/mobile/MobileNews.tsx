@@ -25,6 +25,27 @@ const formatDate = (dateStr: string | undefined) => {
   return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 };
 
+type NewsResponse = { articles: NewsArticle[]; page: number; hasNextPage: boolean };
+
+const CACHE_KEY = (p: number) => `news-cache-page-${p}`;
+const CACHE_TTL = 30 * 60 * 1000; // 30 min
+
+const getCached = (page: number): NewsResponse | null => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY(page));
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return data;
+  } catch { return null; }
+};
+
+const setCache = (page: number, data: NewsResponse) => {
+  try {
+    localStorage.setItem(CACHE_KEY(page), JSON.stringify({ data, ts: Date.now() }));
+  } catch { /* storage full */ }
+};
+
 const MobileNews = () => {
   const [page, setPage] = useState(1);
 
@@ -36,9 +57,12 @@ const MobileNews = () => {
       });
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
-      return data as { articles: NewsArticle[]; page: number; hasNextPage: boolean };
+      const result = data as NewsResponse;
+      setCache(page, result);
+      return result;
     },
-    staleTime: 10 * 60 * 1000, // 10 min cache
+    staleTime: 10 * 60 * 1000,
+    placeholderData: () => getCached(page) ?? undefined,
   });
 
   return (
