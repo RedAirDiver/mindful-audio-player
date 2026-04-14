@@ -16,9 +16,15 @@ const MobileHeader = () => {
     navigate(layoutParam ? `${path}?layout=${layoutParam}` : path);
   };
 
+  const handleLogoClick = () => {
+    navigate(layoutParam ? `/?layout=${layoutParam}` : "/");
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md px-6 py-4 flex justify-between items-center">
-      <img src={logoSvg} alt="Unestål Education" className="h-8 w-auto object-contain" />
+      <button onClick={handleLogoClick} className="focus:outline-none">
+        <img src={logoSvg} alt="Unestål Education" className="h-10 w-auto object-contain" />
+      </button>
       <button
         onClick={handleProfileClick}
         className="w-10 h-10 rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center"
