@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail } from "lucide-react";
+import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import logo from "@/assets/logo.png";
 
 const Footer = () => {
+  const isMobile = useIsMobileLayout();
+
   return (
     <footer className="bg-foreground text-background/80 py-16">
       <div className="container mx-auto px-4">
@@ -32,7 +35,7 @@ const Footer = () => {
             <ul className="space-y-3 text-sm">
               <li><Link to="/login" className="hover:text-background transition-colors">Logga in</Link></li>
               <li><Link to="/login" className="hover:text-background transition-colors">Skapa konto</Link></li>
-              <li><Link to="/dashboard" className="hover:text-background transition-colors">Mina mentala träningsprogram</Link></li>
+              <li><Link to={isMobile ? "/mitt-konto" : "/dashboard"} className="hover:text-background transition-colors">Mina mentala träningsprogram</Link></li>
             </ul>
           </div>
 
