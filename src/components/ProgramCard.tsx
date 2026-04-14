@@ -67,6 +67,9 @@ const ProgramCard = ({
   featured = false,
   categories = [],
 }: ProgramCardProps) => {
+  const [searchParams] = useSearchParams();
+  const layoutParam = searchParams.get("layout");
+  const programLink = layoutParam ? `/program/${slug}?layout=${layoutParam}` : `/program/${slug}`;
   const isFree = price === 0;
   const displayCategory = categories.find(c => c !== 'Gratisprogram') || categories[0];
   const showFlag = country && country !== 'SE' && countryFlags[country];
@@ -156,7 +159,7 @@ const ProgramCard = ({
             )}
           </div>
           <Button size="sm" asChild>
-            <Link to={`/program/${slug}`}>Läs mer</Link>
+            <Link to={programLink}>Läs mer</Link>
           </Button>
         </div>
       </div>
