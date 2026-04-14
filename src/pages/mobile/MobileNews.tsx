@@ -49,9 +49,11 @@ const setCache = (page: number, data: NewsResponse) => {
 
 const MobileNews = () => {
   const [page, setPage] = useState(1);
+  const navigate = useNavigate();
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const touchStartY = useRef(0);
+  const touchStartX = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -80,6 +82,7 @@ const MobileNews = () => {
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
@@ -92,7 +95,16 @@ const MobileNews = () => {
     }
   };
 
-  const onTouchEnd = () => {
+  const onTouchEnd = (e: React.TouchEvent) => {
+    // Swipe-back gesture
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (deltaX > 100 && deltaY < 80) {
+      navigate(-1);
+      setPullDistance(0);
+      return;
+    }
+
     if (pullDistance > 50) {
       handleRefresh();
     }
