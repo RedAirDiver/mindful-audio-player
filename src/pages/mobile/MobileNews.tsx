@@ -115,10 +115,12 @@ const MobileNews = () => {
                   </h2>
 
                   {/* Date & Author */}
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Publicerat {formatDate(article.date)}
-                    {article.author && <> av <span className="font-medium text-foreground/70">{article.author}</span></>}
-                  </p>
+                  {(formatDate(article.date) || article.author) && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {formatDate(article.date) && <>Publicerat {formatDate(article.date)}</>}
+                      {article.author && <> av <span className="font-medium text-foreground/70">{article.author}</span></>}
+                    </p>
+                  )}
 
                   {/* Summary */}
                   <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
