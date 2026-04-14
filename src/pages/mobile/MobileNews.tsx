@@ -107,6 +107,17 @@ const MobileNews = () => {
     >
       <MobileHeader />
 
+      {/* Pull-to-refresh indicator */}
+      <div
+        className="flex items-center justify-center overflow-hidden transition-all"
+        style={{ height: pullDistance > 0 || isRefreshing ? Math.max(pullDistance, isRefreshing ? 40 : 0) : 0 }}
+      >
+        <RefreshCw
+          className={`w-5 h-5 text-primary transition-transform ${isRefreshing ? "animate-spin" : ""}`}
+          style={{ transform: !isRefreshing ? `rotate(${pullDistance * 3}deg)` : undefined }}
+        />
+      </div>
+
       <main className="max-w-2xl mx-auto px-4 pt-4">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
