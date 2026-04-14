@@ -72,8 +72,8 @@ const AppRoutes = () => {
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/faq" element={isMobile ? <MobileFAQ /> : <FAQ />} />
       <Route path="/mitt-konto/kontakt" element={<ProtectedRoute><MobileContact /></ProtectedRoute>} />
-      <Route path="/villkor" element={<Terms />} />
-      <Route path="/integritetspolicy" element={<PrivacyPolicy />} />
+      <Route path="/villkor" element={isMobile ? <MobileTerms /> : <Terms />} />
+      <Route path="/integritetspolicy" element={isMobile ? <MobilePrivacyPolicy /> : <PrivacyPolicy />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/kop-bekraftelse" element={<ProtectedRoute><PaymentReturn /></ProtectedRoute>} />
