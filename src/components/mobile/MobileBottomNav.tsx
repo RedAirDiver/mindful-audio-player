@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Compass, Brain, ShoppingBag, User } from "lucide-react";
+import { Compass, Brain, Newspaper, ShoppingBag, User } from "lucide-react";
 
 interface NavItemProps {
   icon: ReactNode;
@@ -27,6 +27,7 @@ function NavItem({ icon, label, active, onClick }: NavItemProps) {
 
 const TAB_ROUTES: Record<string, string> = {
   explore: "/",
+  news: "/aktuellt",
   programs: "/mina-program",
   shop: "/produkter",
   account: "/mitt-konto",
@@ -34,6 +35,7 @@ const TAB_ROUTES: Record<string, string> = {
 
 const ROUTE_TABS: Record<string, string> = {
   "/": "explore",
+  "/aktuellt": "news",
   "/mina-program": "programs",
   "/produkter": "shop",
   "/mitt-konto": "account",
@@ -51,10 +53,11 @@ const MobileBottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 w-full z-50 backdrop-blur-xl bg-background/80 border-t border-border flex justify-around items-center px-4 pb-8 pt-4">
-      <NavItem icon={<Compass className="w-6 h-6" />} label="Upptäck" active={activeTab === "explore"} onClick={() => handleTabChange("explore")} />
-      <NavItem icon={<Brain className="w-6 h-6" />} label="Mina Program" active={activeTab === "programs"} onClick={() => handleTabChange("programs")} />
-      <NavItem icon={<ShoppingBag className="w-6 h-6" />} label="Butik" active={activeTab === "shop"} onClick={() => handleTabChange("shop")} />
-      <NavItem icon={<User className="w-6 h-6" />} label="Mitt Konto" active={activeTab === "account"} onClick={() => handleTabChange("account")} />
+      <NavItem icon={<Compass className="w-5 h-5" />} label="Upptäck" active={activeTab === "explore"} onClick={() => handleTabChange("explore")} />
+      <NavItem icon={<Newspaper className="w-5 h-5" />} label="Aktuellt" active={activeTab === "news"} onClick={() => handleTabChange("news")} />
+      <NavItem icon={<Brain className="w-5 h-5" />} label="Program" active={activeTab === "programs"} onClick={() => handleTabChange("programs")} />
+      <NavItem icon={<ShoppingBag className="w-5 h-5" />} label="Butik" active={activeTab === "shop"} onClick={() => handleTabChange("shop")} />
+      <NavItem icon={<User className="w-5 h-5" />} label="Konto" active={activeTab === "account"} onClick={() => handleTabChange("account")} />
     </nav>
   );
 };

@@ -17,6 +17,7 @@ import About from "./pages/About";
 import { useIsMobileLayout } from "@/hooks/useCapacitor";
 import Products from "./pages/Products";
 import MobileShop from "./pages/mobile/MobileShop";
+import MobileNews from "./pages/mobile/MobileNews";
 import Login from "./pages/Login";
 import MobileLogin from "./pages/mobile/MobileLogin";
 import Dashboard from "./pages/Dashboard";
@@ -58,6 +59,7 @@ const AppRoutes = () => {
       <Route path="/produkter" element={isMobile ? <MobileShop /> : <Products />} />
       <Route path="/login" element={isMobile ? <MobileLogin /> : <Login />} />
       <Route path="/kategori/:slug" element={<MobileCategory />} />
+      <Route path="/aktuellt" element={<MobileNews />} />
       <Route path="/program/:slug" element={isMobile ? <MobileProgramDetail /> : <ProgramDetail />} />
       <Route path="/bli-affiliate" element={<AffiliateApply />} />
       <Route path="/faq" element={<FAQ />} />
