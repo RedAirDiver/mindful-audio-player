@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "motion/react";
-import { ExternalLink, Newspaper, ChevronLeft, ChevronRight } from "lucide-react";
+import { ExternalLink, Newspaper, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MobileHeader from "@/components/mobile/MobileHeader";
@@ -48,8 +48,12 @@ const setCache = (page: number, data: NewsResponse) => {
 
 const MobileNews = () => {
   const [page, setPage] = useState(1);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartY = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["mobile-news", page],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("fetch-news", {
@@ -65,8 +69,42 @@ const MobileNews = () => {
     placeholderData: () => getCached(page) ?? undefined,
   });
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    // Clear cache for current page
+    try { localStorage.removeItem(CACHE_KEY(page)); } catch {}
+    await refetch();
+    setIsRefreshing(false);
+  }, [page, refetch]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (isRefreshing) return;
+    const scrollTop = scrollRef.current?.scrollTop ?? window.scrollY;
+    if (scrollTop > 5) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0) {
+      setPullDistance(Math.min(delta * 0.4, 80));
+    }
+  };
+
+  const onTouchEnd = () => {
+    if (pullDistance > 50) {
+      handleRefresh();
+    }
+    setPullDistance(0);
+  };
+
   return (
-    <div className="min-h-screen pb-32 bg-background">
+    <div
+      className="min-h-screen pb-32 bg-background"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
       <MobileHeader />
 
       <main className="max-w-2xl mx-auto px-4 pt-4">
