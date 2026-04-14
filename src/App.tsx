@@ -72,6 +72,7 @@ const AppRoutes = () => {
       <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
       <Route path="/mitt-konto" element={<ProtectedRoute>{isMobile ? <MobileAccount /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/mitt-konto/profil" element={<ProtectedRoute><MobileProfile /></ProtectedRoute>} />
+      <Route path="/mitt-konto/notiser" element={<ProtectedRoute><MobileNotifications /></ProtectedRoute>} />
       <Route path="/mina-program" element={<ProtectedRoute>{isMobile ? <MobilePrograms /> : <Dashboard />}</ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
