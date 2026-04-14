@@ -14,12 +14,13 @@ interface NewsArticle {
   url: string | null;
   imageUrl: string | null;
   categories: string[];
+  date: string;
+  author: string | null;
 }
 
-const categoryLabels: Record<string, string> = {
-  nyheter: "Nyheter",
-  artiklar: "Artiklar",
-  podd: "Podd",
+const formatDate = (dateStr: string) => {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 };
 
 const MobileNews = () => {
@@ -100,14 +101,25 @@ const MobileNews = () => {
                           key={cat}
                           className="text-[10px] uppercase tracking-wider font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full"
                         >
-                          {categoryLabels[cat] || cat}
+                          {cat}
                         </span>
                       ))}
                     </div>
                   )}
 
+                  {/* Title */}
+                  <h2 className="font-display text-base font-semibold text-foreground mb-1 line-clamp-2">
+                    {article.title}
+                  </h2>
+
+                  {/* Date & Author */}
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Publicerat {formatDate(article.date)}
+                    {article.author && <> av <span className="font-medium text-foreground/70">{article.author}</span></>}
+                  </p>
+
                   {/* Summary */}
-                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">
                     {article.summary}
                   </p>
 
