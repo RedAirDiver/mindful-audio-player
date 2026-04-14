@@ -53,6 +53,8 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import PaymentReturn from "./pages/PaymentReturn";
+import MobileTerms from "./pages/mobile/MobileTerms";
+import MobilePrivacyPolicy from "./pages/mobile/MobilePrivacyPolicy";
 
 const AppRoutes = () => {
   const isMobile = useIsMobileLayout();
