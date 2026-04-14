@@ -58,7 +58,8 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={isMobile ? <MobileHome /> : <Index />} />
-      <Route path="/about" element={<About />} />
+      <Route path="/about" element={isMobile ? <MobileAbout /> : <About />} />
+      <Route path="/om-oss" element={isMobile ? <MobileAbout /> : <About />} />
       <Route path="/produkter" element={isMobile ? <MobileShop /> : <Products />} />
       <Route path="/login" element={isMobile ? <MobileLogin /> : <Login />} />
       <Route path="/kategori/:slug" element={<MobileCategory />} />
