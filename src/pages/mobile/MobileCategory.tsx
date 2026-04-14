@@ -9,6 +9,9 @@ import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 const MobileCategory = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const layoutParam = searchParams.get("layout");
+  const mLink = (path: string) => layoutParam ? `${path}?layout=${layoutParam}` : path;
   const [sortBy, setSortBy] = useState<"popular" | "newest">("popular");
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -172,7 +175,7 @@ const MobileCategory = () => {
                       {program.price > 0 ? `${program.price} kr` : "Gratis"}
                     </span>
                     <button
-                      onClick={() => navigate(`/program/${program.slug}`)}
+                      onClick={() => navigate(mLink(`/program/${program.slug}`))}
                       className="flex items-center gap-1 text-sm font-semibold text-primary hover:opacity-70 transition-opacity"
                     >
                       Visa program
