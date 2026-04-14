@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Compass, Brain, Newspaper, ShoppingBag } from "lucide-react";
 
 interface NavItemProps {
@@ -42,11 +42,13 @@ const ROUTE_TABS: Record<string, string> = {
 const MobileBottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const layoutParam = searchParams.get("layout");
   const activeTab = ROUTE_TABS[location.pathname] || "explore";
 
   const handleTabChange = (tab: string) => {
     const route = TAB_ROUTES[tab];
-    if (route) navigate(route);
+    if (route) navigate(layoutParam ? `${route}?layout=${layoutParam}` : route);
   };
 
   return (
