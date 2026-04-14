@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Star, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import MobileHeader from "@/components/mobile/MobileHeader";
 
 const MobileCategory = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -66,6 +67,7 @@ const MobileCategory = () => {
 
   return (
     <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <MobileHeader />
       {/* Header */}
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md px-6 py-4 flex items-center gap-4">
         <button

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import { toast } from "sonner";
 import {
+import MobileHeader from "@/components/mobile/MobileHeader";
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -71,6 +72,7 @@ const MobileSecurity = () => {
 
   return (
     <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <MobileHeader />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center gap-3 px-6 py-4">
           <button onClick={() => navigate(-1)} className="p-1 -ml-1">

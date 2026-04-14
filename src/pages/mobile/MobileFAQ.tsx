@@ -9,6 +9,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
+import MobileHeader from "@/components/mobile/MobileHeader";
 
 const faqItems = [
   { question: "Vad är mentalträning?", answer: "Mentalträning är en systematisk metod för att träna sinnet, precis som fysisk träning stärker kroppen. Genom guidade övningar som visualisering, avslappning och positiva affirmationer kan du förbättra fokus, hantera stress och nå dina mål effektivare." },
@@ -40,6 +41,7 @@ const MobileFAQ = () => {
 
   return (
     <div className="min-h-screen pb-32 bg-background" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <MobileHeader />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border/50">
         <div className="flex items-center gap-3 px-6 py-4">
           <button onClick={() => navigate(-1)} className="p-1 -ml-1">
