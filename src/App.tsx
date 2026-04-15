@@ -59,6 +59,14 @@ import MobilePrivacyPolicy from "./pages/mobile/MobilePrivacyPolicy";
 const AppRoutes = () => {
   const isMobile = useIsMobileLayout();
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    if (params.get('native') === '1' && hash.includes('access_token')) {
+      window.location.href = `com.unestal.app://login-callback${hash}`;
+    }
+  }, []);
+
   return (
     <Routes>
       <Route path="/" element={isMobile ? <MobileHome /> : <Index />} />
