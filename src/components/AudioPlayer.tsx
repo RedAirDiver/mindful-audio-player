@@ -61,9 +61,12 @@ const AudioPlayer = ({
   };
 
   // Set up Web Audio API analyser
+  // Detect Android browser (not just native Capacitor)
+  const isAndroid = /android/i.test(navigator.userAgent);
+
   const setupAnalyser = useCallback(() => {
-    // Skip Web Audio API on native Android — it causes audio artifacts/pinging sounds
-    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') return;
+    // Skip Web Audio API on Android entirely — it causes system notification sounds
+    if (isAndroid) return;
     if (!audioRef.current || sourceRef.current) return;
     try {
       const ctx = new AudioContext();
@@ -78,7 +81,7 @@ const AudioPlayer = ({
     } catch {
       // Web Audio not supported
     }
-  }, []);
+  }, [isAndroid]);
 
   // Animate bars from analyser data
   useEffect(() => {
