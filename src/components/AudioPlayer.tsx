@@ -62,6 +62,8 @@ const AudioPlayer = ({
 
   // Set up Web Audio API analyser
   const setupAnalyser = useCallback(() => {
+    // Skip Web Audio API on native Android — it causes audio artifacts/pinging sounds
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') return;
     if (!audioRef.current || sourceRef.current) return;
     try {
       const ctx = new AudioContext();
