@@ -291,7 +291,7 @@ const AudioPlayer = ({
 
   return (
     <div className="bg-card rounded-2xl shadow-elegant p-6 space-y-6">
-      {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin={Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android' ? undefined : "anonymous"} />}
+      {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin={isAndroid ? undefined : "anonymous"} />}
       
       {/* Track Info */}
       <div className="flex items-center gap-4">
