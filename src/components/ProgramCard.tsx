@@ -123,9 +123,10 @@ const ProgramCard = ({
           <h3 className="font-display text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
             {title}
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-            {stripHtml(description)}
-          </p>
+          <div
+            className="mt-2 text-sm text-muted-foreground line-clamp-3 prose-card"
+            dangerouslySetInnerHTML={{ __html: description || "" }}
+          />
         </div>
 
         {/* Meta */}
