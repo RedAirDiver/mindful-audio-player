@@ -143,24 +143,7 @@ serve(async (req) => {
         amount_paid: 0,
       });
 
-      // Send receipt email for free purchase (fire-and-forget)
-      try {
-        const receiptUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-receipt`;
-        await fetch(receiptUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({
-            user_id: user.id,
-            program_id,
-            amount_paid: 0,
-          }),
-        });
-      } catch (e) {
-        console.error("Failed to send receipt:", e);
-      }
+      // Free purchases: no receipt sent (per business rule — only paid Stripe purchases get receipts)
 
       return new Response(
         JSON.stringify({ free: true, message: "Gratis! Programmet har lagts till." }),
@@ -205,6 +188,10 @@ serve(async (req) => {
       ],
       mode: "payment",
       ui_mode: "embedded",
+      // Stripe sends an automatic receipt to this email after successful payment
+      payment_intent_data: {
+        receipt_email: user.email!,
+      },
       return_url: `${origin}/kop-bekraftelse?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         user_id: user.id,
