@@ -19,7 +19,7 @@ const faqItems = [
   { question: "Vilka program passar nybörjare?", answer: "Vi rekommenderar att börja med våra grundläggande avslappningsprogram. De ger en bra introduktion till mentalträning och kräver ingen tidigare erfarenhet. Kolla kategorin 'Avslappning' i vår butik." },
   { question: "Hur avbryter jag mitt konto?", answer: "Du köper enskilda program — det finns inga löpande abonnemang att avbryta. När du har köpt ett program har du livstids tillgång till det." },
   { question: "Kan jag använda programmen på flera enheter?", answer: "Absolut. Logga in med samma konto på webben eller i mobilappen så har du tillgång till alla dina köpta program oavsett enhet." },
-  { question: "Är mentalträning vetenskapligt bevisat?", answer: "Ja, forskning visar att regelbunden mentalträning kan minska stress, förbättra sömn, öka prestationsförmåga och stärka det mentala välbefinnandet. Våra program bygger på Lars-Eric Unestahls metoder som utvecklats under över 50 års forskning." },
+  { question: "Är mentalträning vetenskapligt bevisat?", answer: "Ja, forskning visar att regelbunden mentalträning kan minska stress, förbättra sömn, öka prestationsförmåga och stärka det mentala välbefinnandet. Våra program bygger på Lars-Eric Uneståhls metoder som utvecklats under över 50 års forskning." },
   { question: "Hur fungerar betalningen?", answer: "Vi erbjuder säker betalning via Stripe. Du betalar en engångskostnad per program och får sedan tillgång direkt. Inga dolda avgifter eller återkommande debiteringar." },
   { question: "Vad gör jag om jag har tekniska problem?", answer: "Kontakta oss via e-post eller telefon så hjälper vi dig. Du hittar våra kontaktuppgifter längst ner på sidan. Vi svarar normalt inom 24 timmar på vardagar." },
 ];

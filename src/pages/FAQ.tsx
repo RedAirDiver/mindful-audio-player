@@ -46,7 +46,7 @@ const faqItems = [
   {
     question: "Är mentalträning vetenskapligt bevisat?",
     answer:
-      "Ja, forskning visar att regelbunden mentalträning kan minska stress, förbättra sömn, öka prestationsförmåga och stärka det mentala välbefinnandet. Våra program bygger på Lars-Eric Unestahls metoder som utvecklats under över 50 års forskning.",
+      "Ja, forskning visar att regelbunden mentalträning kan minska stress, förbättra sömn, öka prestationsförmåga och stärka det mentala välbefinnandet. Våra program bygger på Lars-Eric Uneståhls metoder som utvecklats under över 50 års forskning.",
   },
   {
     question: "Hur fungerar betalningen?",
