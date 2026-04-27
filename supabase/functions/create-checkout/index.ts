@@ -188,6 +188,10 @@ serve(async (req) => {
       ],
       mode: "payment",
       ui_mode: "embedded",
+      // Stripe sends an automatic receipt to this email after successful payment
+      payment_intent_data: {
+        receipt_email: user.email!,
+      },
       return_url: `${origin}/kop-bekraftelse?session_id={CHECKOUT_SESSION_ID}`,
       metadata: {
         user_id: user.id,
