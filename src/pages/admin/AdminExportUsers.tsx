@@ -74,7 +74,7 @@ const AdminExportUsers = () => {
             CSV-export
           </CardTitle>
           <CardDescription>
-            Filen innehåller två kolumner: Namn och E-post. UTF-8 med BOM så att åäö visas korrekt i Excel.
+            Filen innehåller en kolumn: E-post. UTF-8 med BOM så att åäö visas korrekt i Excel.
           </CardDescription>
         </CardHeader>
         <CardContent>
