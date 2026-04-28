@@ -12,13 +12,13 @@ const AdminExportUsers = () => {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const all: { name: string | null; email: string | null }[] = [];
+      const all: { email: string | null }[] = [];
       const PAGE_SIZE = 1000;
       let from = 0;
       while (true) {
         const { data, error } = await supabase
           .from("profiles")
-          .select("name, email")
+          .select("email")
           .range(from, from + PAGE_SIZE - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
@@ -32,9 +32,9 @@ const AdminExportUsers = () => {
         return /[",\n\r]/.test(v) ? `"${v}"` : v;
       };
 
-      const rows = ["Namn,E-post"];
+      const rows = ["E-post"];
       for (const u of all) {
-        rows.push(`${escape(u.name || "")},${escape(u.email || "")}`);
+        if (u.email) rows.push(escape(u.email));
       }
       const csv = "\uFEFF" + rows.join("\r\n");
 
@@ -74,7 +74,7 @@ const AdminExportUsers = () => {
             CSV-export
           </CardTitle>
           <CardDescription>
-            Filen innehåller två kolumner: Namn och E-post. UTF-8 med BOM så att åäö visas korrekt i Excel.
+            Filen innehåller en kolumn: E-post. UTF-8 med BOM så att åäö visas korrekt i Excel.
           </CardDescription>
         </CardHeader>
         <CardContent>
