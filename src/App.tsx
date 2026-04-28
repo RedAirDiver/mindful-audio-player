@@ -43,7 +43,7 @@ import AdminAudio from "./pages/admin/AdminAudio";
 import AdminPurchases from "./pages/admin/AdminPurchases";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCategories from "./pages/admin/AdminCategories";
-import AdminImportUsers from "./pages/admin/AdminImportUsers";
+import AdminExportUsers from "./pages/admin/AdminExportUsers";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import AdminDiscountCodes from "./pages/admin/AdminDiscountCodes";
 import AdminCategoryPurchases from "./pages/admin/AdminCategoryPurchases";
@@ -99,7 +99,7 @@ const AppRoutes = () => {
         <Route path="audio" element={<AdminAudio />} />
         <Route path="purchases" element={<AdminPurchases />} />
         <Route path="users" element={<AdminUsers />} />
-        <Route path="import" element={<AdminImportUsers />} />
+        <Route path="export" element={<AdminExportUsers />} />
         <Route path="affiliates" element={<AdminAffiliates />} />
         <Route path="rabattkoder" element={<AdminDiscountCodes />} />
         <Route path="kategori-kop" element={<AdminCategoryPurchases />} />
