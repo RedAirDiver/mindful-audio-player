@@ -152,23 +152,75 @@ serve(async (req) => {
       }
     }
 
-    // Send receipt email (fire-and-forget)
+    // Send admin notification inline (don't rely on cross-function fetch which can die before completing)
     try {
-      const receiptUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-receipt`;
-      await fetch(receiptUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          program_id: programId,
-          amount_paid: amountPaid,
-        }),
-      });
+      const brevoKey = Deno.env.get("BREVO_API_KEY");
+      if (!brevoKey) {
+        console.error("BREVO_API_KEY not set – skipping admin notification");
+      } else if (amountPaid > 0) {
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("name, email, company")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        const { data: program } = await adminClient
+          .from("programs")
+          .select("title")
+          .eq("id", programId)
+          .maybeSingle();
+
+        const formattedDate = new Date().toLocaleString("sv-SE", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit",
+        });
+
+        const customerName = profile?.name || "Okänd kund";
+        const customerEmail = profile?.email || "(saknar e-post)";
+        const programTitle = program?.title || programId;
+
+        const html = `
+<!DOCTYPE html><html lang="sv"><head><meta charset="UTF-8"></head>
+<body style="font-family:Arial,sans-serif;color:#1f3550;padding:20px;">
+  <h2 style="color:#2b5a8c;margin:0 0 16px;">Nytt köp på mentalträning.nu</h2>
+  <table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:14px;">
+    <tr><td><strong>Datum:</strong></td><td>${formattedDate}</td></tr>
+    <tr><td><strong>Kund:</strong></td><td>${customerName}</td></tr>
+    <tr><td><strong>E-post:</strong></td><td>${customerEmail}</td></tr>
+    ${profile?.company ? `<tr><td><strong>Företag:</strong></td><td>${profile.company}</td></tr>` : ""}
+    <tr><td><strong>Program:</strong></td><td>${programTitle}</td></tr>
+    <tr><td><strong>Belopp:</strong></td><td>${amountPaid.toFixed(2)} kr (inkl. moms)</td></tr>
+  </table>
+  <p style="font-size:12px;color:#718096;margin-top:24px;">
+    Stripe har automatiskt skickat ett kvitto till kunden. Detta är en intern notifiering.
+  </p>
+</body></html>`;
+
+        const brevoResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST",
+          headers: {
+            "api-key": brevoKey,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            sender: { name: "Mental Träning – Notifiering", email: "noreply@xn--mentaltrning-ncb.nu" },
+            to: [{ email: "info@unestal.se", name: "Unestål Education" }],
+            subject: `Nytt köp: ${programTitle} – ${amountPaid.toFixed(2)} kr`,
+            htmlContent: html,
+          }),
+        });
+
+        if (!brevoResponse.ok) {
+          const errBody = await brevoResponse.text();
+          console.error("Brevo error:", brevoResponse.status, errBody);
+        } else {
+          const result = await brevoResponse.json();
+          console.log("Admin notification sent:", programTitle, amountPaid, "kr — messageId:", result.messageId);
+        }
+      }
     } catch (e) {
-      console.error("Failed to send receipt:", e);
+      console.error("Failed to send admin notification:", e);
     }
 
     return new Response(
