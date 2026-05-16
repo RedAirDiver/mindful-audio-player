@@ -125,7 +125,7 @@ const ProgramCard = ({
           </h3>
           <div
             className="mt-2 text-sm text-muted-foreground line-clamp-3 prose-card"
-            dangerouslySetInnerHTML={{ __html: description || "" }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description || "") }}
           />
         </div>
 

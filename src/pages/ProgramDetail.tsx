@@ -511,7 +511,7 @@ const ProgramDetail = () => {
             <div className="lg:col-span-3 space-y-8">
               <div 
                 className="text-lg text-muted-foreground leading-relaxed prose prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: program.description || program.short_description || "" }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(program.description || program.short_description || "") }}
               />
 
               {/* Audio Player for purchased programs */}
