@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import DOMPurify from "dompurify";
 import { Badge } from "@/components/ui/badge";
 import { Link, useSearchParams } from "react-router-dom";
 import { Headphones, Clock, Gift } from "lucide-react";
@@ -125,7 +126,7 @@ const ProgramCard = ({
           </h3>
           <div
             className="mt-2 text-sm text-muted-foreground line-clamp-3 prose-card"
-            dangerouslySetInnerHTML={{ __html: description || "" }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description || "") }}
           />
         </div>
 

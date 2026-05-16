@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
@@ -534,7 +535,7 @@ const MobileProgramDetail = () => {
           <h2 className="font-display text-lg font-semibold text-foreground mb-3">Om programmet</h2>
           <div
             className="text-sm text-muted-foreground leading-relaxed prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: program.description || program.short_description || "" }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(program.description || program.short_description || "") }}
           />
         </motion.div>
 
