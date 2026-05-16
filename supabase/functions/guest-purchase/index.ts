@@ -168,6 +168,15 @@ Deno.serve(async (req) => {
         .eq("id", dc.id);
     }
 
+    // SECURITY: Only allow this endpoint for purchases that are free (after discount).
+    // All paid purchases MUST go through create-checkout / Stripe.
+    if (Number(finalPrice) > 0) {
+      return new Response(
+        JSON.stringify({ error: "Betalda köp måste genomföras via Stripe-checkout." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Create purchase
     const { data: purchaseRow, error: purchaseError } = await adminClient
       .from("purchases")
