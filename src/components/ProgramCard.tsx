@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import DOMPurify from "dompurify";
 import { Badge } from "@/components/ui/badge";
 import { Link, useSearchParams } from "react-router-dom";
 import { Headphones, Clock, Gift } from "lucide-react";
