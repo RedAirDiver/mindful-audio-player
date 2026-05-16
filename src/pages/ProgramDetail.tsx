@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";

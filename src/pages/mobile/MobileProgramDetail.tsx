@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import DOMPurify from "dompurify";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { supabase } from "@/integrations/supabase/client";
