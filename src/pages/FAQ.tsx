@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import {
   Accordion,
   AccordionContent,
@@ -61,8 +62,24 @@ const faqItems = [
 ];
 
 const FAQ = () => {
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  };
+
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Vanliga frågor om mental träning | Mentalträning"
+        description="Svar på vanliga frågor om mentalträning, våra program, betalning, offline-lyssning och hur du kommer igång."
+        path="/faq"
+        jsonLd={faqJsonLd}
+      />
       <Header />
       <main className="pt-28 md:pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-3xl">
