@@ -1,0 +1,18 @@
+# Mentalträning
+
+> Sveriges ledande plattform för mentala träningsprogram, baserade på Lars-Eric Uneståls metodik. Hundratals ljudguidade program för fokus, stresshantering, sömn, sport och personlig utveckling.
+
+Mentalträning drivs av Unestål Education i Örebro. Vi har utvecklat och sålt mentala träningsprogram sedan 1990. Programmen levereras som ljudfiler som streamas via webbplats och mobilapp — köp ger livstids tillgång, inga prenumerationer.
+
+## Pages
+
+- [Hem](/): Introduktion till mental träning och översikt av kategorier.
+- [Mentala Träningsprogram](/produkter): Hela katalogen med program — filtrera per kategori.
+- [Om oss](/about): Bakgrund, metodik och kontakt.
+- [Vanliga frågor](/faq): Svar på de vanligaste frågorna om mental träning och våra program.
+- [Bli affiliate](/bli-affiliate): Affiliate-programmet — tjäna provision på rekommenderade köp.
+
+## Optional
+
+- [Användarvillkor](/villkor): Köpvillkor och cookies.
+- [Integritetspolicy](/integritetspolicy): Hur vi hanterar personuppgifter.

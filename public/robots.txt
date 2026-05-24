@@ -12,3 +12,14 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /mitt-konto
+Disallow: /dashboard
+Disallow: /mina-program
+Disallow: /affiliate
+Disallow: /login
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /kop-bekraftelse
+
+Sitemap: https://xn--mentaltrning-ncb.nu/sitemap.xml

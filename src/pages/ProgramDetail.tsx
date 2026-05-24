@@ -3,6 +3,7 @@ import DOMPurify from "dompurify";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 import AudioPlayer from "@/components/AudioPlayer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -464,8 +465,33 @@ const ProgramDetail = () => {
     );
   }
 
+  const plainDesc = stripHtml(program.description || program.short_description || "").slice(0, 160);
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: program.title,
+    description: plainDesc,
+    image: program.image_url || undefined,
+    brand: { "@type": "Brand", name: "Unestål Education" },
+    offers: {
+      "@type": "Offer",
+      url: `https://xn--mentaltrning-ncb.nu/program/${program.slug}`,
+      priceCurrency: "SEK",
+      price: program.price,
+      availability: "https://schema.org/InStock",
+    },
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={`${program.title} | Mentalträning`}
+        description={plainDesc || `Mentalt träningsprogram: ${program.title}. Köp en gång, lyssna för alltid.`}
+        path={`/program/${program.slug}`}
+        image={program.image_url || undefined}
+        type="product"
+        jsonLd={productJsonLd}
+      />
       <Header />
       
       <main className="pt-28 md:pt-36 pb-16">
