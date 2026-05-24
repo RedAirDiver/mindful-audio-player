@@ -140,6 +140,11 @@ const Products = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Mentala Träningsprogram – hela katalogen | Mentalträning"
+        description="Bläddra bland hundratals ljudguidade mentala träningsprogram för fokus, sömn, sport, ledarskap och välmående. Köp en gång, lyssna för alltid."
+        path="/produkter"
+      />
       <Header />
       <main className="pt-28 md:pt-36 pb-16">
         <div className="container mx-auto px-4">

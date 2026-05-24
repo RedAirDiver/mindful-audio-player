@@ -32,6 +32,11 @@ const About = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Om oss – Unestål Education | Mentalträning"
+        description="Lär känna Unestål Education, grundare av modern mental träning i Sverige sedan 1990. Vår metodik, bakgrund och kontakt."
+        path="/about"
+      />
       <Header />
       <main className="pt-28 md:pt-32">
         {/* Hero Section */}
