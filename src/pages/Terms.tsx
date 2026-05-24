@@ -1,9 +1,15 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const Terms = () => {
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Användarvillkor & Cookies | Mentalträning"
+        description="Användarvillkor och cookieinformation för Mentalträning och Unestål Education."
+        path="/villkor"
+      />
       <Header />
       <main className="pt-28 md:pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-3xl prose prose-neutral dark:prose-invert prose-headings:font-serif">

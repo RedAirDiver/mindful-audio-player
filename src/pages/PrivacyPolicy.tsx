@@ -1,9 +1,15 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen">
+      <SEO
+        title="Integritetspolicy | Mentalträning"
+        description="Information om hur Unestål Education behandlar dina personuppgifter i enlighet med GDPR."
+        path="/integritetspolicy"
+      />
       <Header />
       <main className="pt-28 md:pt-32 pb-16">
         <div className="container mx-auto px-4 max-w-3xl prose prose-neutral dark:prose-invert prose-headings:font-serif">
