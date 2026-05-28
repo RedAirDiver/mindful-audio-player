@@ -509,6 +509,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_login: {
+        Args: {
+          _ip_address: string
+          _login_method: string
+          _user_agent: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
