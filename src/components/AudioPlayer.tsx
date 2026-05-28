@@ -69,7 +69,9 @@ const AudioPlayer = ({
 
   const setupAnalyser = useCallback(() => {
     // Skip Web Audio API on Android entirely — it causes system notification sounds
-    if (isAndroid) return;
+    // Skip Web Audio API on mobile (iOS/Android) — AudioContext suspends on screen lock,
+    // which silences playback. On iOS it also blocks background audio entirely.
+    if (isMobile) return;
     if (!audioRef.current || sourceRef.current) return;
     try {
       const ctx = new AudioContext();
