@@ -58,6 +58,22 @@ serve(async (req) => {
       });
     }
 
+    // SECURITY: caller must own this purchase (or be admin), otherwise anyone
+    // can spam admin inbox with fake purchase notifications for other users.
+    const callerUid = claimsData.claims.sub as string;
+    if (user_id !== callerUid) {
+      const { data: isAdmin } = await adminClient.rpc('has_role', {
+        _user_id: callerUid,
+        _role: 'admin',
+      });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const paid = Number(amount_paid ?? 0);
 
     // Skip free purchases (manual assignments / category access) — only notify for real Stripe payments
