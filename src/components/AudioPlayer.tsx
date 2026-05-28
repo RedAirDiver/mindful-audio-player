@@ -61,8 +61,11 @@ const AudioPlayer = ({
   };
 
   // Set up Web Audio API analyser
-  // Detect Android browser (not just native Capacitor)
-  const isAndroid = /android/i.test(navigator.userAgent);
+  // Detect mobile browsers where Web Audio API breaks background/lock-screen playback
+  const ua = navigator.userAgent;
+  const isAndroid = /android/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  const isMobile = isAndroid || isIOS;
 
   const setupAnalyser = useCallback(() => {
     // Skip Web Audio API on Android entirely — it causes system notification sounds
