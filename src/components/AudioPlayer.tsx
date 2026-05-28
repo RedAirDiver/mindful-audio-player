@@ -61,12 +61,17 @@ const AudioPlayer = ({
   };
 
   // Set up Web Audio API analyser
-  // Detect Android browser (not just native Capacitor)
-  const isAndroid = /android/i.test(navigator.userAgent);
+  // Detect mobile browsers where Web Audio API breaks background/lock-screen playback
+  const ua = navigator.userAgent;
+  const isAndroid = /android/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
+  const isMobile = isAndroid || isIOS;
 
   const setupAnalyser = useCallback(() => {
     // Skip Web Audio API on Android entirely — it causes system notification sounds
-    if (isAndroid) return;
+    // Skip Web Audio API on mobile (iOS/Android) — AudioContext suspends on screen lock,
+    // which silences playback. On iOS it also blocks background audio entirely.
+    if (isMobile) return;
     if (!audioRef.current || sourceRef.current) return;
     try {
       const ctx = new AudioContext();
@@ -291,7 +296,7 @@ const AudioPlayer = ({
 
   return (
     <div className="bg-card rounded-2xl shadow-elegant p-6 space-y-6">
-      {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin={isAndroid ? undefined : "anonymous"} />}
+      {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin={isMobile ? undefined : "anonymous"} />}
       
       {/* Track Info */}
       <div className="flex items-center gap-4">
