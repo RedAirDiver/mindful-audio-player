@@ -127,12 +127,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const method = u.app_metadata?.provider || "unknown";
 
         supabase
-          .from("login_history")
-          .insert({
-            user_id: u.id,
-            email: u.email,
-            login_method: method,
-            user_agent: navigator.userAgent,
+          .rpc("record_login", {
+            _login_method: method,
+            _ip_address: null,
+            _user_agent: navigator.userAgent,
           })
           .then(({ error }) => {
             if (error && readStoredLoginFingerprint() === loginFingerprint) {
