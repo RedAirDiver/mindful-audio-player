@@ -28,3 +28,6 @@ verify_jwt = false
 
 [functions.send-receipt]
 verify_jwt = false
+
+[functions.preview-audio]
+verify_jwt = false
