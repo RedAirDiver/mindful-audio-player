@@ -284,27 +284,22 @@ const ProgramDetail = () => {
     }
 
     setPreviewLoading(true);
-    
-    try {
-      // Get signed URL for the track
-      const { data, error } = await supabase.storage
-        .from("audio-files")
-        .createSignedUrl(track.file_path, 300); // 5 min expiry for preview
 
-      if (error || !data?.signedUrl) {
-        throw new Error("Kunde inte hämta ljudfil");
-      }
+    try {
+      // Preview is served by an edge function that caps response size,
+      // so anonymous users can't download full paid tracks.
+      const previewUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preview-audio?track_id=${encodeURIComponent(trackId)}`;
 
       if (previewAudioRef.current) {
-        previewAudioRef.current.src = data.signedUrl;
+        previewAudioRef.current.src = previewUrl;
         previewAudioRef.current.volume = 0.8;
         previewAudioRef.current.currentTime = 60; // Start 1 min in
         await previewAudioRef.current.play();
-        
+
         setPreviewTrack(trackId);
         setIsPlaying(true);
         setPreviewProgress(0);
-        
+
         toast.info("Förhandslyssning: 1,5 minuter", {
           description: "Köp produkten för att lyssna på hela spåret"
         });
