@@ -135,15 +135,30 @@ Deno.serve(async (req) => {
       if (email) {
         const { data: existing } = await adminClient.auth.admin.getUserById(userId);
         const currentEmail = existing?.user?.email?.toLowerCase() ?? null;
-        if (currentEmail !== email.toLowerCase()) {
+        const newEmail = email.toLowerCase();
+        if (currentEmail !== newEmail) {
+          // Check if another user already has this email
+          const { data: list } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const conflict = list?.users?.find(
+            (u) => u.id !== userId && u.email?.toLowerCase() === newEmail
+          );
+          if (conflict) {
+            return new Response(
+              JSON.stringify({ error: `E-postadressen ${email} används redan av en annan användare.` }),
+              { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
           authUpdates.email = email;
         }
       }
       if (Object.keys(authUpdates).length > 0) {
         const { error: authError } = await adminClient.auth.admin.updateUserById(userId, authUpdates);
         if (authError) {
+          const msg = authError.message?.includes("duplicate") || authError.message?.includes("already")
+            ? `E-postadressen används redan av en annan användare.`
+            : authError.message;
           return new Response(
-            JSON.stringify({ error: authError.message }),
+            JSON.stringify({ error: msg }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
