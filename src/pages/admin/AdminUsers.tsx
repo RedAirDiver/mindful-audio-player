@@ -274,10 +274,15 @@ const AdminUsers = () => {
 
   const saveUserMutation = useMutation({
     mutationFn: async () => {
+      // Validate required name
+      if (!formData.name.trim()) {
+        throw new Error("Namn är obligatoriskt");
+      }
       // Validate password match
       if (formData.password && formData.password !== formData.confirmPassword) {
         throw new Error("Lösenorden matchar inte");
       }
+
       if (editingUser) {
         // Update existing user
         const { data, error } = await supabase.functions.invoke("manage-user", {
