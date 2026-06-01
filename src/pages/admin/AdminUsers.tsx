@@ -252,6 +252,26 @@ const AdminUsers = () => {
     },
   });
 
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("manage-user", {
+        body: { action: "delete", userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-roles"] });
+      toast.success("Användaren har raderats");
+    },
+    onError: (error: Error) => {
+      toast.error("Kunde inte radera användaren: " + error.message);
+    },
+  });
+
+
   const saveUserMutation = useMutation({
     mutationFn: async () => {
       // Validate password match
@@ -508,7 +528,40 @@ const AdminUsers = () => {
                                   </>
                                 )}
                               </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    title="Radera användaren helt"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Radera
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Radera användaren?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Detta raderar permanent kontot för{" "}
+                                      <strong>{profile.email || profile.name || profile.user_id}</strong>{" "}
+                                      samt alla köp, affiliate-data och inloggningshistorik. Åtgärden kan inte ångras.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => deleteUserMutation.mutate(profile.user_id)}
+                                    >
+                                      Radera permanent
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
+
                           </TableCell>
                         </TableRow>
                         {isExpanded && (

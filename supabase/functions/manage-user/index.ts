@@ -170,6 +170,52 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (action === "delete") {
+      const { userId } = body;
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: "userId is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (userId === user.id) {
+        return new Response(
+          JSON.stringify({ error: "Du kan inte radera ditt eget konto." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Best-effort cleanup of related rows
+      const affiliateIds = (await adminClient
+        .from("affiliates")
+        .select("id")
+        .eq("user_id", userId)).data?.map((a: { id: string }) => a.id) ?? [];
+      if (affiliateIds.length > 0) {
+        await adminClient.from("commissions").delete().in("affiliate_id", affiliateIds);
+        await adminClient.from("referrals").delete().in("affiliate_id", affiliateIds);
+      }
+      await adminClient.from("affiliates").delete().eq("user_id", userId);
+      await adminClient.from("referrals").delete().eq("converted_user_id", userId);
+      await adminClient.from("purchases").delete().eq("user_id", userId);
+      await adminClient.from("login_history").delete().eq("user_id", userId);
+      await adminClient.from("user_roles").delete().eq("user_id", userId);
+      await adminClient.from("profiles").delete().eq("user_id", userId);
+
+      const { error: delErr } = await adminClient.auth.admin.deleteUser(userId);
+      if (delErr) {
+        return new Response(
+          JSON.stringify({ error: delErr.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+
     return new Response(
       JSON.stringify({ error: "Unknown action" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
