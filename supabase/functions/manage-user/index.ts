@@ -129,10 +129,16 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update auth email/password if changed
+      // Update auth email/password only if actually changed
       const authUpdates: Record<string, string> = {};
-      if (email) authUpdates.email = email;
       if (password) authUpdates.password = password;
+      if (email) {
+        const { data: existing } = await adminClient.auth.admin.getUserById(userId);
+        const currentEmail = existing?.user?.email?.toLowerCase() ?? null;
+        if (currentEmail !== email.toLowerCase()) {
+          authUpdates.email = email;
+        }
+      }
       if (Object.keys(authUpdates).length > 0) {
         const { error: authError } = await adminClient.auth.admin.updateUserById(userId, authUpdates);
         if (authError) {
