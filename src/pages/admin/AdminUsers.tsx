@@ -528,7 +528,40 @@ const AdminUsers = () => {
                                   </>
                                 )}
                               </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    title="Radera användaren helt"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Radera
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Radera användaren?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Detta raderar permanent kontot för{" "}
+                                      <strong>{profile.email || profile.name || profile.user_id}</strong>{" "}
+                                      samt alla köp, affiliate-data och inloggningshistorik. Åtgärden kan inte ångras.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => deleteUserMutation.mutate(profile.user_id)}
+                                    >
+                                      Radera permanent
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
+
                           </TableCell>
                         </TableRow>
                         {isExpanded && (
