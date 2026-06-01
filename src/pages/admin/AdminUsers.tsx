@@ -250,7 +250,25 @@ const AdminUsers = () => {
     onError: (error) => {
       toast.error("Kunde inte ändra behörighet: " + error.message);
     },
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke("manage-user", {
+        body: { action: "delete", userId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-user-roles"] });
+      toast.success("Användaren har raderats");
+    },
+    onError: (error: Error) => {
+      toast.error("Kunde inte radera användaren: " + error.message);
+    },
   });
+
 
   const saveUserMutation = useMutation({
     mutationFn: async () => {
