@@ -250,6 +250,8 @@ const AdminUsers = () => {
     onError: (error) => {
       toast.error("Kunde inte ändra behörighet: " + error.message);
     },
+  });
+
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
