@@ -763,7 +763,9 @@ const AdminUsers = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="user-name">Namn</Label>
+              <Label htmlFor="user-name">
+                Namn <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="user-name"
                 value={formData.name}
@@ -771,7 +773,9 @@ const AdminUsers = () => {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="Förnamn Efternamn"
+                required
               />
+
             </div>
             <div>
               <Label htmlFor="user-email">E-post</Label>
